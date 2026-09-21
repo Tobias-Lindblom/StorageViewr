@@ -1,0 +1,90 @@
+@import "tailwindcss";
+
+@theme {
+  --color-canvas: #090810;
+  --color-surface: #13111f;
+  --color-surface-raised: #1d182e;
+  --color-line: #393047;
+  --color-foreground: #f6f3ff;
+  --color-muted: #b8b1ca;
+  --color-accent: #bda5ff;
+  --color-cyan: #9be7f5;
+}
+
+@layer base {
+  html { color-scheme: dark; scroll-behavior: smooth; }
+  body {
+    @apply m-0 min-h-svh bg-canvas text-foreground antialiased;
+    font-family: Arial, Helvetica, sans-serif;
+    background-image: radial-gradient(ellipse at 85% 5%, #45228726, transparent 45%);
+    background-repeat: no-repeat;
+  }
+  h1 { @apply mb-5 text-3xl font-bold tracking-tight sm:text-4xl; overflow-wrap: anywhere; }
+  h2 { @apply mb-5 text-xl font-semibold; }
+  label { @apply block text-sm font-medium text-foreground; }
+  input {
+    @apply mt-2 min-h-13 w-full rounded-xl border border-line bg-canvas px-4 text-base text-foreground outline-none placeholder:text-muted/70 focus:border-accent focus:ring-2 focus:ring-accent/25;
+  }
+  button, a { @apply focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cyan; }
+  button { @apply cursor-pointer disabled:cursor-wait; }
+  ::selection { background: #7950ce; color: white; }
+}
+@layer components {
+  .button {
+    @apply inline-flex min-h-13 items-center justify-center gap-4 rounded-xl border border-violet-400/40 px-6 py-3 text-sm font-semibold text-white transition hover:brightness-110 disabled:opacity-60;
+    background: linear-gradient(115deg, #7934d8, #5921bb 65%, #4c27a1);
+    box-shadow: inset 0 1px 0 #ffffff20, 0 5px 24px #6e22ce26;
+  }
+  .button-secondary {
+    @apply inline-flex min-h-13 items-center justify-center rounded-xl border border-line bg-surface px-5 py-3 text-sm font-medium text-foreground transition hover:border-accent/70 hover:bg-surface-raised disabled:opacity-60;
+  }
+  .panel { @apply rounded-2xl border border-line bg-surface p-6 sm:p-8; box-shadow: inset 0 1px 0 #ffffff05; }
+  .eyebrow { @apply mb-4 text-xs font-bold uppercase tracking-widest text-accent; }
+  .brand { @apply text-xl font-bold tracking-tight text-foreground; }
+  .brand span { @apply text-accent; }
+  .error { @apply rounded-xl border border-rose-400/25 bg-rose-950/50 p-3 text-sm text-rose-200; }
+  .hero-title { font-size: clamp(2.75rem, 7vw, 5.5rem); line-height: 1.04; letter-spacing: -0.065em; }
+  .gradient-text {
+    background: linear-gradient(105deg, #c9a8ff 5%, #9c75ff 55%, #a4e7ff);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .preview-stage {
+    @apply relative mx-auto w-full max-w-md px-3 pb-10 pt-6 sm:px-7 sm:pt-10;
+    isolation: isolate;
+  }
+  .preview-stage::before {
+    content: "";
+    position: absolute;
+    inset: 8% -3% 4%;
+    z-index: -1;
+    background: radial-gradient(ellipse, #7837ff35, transparent 68%);
+  }
+  .preview-card {
+    @apply relative overflow-hidden rounded-[2rem] border border-violet-300/25 p-5 sm:p-6;
+    background: linear-gradient(150deg, #3f257d 0%, #21153f 26%, #110e1c 65%, #20103d 100%);
+    box-shadow: inset 0 1px 0 #ffffff25, 0 24px 80px #00000075;
+  }
+  .preview-scan {
+    @apply flex items-center justify-center rounded-2xl border border-violet-300/25;
+    background: radial-gradient(ellipse, #823cdb65, #261340 70%);
+    box-shadow: inset 0 0 28px #9c52ff12;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { transition-duration: 0s !important; }
+}
+
+@layer base {
+  select { @apply mt-2 min-h-13 w-full rounded-xl border border-line bg-canvas px-4 text-base text-foreground outline-none focus:border-accent focus:ring-2 focus:ring-accent/25; }
+}
+@media print {
+  @page { size: A4; margin: 12mm; }
+  html, body { background: white !important; color: black !important; }
+  .print-hidden { display: none !important; }
+  .label-sheet { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 8mm !important; }
+  .qr-label { break-inside: avoid; border: 1px solid #ccc !important; border-radius: 0 !important; color: black !important; background: white !important; padding: 5mm !important; print-color-adjust: exact; }
+  .qr-label img { width: 44mm !important; height: 44mm !important; }
+}
