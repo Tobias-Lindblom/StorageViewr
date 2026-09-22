@@ -3,15 +3,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AppIcon } from "./app-icon";
 
-export function AppNav({ admin }: { admin: boolean }) {
+export function AppNav() {
   const pathname = usePathname();
   const items = [
     { href: "/dashboard", label: "Översikt", icon: "dashboard" as const },
     { href: "/warehouses", label: "Lager", icon: "warehouse" as const },
     { href: "/locations", label: "Lagerplatser", icon: "location" as const },
-    ...(admin ? [{ href: "/settings/organization", label: "Inställningar", icon: "settings" as const }] : []),
   ];
-  return <nav aria-label="Företagsmeny" className={`grid gap-1 rounded-2xl border border-line/70 bg-surface p-1.5 lg:sticky lg:top-6 lg:grid-cols-1 lg:gap-2 lg:p-3 ${admin ? "grid-cols-4" : "grid-cols-3"}`}>
+  return <nav aria-label="Företagsmeny" className="grid grid-cols-3 gap-1 rounded-2xl border border-line/70 bg-surface p-1.5 lg:sticky lg:top-6 lg:grid-cols-1 lg:gap-2 lg:p-3">
     {items.map(item => {
       const active = pathname === item.href || pathname.startsWith(item.href + "/") || (item.icon === "location" && pathname.startsWith("/location/"));
       return <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined}

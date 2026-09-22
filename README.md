@@ -34,7 +34,7 @@ I produktion används HTTPS. Hemligheter ligger i .env.local och ignoreras av Gi
 ## Prova det nya flödet
 1. Välj företag → Översikt.
 2. Skapa lager med namn och unik kod.
-3. Välj Skapa lagerplatser: zon A, hylla 01, första position 1, antal 10.
+3. Välj Skapa lagerplatser: zon A, sektion 01, första position 1, antal 10.
 4. Öppna en plats och följ QR-länken.
 5. Välj QR-etiketter och skriv ut eller spara som PDF.
 6. Redigera platskod; länken är densamma, men etiketten behöver skrivas ut igen.

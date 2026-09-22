@@ -128,3 +128,23 @@ test("database rate limiting stays atomic under concurrent requests", async () =
   assert.equal(outcomes.filter(o => o.status === "fulfilled").length, 3);
   assert.equal(outcomes.filter(o => o.status === "rejected" && hasStatus(429)(o.reason)).length, 5);
 });
+
+test("account settings update only the signed-in user's name and never expose credentials", async () => {
+  const { getAccount, updateAccount } = await import("../src/features/account/service");
+  const first = await User.create({ email: "profile-a@example.com", name: "Anna", passwordHash: "secret-test-hash" });
+  const second = await User.create({ email: "profile-b@example.com", name: "Bertil", passwordHash: "other-test-hash" });
+  const session = await resolveSession((await createSession(first._id)).token);
+  assert.deepEqual(await getAccount(session), { name: "Anna", email: "profile-a@example.com" });
+  assert.deepEqual(await updateAccount(session, { name: "  Anna Andersson  " }), { name: "Anna Andersson", email: "profile-a@example.com" });
+  for (const input of [
+    { name: "Intrång", userId: second._id.toString() },
+    { name: "Intrång", email: "changed@example.com" },
+    { name: "Intrång", passwordHash: "changed" },
+    { name: " " },
+  ]) {
+    await assert.rejects(updateAccount(session, input));
+  }
+  assert.equal((await User.findById(second._id))?.name, "Bertil");
+  assert.equal((await User.findById(first._id))?.name, "Anna Andersson");
+  assert.equal((await User.findById(first._id).select("+passwordHash"))?.passwordHash, "secret-test-hash");
+});

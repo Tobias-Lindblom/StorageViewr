@@ -1,4 +1,6 @@
 "use client";
+import { MaterialArrow } from "@/components/material-arrow";
+
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -65,7 +67,7 @@ export function OrganizationList({
               </span>
               <span className="mt-auto flex min-h-11 w-full items-center justify-between gap-3 border-t border-line/70 pt-4 text-sm font-medium text-foreground">
                 <span>{opening ? "Öppnar…" : returnTo ? "Öppna lagerplats" : "Öppna översikt"}</span>
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-accent transition group-hover:bg-violet-500/20" aria-hidden="true">→</span>
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-accent transition group-hover:bg-violet-500/20" aria-hidden="true"><MaterialArrow name="forward" /></span>
               </span>
             </button>
           );

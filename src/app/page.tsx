@@ -1,3 +1,4 @@
+import { MaterialArrow } from "@/components/material-arrow";
 import { BrandLogo } from "@/components/brand-logo";
 import Link from "next/link";
 import { InventoryPreview } from "@/components/inventory-preview";
@@ -46,12 +47,12 @@ export default function Home() {
           </p>
           <div className="flex flex-col gap-3 min-[400px]:flex-row">
             <Link href="/register" className="button">
-              Skapa ditt konto <span aria-hidden="true">↗</span>
+              Skapa ditt konto <span aria-hidden="true"><MaterialArrow name="outward" /></span>
             </Link>
             <Link href="#flode" className="button-secondary">
               Utforska flödet{" "}
               <span className="ml-3 text-accent" aria-hidden="true">
-                ↓
+                <MaterialArrow name="down" />
               </span>
             </Link>
           </div>
@@ -98,7 +99,7 @@ export default function Home() {
         >
           Till ditt arbetsutrymme{" "}
           <span className="ml-2" aria-hidden="true">
-            →
+            <MaterialArrow name="forward" />
           </span>
         </Link>
       </footer>

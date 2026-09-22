@@ -1,4 +1,6 @@
 "use client";
+import { MaterialArrow } from "@/components/material-arrow";
+
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -45,13 +47,13 @@ export function LocationForm({ warehouses, warehouseId, initial }: {
       <label>Lager<select name="warehouseId" required defaultValue={warehouseId ?? warehouses[0]?.id}>{warehouses.map(warehouse => <option key={warehouse.id} value={warehouse.id}>{warehouse.name}</option>)}</select></label>}
     <div className="grid grid-cols-2 gap-4">
       <label>Zon<input name="zone" required maxLength={8} value={zone} onChange={event => setZone(event.target.value)} autoCapitalize="characters" /></label>
-      <label>Hylla<input name="shelf" required inputMode="numeric" pattern="[0-9]{1,3}" maxLength={3} value={shelf} onChange={event => setShelf(event.target.value)} /></label>
+      <label>Sektion<input name="shelf" required inputMode="numeric" pattern="[0-9]{1,3}" maxLength={3} value={shelf} onChange={event => setShelf(event.target.value)} /></label>
       <label>{initial ? "Position" : "Första position"}<input name="position" required inputMode="numeric" pattern="[0-9]{1,3}" maxLength={3} value={position} onChange={event => setPosition(event.target.value)} /></label>
       {!initial && <label>Antal platser<input name="count" type="number" required min={1} max={100} step={1} value={count} onChange={event => setCount(event.target.value)} /></label>}
     </div>
     <div className="rounded-xl border border-violet-400/25 bg-violet-500/10 p-4" aria-live="polite">
       <p className="mb-2 text-xs text-muted">{initial ? "Platskod" : "Platskoder som skapas"}</p>
-      <p className="break-words font-mono text-sm text-accent">{first ? first === last ? first : first + " → " + last : "Ange giltig zon, hylla och position."}</p>
+      <p className="break-words font-mono text-sm text-accent">{first ? first === last ? first : <>{first} <span className="sr-only">till</span><MaterialArrow name="forward" size={18} /> {last}</> : "Ange giltig zon, sektion och position."}</p>
     </div>
     {initial && <><label className="flex min-h-13 items-center gap-3"><input className="!m-0 !h-5 !min-h-0 !w-5 accent-violet-500" type="checkbox" name="active" defaultChecked={initial.active} />Aktiv lagerplats</label><p className="text-xs leading-6 text-muted">QR-länken behålls när koden ändras. Skriv ut en ny etikett så att den synliga koden stämmer.</p></>}
     {error && <p className="error" role="alert">{error}</p>}

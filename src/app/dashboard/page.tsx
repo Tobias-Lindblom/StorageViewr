@@ -1,3 +1,4 @@
+import { MaterialArrow } from "@/components/material-arrow";
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { AppIcon } from "@/components/app-icon";
@@ -10,18 +11,16 @@ export default async function DashboardPage() {
   const dashboard = await getDashboard(context);
   const admin = context.role === "admin";
   const hasWarehouses = dashboard.warehouseCount > 0;
-  const nextHref = dashboard.locationCount ? "/locations/labels" : "/locations/new";
-  const nextLabel = dashboard.locationCount ? "Skriv ut QR-etiketter" : "Skapa lagerplatser";
 
   return (
     <AppShell context={context}>
       <PageHeading
         title="Översikt"
         description="Lager och platser, samlade på ett ställe."
-        action={hasWarehouses ? (
+        action={hasWarehouses && (!admin || dashboard.locationCount === 0) ? (
           admin ? (
-            <Link className="button" href={nextHref}>
-              {nextLabel} <span aria-hidden="true">→</span>
+            <Link className="button" href="/locations/new">
+              Skapa lagerplatser <span aria-hidden="true"><MaterialArrow name="forward" /></span>
             </Link>
           ) : (
             <Link className="button" href="/locations">Visa lagerplatser</Link>
@@ -41,7 +40,7 @@ export default async function DashboardPage() {
           >
             <div className="mb-5 flex items-center justify-between">
               <span className="text-accent"><AppIcon name={item.icon} /></span>
-              <span className="text-muted" aria-hidden="true">↗</span>
+              <span className="text-muted" aria-hidden="true"><MaterialArrow name="outward" /></span>
             </div>
             <p className="mb-2 text-4xl font-semibold tabular-nums">{item.value}</p>
             <p className="text-xs leading-5 text-muted sm:text-sm">{item.label}</p>
@@ -55,7 +54,7 @@ export default async function DashboardPage() {
             <div className="mb-2 flex items-center justify-between gap-3">
               <h2 id="warehouses-heading" className="mb-0! text-lg">Dina lager</h2>
               <Link href="/warehouses" className="inline-flex min-h-13 items-center text-xs text-cyan">
-                Visa alla <span className="ml-2" aria-hidden="true">→</span>
+                Visa alla <span className="ml-2" aria-hidden="true"><MaterialArrow name="forward" /></span>
               </Link>
             </div>
             <ul className="divide-y divide-line/60">
@@ -74,7 +73,7 @@ export default async function DashboardPage() {
                         {warehouse.code} · {warehouse.locationCount} aktiva platser
                       </p>
                     </div>
-                    <span aria-hidden="true" className="text-accent">→</span>
+                    <span aria-hidden="true" className="text-accent"><MaterialArrow name="forward" /></span>
                   </Link>
                 </li>
               ))}
@@ -90,7 +89,7 @@ export default async function DashboardPage() {
                 <h2 id="warehouses-heading" className="mb-2! text-lg">Inga aktiva lager ännu</h2>
                 <p className="max-w-md text-sm leading-7 text-muted">
                   {admin
-                    ? "Lägg till ett lager för att börja organisera hyllor och platser."
+                    ? "Lägg till ett lager för att börja organisera sektioner och platser."
                     : "En administratör behöver lägga till ett lager innan det visas här."}
                 </p>
               </div>
@@ -98,7 +97,7 @@ export default async function DashboardPage() {
             {admin && (
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-5">
                 <Link className="button" href="/warehouses/new">
-                  Lägg till lager <span aria-hidden="true">→</span>
+                  Lägg till lager <span aria-hidden="true"><MaterialArrow name="forward" /></span>
                 </Link>
                 <Link className="inline-flex min-h-13 items-center justify-center text-sm text-cyan sm:justify-start" href="/warehouses">
                   Hantera lager

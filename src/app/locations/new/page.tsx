@@ -18,7 +18,7 @@ export default async function NewLocationPage({ searchParams }: { searchParams: 
   }
   const warehouses = (await listWarehouses(context)).filter(warehouse => warehouse.active);
   return <AppShell context={context}>
-    <PageHeading eyebrow="Lagerstruktur" title="Skapa lagerplatser" description="Välj zon och hylla. Skapa en plats eller en följd med upp till 100 positioner." />
+    <PageHeading eyebrow="Lagerstruktur" title="Skapa lagerplatser" description="Välj zon och sektion. Skapa en plats eller en följd med upp till 100 positioner." />
     {warehouses.length ? <LocationForm warehouses={warehouses} warehouseId={warehouseId} /> : <EmptyState title="Börja med ett lager" action={<Link className="button" href="/warehouses/new">Skapa lager</Link>}>Lagerplatser måste tillhöra ett aktivt lager.</EmptyState>}
   </AppShell>;
 }

@@ -105,7 +105,8 @@ av inventering och avvikelser. Gemensam navigation binder ihop översikt, lager,
 
 Warehouse och Location har nu modeller, services, Zod-validering, API och mobilanpassade sidor.
 Admin kan skapa/redigera/inaktivera; warehouse-rollen har läsåtkomst till aktiva objekt.
-Platskoder genereras från zon, hylla och position (A-01-01). Samma kod kan förekomma i olika
+Sektion motsvarar det befintliga databas- och API-fältet shelf. Ingen datamigrering krävs.
+Platskoder genereras från zon, sektion och position (A-01-01). Samma kod kan förekomma i olika
 lager men inte två gånger i samma lager inom ett företag. Batchskapande är begränsat till
 100 platser per anrop och sker atomärt: en dubblett gör rollback av hela gruppen.
 
