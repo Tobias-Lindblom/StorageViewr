@@ -3,7 +3,11 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
-export function BottomSheet({ title, children, onClose }: {
+export function BottomSheet({
+  title,
+  children,
+  onClose,
+}: {
   title: string;
   children: ReactNode;
   onClose: () => void;
@@ -44,10 +48,13 @@ export function BottomSheet({ title, children, onClose }: {
 
     // Continue from the current position, including an unfinished opening or drag.
     const current = getComputedStyle(element);
-    const animation = element.animate([
-      { transform: current.transform, translate: current.translate },
-      { transform: "translateY(100%)", translate: "0 0" },
-    ], { duration: 220, easing: "cubic-bezier(0.4, 0, 1, 1)", fill: "forwards" });
+    const animation = element.animate(
+      [
+        { transform: current.transform, translate: current.translate },
+        { transform: "translateY(100%)", translate: "0 0" },
+      ],
+      { duration: 220, easing: "cubic-bezier(0.4, 0, 1, 1)", fill: "forwards" },
+    );
     exitAnimation.current = animation;
     animation.onfinish = () => element.close();
   }
@@ -61,13 +68,23 @@ export function BottomSheet({ title, children, onClose }: {
       data-dragging={drag.active}
       data-closing={closing}
       style={{ translate: "0 " + drag.distance + "px" }}
-      onCancel={event => { event.preventDefault(); requestClose(); }}
-      onClose={event => { if (!event.currentTarget.open) onClose(); }}
-      onKeyDown={event => {
+      onCancel={(event) => {
+        event.preventDefault();
+        requestClose();
+      }}
+      onClose={(event) => {
+        if (!event.currentTarget.open) onClose();
+      }}
+      onKeyDown={(event) => {
         if (event.key !== "Tab") return;
-        const focusable = Array.from(event.currentTarget.querySelectorAll<HTMLElement>(
-          'a[href], button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])',
-        )).filter(element => element.tabIndex >= 0 && element.getClientRects().length > 0);
+        const focusable = Array.from(
+          event.currentTarget.querySelectorAll<HTMLElement>(
+            'a[href], button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])',
+          ),
+        ).filter(
+          (element) =>
+            element.tabIndex >= 0 && element.getClientRects().length > 0,
+        );
         const first = focusable[0];
         const last = focusable[focusable.length - 1];
         if (event.shiftKey && document.activeElement === first) {
@@ -78,10 +95,15 @@ export function BottomSheet({ title, children, onClose }: {
           first?.focus();
         }
       }}
-      onClick={event => {
+      onClick={(event) => {
         if (event.target !== event.currentTarget) return;
         const bounds = event.currentTarget.getBoundingClientRect();
-        if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) {
+        if (
+          event.clientX < bounds.left ||
+          event.clientX > bounds.right ||
+          event.clientY < bounds.top ||
+          event.clientY > bounds.bottom
+        ) {
           requestClose();
         }
       }}
@@ -91,20 +113,31 @@ export function BottomSheet({ title, children, onClose }: {
           type="button"
           aria-label={"Stäng " + title.toLocaleLowerCase("sv")}
           className="group mx-auto flex min-h-13 w-full touch-none items-center justify-center rounded-xl cursor-grab! active:cursor-grabbing!"
-          onPointerDown={event => {
+          onPointerDown={(event) => {
             if (!event.isPrimary || event.button !== 0) return;
-            pointer.current = { id: event.pointerId, x: event.clientX, y: event.clientY };
+            pointer.current = {
+              id: event.pointerId,
+              x: event.clientX,
+              y: event.clientY,
+            };
             moved.current = false;
             event.currentTarget.setPointerCapture(event.pointerId);
             setDrag({ distance: 0, active: true });
           }}
-          onPointerMove={event => {
+          onPointerMove={(event) => {
             const start = pointer.current;
             if (!start || start.id !== event.pointerId) return;
-            if (Math.abs(event.clientY - start.y) > 6 || Math.abs(event.clientX - start.x) > 6) moved.current = true;
-            setDrag({ distance: Math.max(0, event.clientY - start.y), active: true });
+            if (
+              Math.abs(event.clientY - start.y) > 6 ||
+              Math.abs(event.clientX - start.x) > 6
+            )
+              moved.current = true;
+            setDrag({
+              distance: Math.max(0, event.clientY - start.y),
+              active: true,
+            });
           }}
-          onPointerUp={event => {
+          onPointerUp={(event) => {
             const start = pointer.current;
             if (!start || start.id !== event.pointerId) return;
             pointer.current = null;
@@ -116,15 +149,22 @@ export function BottomSheet({ title, children, onClose }: {
             moved.current = true;
             setDrag({ distance: 0, active: false });
           }}
-          onClick={event => {
+          onClick={(event) => {
             if (event.detail === 0 || !moved.current) requestClose();
           }}
         >
-          <span aria-hidden="true" className="h-1 w-10 rounded-full bg-muted/40 transition-colors group-hover:bg-accent/70" />
+          <span
+            aria-hidden="true"
+            className="h-1 w-10 rounded-full bg-muted/40 transition-colors group-hover:bg-accent/70"
+          />
         </button>
-        <h2 id={titleId} className="mb-0! border-b border-line/60 pb-5 text-xl">{title}</h2>
+        <h2 id={titleId} className="mb-0! border-b border-line/60 pb-5 text-xl">
+          {title}
+        </h2>
       </div>
-      <div className="px-5 pt-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-7 sm:pt-6">{children}</div>
+      <div className="px-5 pt-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-7 sm:pt-6">
+        {children}
+      </div>
     </dialog>,
     document.body,
   );

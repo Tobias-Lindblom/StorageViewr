@@ -10,17 +10,24 @@ function destination(path: string, returnTo?: string) {
   return path + (safe ? "?next=" + encodeURIComponent(safe) : "");
 }
 export async function pageSession(returnTo?: string) {
-  try { return await requireSession(); }
-  catch (error) {
-    if (error instanceof AppError && error.status === 401) redirect(destination("/login", returnTo));
+  try {
+    return await requireSession();
+  } catch (error) {
+    if (error instanceof AppError && error.status === 401)
+      redirect(destination("/login", returnTo));
     throw error;
   }
 }
 export async function pageTenant(returnTo?: string) {
   const session = await pageSession(returnTo);
-  try { return await tenantForSession(session); }
-  catch (error) {
-    if (error instanceof AppError && (error.status === 403 || error.status === 409)) redirect(destination("/organizations", returnTo));
+  try {
+    return await tenantForSession(session);
+  } catch (error) {
+    if (
+      error instanceof AppError &&
+      (error.status === 403 || error.status === 409)
+    )
+      redirect(destination("/organizations", returnTo));
     throw error;
   }
 }

@@ -10,7 +10,8 @@ type AccountContext = { userId: Types.ObjectId };
 export async function getAccount(context: AccountContext) {
   await connectDb();
   const user = await User.findById(context.userId).select("name email").lean();
-  if (!user) throw new AppError(401, "UNAUTHENTICATED", "Logga in för att fortsätta.");
+  if (!user)
+    throw new AppError(401, "UNAUTHENTICATED", "Logga in för att fortsätta.");
   return { name: user.name, email: user.email };
 }
 
@@ -21,7 +22,10 @@ export async function updateAccount(context: AccountContext, input: unknown) {
     { _id: context.userId },
     { $set: { name: data.name } },
     { returnDocument: "after", runValidators: true },
-  ).select("name email").lean();
-  if (!user) throw new AppError(401, "UNAUTHENTICATED", "Logga in för att fortsätta.");
+  )
+    .select("name email")
+    .lean();
+  if (!user)
+    throw new AppError(401, "UNAUTHENTICATED", "Logga in för att fortsätta.");
   return { name: user.name, email: user.email };
 }

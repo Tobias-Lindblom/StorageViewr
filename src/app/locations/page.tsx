@@ -7,7 +7,11 @@ import { getWarehouse, listWarehouses } from "@/features/warehouses/service";
 import { pageTenant } from "@/lib/server/page-auth";
 import { pageResource } from "@/lib/server/page-resource";
 
-export default async function LocationsPage({ searchParams }: { searchParams: Promise<{ warehouseId?: string }> }) {
+export default async function LocationsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ warehouseId?: string }>;
+}) {
   const context = await pageTenant();
   const { warehouseId } = await searchParams;
   if (warehouseId) await pageResource(() => getWarehouse(context, warehouseId));
@@ -24,12 +28,18 @@ export default async function LocationsPage({ searchParams }: { searchParams: Pr
         action={
           <div className="flex flex-wrap gap-2">
             {context.role === "admin" && (
-              <Link className="button flex-1 whitespace-nowrap px-4! sm:flex-none" href={"/locations/new" + scope}>
+              <Link
+                className="button flex-1 whitespace-nowrap px-4! sm:flex-none"
+                href={"/locations/new" + scope}
+              >
                 + Skapa platser
               </Link>
             )}
-            {locations.some(location => location.active) && (
-              <Link className="button-secondary flex-1 whitespace-nowrap px-4! sm:flex-none" href={"/locations/labels" + scope}>
+            {locations.some((location) => location.active) && (
+              <Link
+                className="button-secondary flex-1 whitespace-nowrap px-4! sm:flex-none"
+                href={"/locations/labels" + scope}
+              >
                 QR-etiketter
               </Link>
             )}
@@ -38,7 +48,11 @@ export default async function LocationsPage({ searchParams }: { searchParams: Pr
       />
       <LocationList
         locations={locations}
-        warehouses={warehouses.map(({ id, name, active }) => ({ id, name, active }))}
+        warehouses={warehouses.map(({ id, name, active }) => ({
+          id,
+          name,
+          active,
+        }))}
         warehouseId={warehouseId}
         admin={context.role === "admin"}
       />

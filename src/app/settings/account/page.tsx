@@ -16,17 +16,34 @@ export default async function AccountSettingsPage() {
   try {
     context = await tenantForSession(session);
   } catch (error) {
-    if (!(error instanceof AppError && (error.status === 403 || error.status === 409))) throw error;
+    if (
+      !(
+        error instanceof AppError &&
+        (error.status === 403 || error.status === 409)
+      )
+    )
+      throw error;
   }
 
   const content = (
     <>
-      <Link className="mb-5 inline-flex min-h-13 items-center gap-2 text-sm text-cyan" href={context ? "/dashboard" : "/organizations"}>
-        <MaterialArrow name="back" /> {context ? "Till översikten" : "Till företagsvalet"}
+      <Link
+        className="mb-5 inline-flex min-h-13 items-center gap-2 text-sm text-cyan"
+        href={context ? "/dashboard" : "/organizations"}
+      >
+        <MaterialArrow name="back" />{" "}
+        {context ? "Till översikten" : "Till företagsvalet"}
       </Link>
-      <PageHeading title="Kontoinställningar" description="Dina personliga uppgifter gäller i alla dina företag." />
+      <PageHeading
+        title="Kontoinställningar"
+        description="Dina personliga uppgifter gäller i alla dina företag."
+      />
       <AccountForm name={account.name} email={account.email} />
     </>
   );
-  return context ? <AppShell context={context}>{content}</AppShell> : <OrganizationShell session={session}>{content}</OrganizationShell>;
+  return context ? (
+    <AppShell context={context}>{content}</AppShell>
+  ) : (
+    <OrganizationShell session={session}>{content}</OrganizationShell>
+  );
 }

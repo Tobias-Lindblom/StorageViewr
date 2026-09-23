@@ -23,7 +23,7 @@ const steps = [
 
 export default function Home() {
   return (
-    <main className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-12">
+    <main id="toppen" className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-12">
       <header className="flex min-h-24 items-center justify-between gap-4 border-b border-line/50">
         <BrandLogo />
         <nav aria-label="Huvudmeny" className="flex items-center gap-8">
@@ -47,7 +47,10 @@ export default function Home() {
           </p>
           <div className="flex flex-col gap-3 min-[400px]:flex-row">
             <Link href="/register" className="button">
-              Skapa ditt konto <span aria-hidden="true"><MaterialArrow name="outward" /></span>
+              Skapa ditt konto{" "}
+              <span aria-hidden="true">
+                <MaterialArrow name="outward" />
+              </span>
             </Link>
             <Link href="#flode" className="button-secondary">
               Utforska flödet{" "}
@@ -88,20 +91,16 @@ export default function Home() {
           ))}
         </div>
       </section>
-      <footer className="flex flex-col gap-3 border-t border-line/60 py-7 text-xs text-muted sm:flex-row sm:items-center sm:justify-between">
-        <span className="text-sm font-semibold text-foreground">
-          StorageViewr<span className="text-accent">.</span>
-        </span>
-        <p>Ordning på produkter, platser och antal.</p>
-        <Link
-          href="/login"
-          className="inline-flex min-h-11 items-center text-accent hover:text-cyan"
-        >
-          Till ditt arbetsutrymme{" "}
-          <span className="ml-2" aria-hidden="true">
-            <MaterialArrow name="forward" />
-          </span>
-        </Link>
+      <footer className="flex flex-col gap-6 border-t border-line/60 py-8 sm:flex-row sm:items-end sm:justify-between sm:gap-10">
+        <div>
+          <BrandLogo />
+          <p className="mt-3 text-sm leading-6 text-muted">
+            Ditt lager. Under kontroll.
+          </p>
+        </div>
+        <p className="text-xs leading-6 text-muted">
+          © {new Date().getFullYear()} StorageViewr.
+        </p>
       </footer>
     </main>
   );

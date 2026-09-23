@@ -5,7 +5,11 @@ import { AccountMenu } from "@/components/account-menu";
 import { getAccount } from "@/features/account/service";
 import { listOrganizations } from "./service";
 
-export async function OrganizationShell({ children, session, organizations }: {
+export async function OrganizationShell({
+  children,
+  session,
+  organizations,
+}: {
   children: ReactNode;
   session: Awaited<ReturnType<typeof pageSession>>;
   organizations?: Awaited<ReturnType<typeof listOrganizations>>;
@@ -14,7 +18,9 @@ export async function OrganizationShell({ children, session, organizations }: {
     getAccount(session),
     organizations ?? listOrganizations(session),
   ]);
-  const selected = memberships.find(organization => organization.id === session.organizationId?.toString());
+  const selected = memberships.find(
+    (organization) => organization.id === session.organizationId?.toString(),
+  );
 
   return (
     <div className="mx-auto flex min-h-svh max-w-7xl flex-col px-4 sm:px-7">

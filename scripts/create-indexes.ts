@@ -1,3 +1,4 @@
+import { Product } from "../src/models/product";
 import { Warehouse } from "../src/models/warehouse";
 import { Location } from "../src/models/location";
 import { connectDb } from "../src/lib/server/db";
@@ -10,7 +11,7 @@ import { RateLimit } from "../src/models/rate-limit";
 async function main() {
   const db = await connectDb();
   try {
-    for (const model of [User, Organization, Membership, Session, RateLimit, Warehouse, Location]) {
+    for (const model of [User, Organization, Membership, Session, RateLimit, Warehouse, Location, Product]) {
       await model.createCollection();
       await model.createIndexes();
       console.log(model.collection.name + ": index klara");

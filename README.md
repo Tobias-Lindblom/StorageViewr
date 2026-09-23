@@ -3,7 +3,7 @@
 Lager- och inventeringssystem för mindre företag. Next.js App Router, TypeScript,
 MongoDB, Mongoose, Tailwind CSS och Zod.
 
-## Status: grund och lagerstruktur
+## Status: grund, lagerstruktur och produkter
 Implementerat:
 - Registrering, inloggning, sessioner, företag och medlemskap (admin/warehouse).
 - Företagsöversikt med faktiska antal aktiva lager och lagerplatser.
@@ -13,7 +13,10 @@ Implementerat:
 - Sökbara lagerplatser, stabila QR-länkar och utskrivbara etiketter.
 - Tenant-isolering, rollkontroller, Zod-validering, API-fel och rate limiting.
 
-Nästa steg är produkter och CSV-import, därefter placering och inventering.
+- Produkter med unika artikelnummer, sökning, statusfilter och sidindelning.
+- CSV-import med förhandsgranskning, radfel och atomärt sparande.
+
+Nästa steg är placering och saldo, därefter inventering.
 Full modell och ordning: [Arkitektur](docs/architecture.md).
 Ursprungliga krav: [Kravspecifikation](docs/requirements.md).
 
@@ -59,7 +62,7 @@ QR-avgränsning, batchskapande och samtidiga lager-/platsändringar.
 ## API
 Svar: `{ data: ... }` eller `{ error: { code, message, details? } }`.
 Mutationer kräver korrekt Origin. JSON-anrop kräver Content-Type: application/json.
-Request bodies begränsas till 16 KiB.
+Request bodies begränsas till 16 KiB, utom produktimport (3 100 000 byte för JSON). CSV-innehållet begränsas separat till 500 kB och 500 produkter.
 
 - POST /api/auth/register, /api/auth/login, /api/auth/logout
 - GET/POST /api/organizations
@@ -70,6 +73,9 @@ Request bodies begränsas till 16 KiB.
 - GET/POST /api/locations (valfritt warehouseId-filter på GET)
 - GET/PATCH /api/locations/[id]
 - POST /api/locations/batch
+- GET/POST /api/products (q, status och page på GET)
+- GET/PATCH /api/products/[id]
+- POST /api/products/import (mode: preview eller commit)
 - GET /api/health
 
 Organisation och roll hämtas från verifierad session och aktuellt medlemskap.

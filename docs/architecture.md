@@ -123,3 +123,32 @@ accepteras som returadress. Länken ger aldrig åtkomst utan medlemskap i rätt 
 Kör npm run db:indexes efter uppdateringen för de nya compound- och QR-indexen.
 Nästa etapp: Product och CSV-import. Vid fas 4 måste inaktivering av platser även kontrollera
 InventoryLevel och öppna inventeringar; alla platser är ännu utan produktplaceringar i fas 2.
+
+## Levererat i fas 3
+Produkter har en egen flik med sökning på namn, artikelnummer (SKU) och streckkod,
+statusfilter och sidindelning. Administratörer kan skapa, redigera, inaktivera och
+återaktivera produkter. Lagermedarbetare ser endast aktiva produkter.
+
+Product har organizationId, normaliserat SKU (trim + versaler), namn, streckkod,
+beskrivning, valfri HTTPS-bildlänk och aktivstatus. Bildlänken öppnas separat;
+uppladdning ingår inte.
+Indexet (organizationId,sku) är unikt även för inaktiva produkter.
+Alla läsningar och mutationer avgränsas av verifierad företagskontext.
+
+CSV-import använder csv-parse och stöder UTF-8/BOM, komma eller semikolon, citerade
+fält och radbrytningar. Gränserna är 500 kB och 500 produkter. Kolumner: sku och name
+krävs; barcode, description och imageUrl är valfria. Okända och upprepade rubriker
+avvisas. Varje produkt Zod-valideras och dubbletter kontrolleras i både fil och databas.
+
+Förhandsgranskningen skriver ingenting och visar radnummer och fel. Vid bekräftelse
+valideras filen igen, aktuell företagskontext måste matcha förhandsgranskningen och
+hela importen sparas i en transaction. Unikt index skyddar mot samtidiga importer;
+vid konflikt rullas hela importen tillbaka. Importen skapar enbart nya produkter.
+Vanliga JSON-anrop behåller 16 KiB-gränsen; importanrop tillåter 3 100 000 byte för
+JSON-escapning, medan själva CSV-innehållet fortfarande begränsas till 500 000 byte.
+
+Integrationstester täcker företagsisolering, roller, SKU-index, sökning, status,
+sidindelning, CSV-format och gränser, fel/dubbletter, företagsbyte och samtidiga importer.
+Kör npm run db:indexes för produktindexen innan funktionen används.
+Nästa etapp är fas 4: produktplacering, saldo och historik i transaktioner.
+Inaktivering av produkter måste då även kontrollera saldo och öppna inventeringar.

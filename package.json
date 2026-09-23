@@ -8,10 +8,11 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "next typegen && tsc --noEmit",
-    "test": "node --conditions=react-server --import tsx --test tests/foundation.test.ts tests/warehouse.test.ts",
+    "test": "node --conditions=react-server --import tsx --test tests/foundation.test.ts tests/warehouse.test.ts tests/product.test.ts",
     "db:indexes": "node --conditions=react-server --import tsx --env-file=.env.local scripts/create-indexes.ts"
   },
   "dependencies": {
+    "csv-parse": "^6.2.1",
     "mongoose": "^9",
     "next": "latest",
     "qrcode": "^1.5.4",
