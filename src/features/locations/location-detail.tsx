@@ -4,13 +4,17 @@ import Link from "next/link";
 import { PageHeading } from "@/components/page-heading";
 import { locationQr } from "./labels";
 import type { getLocation } from "./service";
+import type { TenantContext } from "@/lib/server/tenant";
+import { StockPanel } from "@/features/inventory/stock-panel";
 
 export async function LocationDetail({
   location,
   admin,
+  context,
 }: {
   location: Awaited<ReturnType<typeof getLocation>>;
   admin: boolean;
+  context: TenantContext;
 }) {
   const qr =
     location.active && location.warehouseActive
@@ -37,7 +41,8 @@ export async function LocationDetail({
           ) : undefined
         }
       />
-      <div className="grid gap-5 md:grid-cols-[1fr_280px]">
+      <StockPanel context={context} kind="location" id={location.id} label={location.warehouseName + " · " + location.code} active={location.active && location.warehouseActive} />
+      <div className="mt-8 grid gap-5 md:grid-cols-[1fr_280px]">
         <section className="panel">
           <h2>Platsuppgifter</h2>
           <dl className="grid grid-cols-2 gap-6 text-sm">

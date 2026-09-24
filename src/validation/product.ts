@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { productPhotoSchema } from "./product-photo";
 export const productSchema = z
   .object({
     sku: z
@@ -56,3 +57,6 @@ export const productImportSchema = z
   })
   .strict();
 export type ProductInput = z.infer<typeof productSchema>;
+
+export const productCreateRequestSchema = productSchema.extend({ photo: productPhotoSchema }).strict();
+export const productUpdateRequestSchema = productUpdateSchema.extend({ photo: productPhotoSchema }).strict();

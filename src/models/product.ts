@@ -23,7 +23,9 @@ const schema = new Schema(
     barcode: { type: String, default: "", maxlength: 100 },
     description: { type: String, default: "", maxlength: 2000 },
     imageUrl: { type: String, default: "", maxlength: 2048 },
+    hasPhoto: { type: Boolean, default: false, required: true },
     active: { type: Boolean, default: true, required: true },
+    stockRevision: { type: Number, default: 0, required: true },
   },
   { timestamps: true, collection: "products" },
 );

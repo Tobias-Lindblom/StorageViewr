@@ -7,6 +7,9 @@ import { AppError } from "../src/lib/server/errors";
 import { readJson } from "../src/lib/server/api";
 import type { TenantContext } from "../src/lib/server/tenant";
 import { Product } from "../src/models/product";
+import { ProductPhoto } from "../src/models/product-photo";
+import sharp from "sharp";
+import { prepareProductPhoto, readProductPhoto } from "../src/features/products/photos";
 import {
   createProduct,
   getProduct,
@@ -27,6 +30,8 @@ before(async () => {
   await connectDb();
   await Product.createCollection();
   await Product.createIndexes();
+  await ProductPhoto.createCollection();
+  await ProductPhoto.createIndexes();
 });
 after(async () => {
   await (await connectDb()).disconnect();
@@ -316,4 +321,90 @@ test("JSON size limits stay small by default and are explicitly expanded for bou
     (await readJson(makeRequest(), productImportSchema, 3_100_000)).csv,
     csv,
   );
+});
+
+test("photos are re-encoded, oriented and stripped of metadata before storage", async () => {
+  const source = await sharp({ create: { width: 12, height: 8, channels: 3, background: "#8b5cf6" } })
+    .jpeg().withMetadata({ orientation: 6 }).toBuffer();
+  const prepared = await prepareProductPhoto("data:image/jpeg;base64," + source.toString("base64"));
+  assert.ok(prepared);
+  const metadata = await sharp(prepared).metadata();
+  assert.equal(metadata.format, "webp");
+  assert.equal(metadata.width, 8); assert.equal(metadata.height, 12);
+  assert.equal(metadata.exif, undefined);
+  assert.equal(metadata.icc, undefined);
+  assert.equal(await prepareProductPhoto(undefined), undefined);
+  assert.equal(await prepareProductPhoto(null), null);
+});
+
+test("photo reads and writes require the owning company and respect product visibility", async () => {
+  const a = tenant(), b = tenant(), worker: TenantContext = { ...a, role: "warehouse" };
+  const source = await sharp({ create: { width: 10, height: 10, channels: 3, background: "#8b5cf6" } }).png().toBuffer();
+  const photo = "data:image/png;base64," + source.toString("base64");
+  const product = await createProduct(a, { ...input, photo });
+  assert.ok(product.photoUrl.startsWith("/api/products/" + product.id + "/photo?v="));
+  assert.ok((await readProductPhoto(worker, product.id)).length > 0);
+  await assert.rejects(readProductPhoto(b, product.id), status(404));
+  await assert.rejects(updateProduct(b, product.id, { ...input, active: true, photo }), status(404));
+  await assert.rejects(updateProduct(worker, product.id, { ...input, active: true, photo: null }), status(403));
+  assert.equal(await ProductPhoto.countDocuments({ organizationId: a.organizationId }), 1);
+  await updateProduct(a, product.id, { ...input, active: false });
+  await assert.rejects(readProductPhoto(worker, product.id), status(404));
+  assert.ok((await readProductPhoto(a, product.id)).length);
+  const listed = (await listProducts(a, { status: "all" })).items[0];
+  assert.ok(listed.photoUrl);
+  assert.equal("data" in listed, false);
+});
+
+test("replacing and removing photos preserve a single attachment and clear old image links", async () => {
+  const a = tenant();
+  const image = async (background: string) => "data:image/png;base64," + (await sharp({ create: { width: 10, height: 10, channels: 3, background } }).png().toBuffer()).toString("base64");
+  const product = await createProduct(a, { ...input, imageUrl: "https://example.com/old.jpg", photo: await image("#ff0000") });
+  const before = await readProductPhoto(a, product.id);
+  assert.equal(product.imageUrl, "");
+  await updateProduct(a, product.id, { ...input, active: true, photo: await image("#0000ff") });
+  const after = await readProductPhoto(a, product.id);
+  assert.equal(before.equals(after), false);
+  assert.equal(await ProductPhoto.countDocuments({ productId: product.id }), 1);
+  const edited = await updateProduct(a, product.id, { ...input, name: "Nytt namn", active: true });
+  assert.ok(edited.photoUrl);
+  const removed = await updateProduct(a, product.id, { ...input, active: true, photo: null });
+  assert.equal(removed.photoUrl, "");
+  assert.equal(await ProductPhoto.countDocuments({ productId: product.id }), 0);
+  await assert.rejects(readProductPhoto(a, product.id), status(404));
+});
+
+test("invalid and oversized images create no products or photo records", async () => {
+  const a = tenant();
+  await assert.rejects(createProduct(a, { ...input, photo: "data:image/jpeg;base64," + Buffer.from("not a photo").toString("base64") }), status(400));
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"></svg>';
+  await assert.rejects(createProduct(a, { ...input, photo: "data:image/png;base64," + Buffer.from(svg).toString("base64") }), status(400));
+  await assert.rejects(prepareProductPhoto("data:image/jpeg;base64," + Buffer.alloc(2_000_001).toString("base64")), status(413));
+  assert.equal(await Product.countDocuments({ organizationId: a.organizationId }), 0);
+  assert.equal(await ProductPhoto.countDocuments({ organizationId: a.organizationId }), 0);
+});
+
+test("a conflicting product save leaves the previous photo untouched and creates no orphan", async () => {
+  const a = tenant();
+  const photo = "data:image/png;base64," + (await sharp({ create: { width: 10, height: 10, channels: 3, background: "#ff0000" } }).png().toBuffer()).toString("base64");
+  const product = await createProduct(a, { ...input, photo });
+  const original = await readProductPhoto(a, product.id);
+  await assert.rejects(createProduct(a, { ...input, photo }), status(409));
+  await createProduct(a, { ...input, sku: "OTHER" });
+  await assert.rejects(updateProduct(a, product.id, { ...input, sku: "OTHER", active: true, photo: null }), status(409));
+  assert.ok((await readProductPhoto(a, product.id)).equals(original));
+  assert.equal(await ProductPhoto.countDocuments({ organizationId: a.organizationId }), 1);
+});
+
+test("concurrent photo replacement and removal leave product and attachment consistent", async () => {
+  const a = tenant();
+  const photo = "data:image/png;base64," + (await sharp({ create: { width: 10, height: 10, channels: 3, background: "#ff0000" } }).png().toBuffer()).toString("base64");
+  const product = await createProduct(a, { ...input, photo });
+  await Promise.all([
+    updateProduct(a, product.id, { ...input, active: true, photo: null }),
+    updateProduct(a, product.id, { ...input, active: true, photo }),
+  ]);
+  const current = await getProduct(a, product.id);
+  const count = await ProductPhoto.countDocuments({ organizationId: a.organizationId, productId: product.id });
+  assert.equal(count, current.photoUrl ? 1 : 0);
 });

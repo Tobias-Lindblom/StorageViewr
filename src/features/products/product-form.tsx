@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { clientApi } from "@/lib/client-api";
 import type { getProduct } from "./service";
+import { ProductPhotoPicker } from "./product-photo-picker";
 
 export function ProductForm({
   initial,
@@ -13,8 +14,11 @@ export function ProductForm({
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
+  const [photo, setPhoto] = useState<string | null | undefined>(undefined);
+  const [photoBusy, setPhotoBusy] = useState(false);
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (pending || photoBusy) return;
     setPending(true);
     setError("");
     const form = new FormData(event.currentTarget);
@@ -27,7 +31,8 @@ export function ProductForm({
           name: form.get("name"),
           barcode: form.get("barcode"),
           description: form.get("description"),
-          imageUrl: form.get("imageUrl"),
+          imageUrl: photo === undefined ? initial?.imageUrl ?? "" : "",
+          ...(photo !== undefined ? { photo } : {}),
           ...(initial ? { active: form.get("active") === "on" } : {}),
         },
       );
@@ -43,7 +48,7 @@ export function ProductForm({
   }
   return (
     <form onSubmit={submit} className="panel max-w-2xl space-y-6">
-      <fieldset disabled={pending} className="space-y-6">
+      <fieldset disabled={pending || photoBusy} className="space-y-6">
         <label>
           Produktnamn
           <input
@@ -89,19 +94,13 @@ export function ProductForm({
             className="mt-2 block w-full resize-y rounded-xl border border-line bg-canvas p-4 text-base text-foreground outline-none focus:border-accent focus:ring-2 focus:ring-accent/25"
           />
         </label>
-        <label>
-          Bildlänk <span className="font-normal text-muted">(valfritt)</span>
-          <input
-            name="imageUrl"
-            type="url"
-            maxLength={2048}
-            defaultValue={initial?.imageUrl}
-            placeholder="https://"
-          />
-          <span className="mt-2 block text-xs font-normal text-muted">
-            En länk till en bild via HTTPS.
-          </span>
-        </label>
+        <ProductPhotoPicker
+          existing={initial?.photoUrl || initial?.imageUrl}
+          value={photo}
+          onChange={setPhoto}
+          onBusy={setPhotoBusy}
+          disabled={pending}
+        />
         {initial && (
           <div>
             <label className="flex min-h-13 items-center gap-3">
@@ -114,7 +113,7 @@ export function ProductForm({
               Aktiv produkt
             </label>
             <p className="text-xs leading-6 text-muted">
-              Inaktiva produkter döljs för lagermedarbetare. Artikelnumret
+              Nollställ produktens saldo innan inaktivering. Inaktiva produkter döljs för lagermedarbetare. Artikelnumret
               behålls.
             </p>
           </div>
@@ -126,7 +125,7 @@ export function ProductForm({
         </p>
       )}
       <div className="flex flex-wrap gap-3">
-        <button className="button" disabled={pending}>
+        <button className="button" disabled={pending || photoBusy}>
           {pending ? "Sparar…" : initial ? "Spara ändringar" : "Skapa produkt"}
         </button>
         <Link

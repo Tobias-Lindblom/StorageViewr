@@ -198,7 +198,7 @@ export function LocationForm({
             Aktiv lagerplats
           </label>
           <p className="text-xs leading-6 text-muted">
-            QR-länken behålls när koden ändras. Skriv ut en ny etikett så att
+            Nollställ platsens saldo innan inaktivering. QR-länken behålls när koden ändras. Skriv ut en ny etikett så att
             den synliga koden stämmer.
           </p>
         </>

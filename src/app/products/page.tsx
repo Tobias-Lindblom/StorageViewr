@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ProductPhoto } from "@/components/product-photo";
 import { AppShell } from "@/components/app-shell";
 import { PageHeading } from "@/components/page-heading";
 import { EmptyState } from "@/components/empty-state";
@@ -99,9 +100,11 @@ export default async function ProductsPage({
               href={"/products/" + product.id}
               className="flex min-h-24 items-center gap-4 border-b border-line/60 p-4 transition last:border-0 hover:bg-surface-raised sm:p-5"
             >
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-400/10 text-accent">
-                <AppIcon name="product" />
-              </span>
+              {product.photoUrl ? (
+                <ProductPhoto src={product.photoUrl} alt="" className="h-14 w-14 shrink-0 rounded-xl border border-line bg-canvas object-cover" />
+              ) : (
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-400/10 text-accent"><AppIcon name="product" /></span>
+              )}
               <div className="min-w-0 flex-1">
                 <p className="wrap-break-word font-semibold">{product.name}</p>
                 <p className="mt-1 break-all text-xs text-muted">

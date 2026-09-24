@@ -3,7 +3,7 @@
 Lager- och inventeringssystem för mindre företag. Next.js App Router, TypeScript,
 MongoDB, Mongoose, Tailwind CSS och Zod.
 
-## Status: grund, lagerstruktur och produkter
+## Status: etapp 1–5, inklusive inventering
 Implementerat:
 - Registrering, inloggning, sessioner, företag och medlemskap (admin/warehouse).
 - Företagsöversikt med faktiska antal aktiva lager och lagerplatser.
@@ -14,9 +14,13 @@ Implementerat:
 - Tenant-isolering, rollkontroller, Zod-validering, API-fel och rate limiting.
 
 - Produkter med unika artikelnummer, sökning, statusfilter och sidindelning.
+- Produktfoto från mobilkamera eller bildval, med förhandsvisning och privat lagring i MongoDB.
 - CSV-import med förhandsgranskning, radfel och atomärt sparande.
 
-Nästa steg är placering och saldo, därefter inventering.
+- Produktplacering, saldo per plats och totalsaldo per produkt.
+- Saldohistorik, versionskontroll och skydd mot inaktivering när saldo finns kvar.
+
+Nästa steg är inventeringssessioner och avvikelser.
 Full modell och ordning: [Arkitektur](docs/architecture.md).
 Ursprungliga krav: [Kravspecifikation](docs/requirements.md).
 
@@ -45,7 +49,7 @@ I produktion används HTTPS. Hemligheter ligger i .env.local och ignoreras av Gi
 För att skanna från en fysisk telefon måste APP_URL vara nåbar från telefonen.
 localhost på telefonen pekar på telefonen, inte din dator. Använd den konfigurerade
 adressen även i webbläsaren eftersom API:t verifierar Origin.
-Inbyggt kamerascannerläge och produktinventering tillkommer i senare etapper.
+Platsbaserad inventering finns i etapp 5. Inbyggt kamerascannerläge tillkommer i etapp 6.
 
 ## Verifiera
 - `npm run lint`
@@ -62,7 +66,7 @@ QR-avgränsning, batchskapande och samtidiga lager-/platsändringar.
 ## API
 Svar: `{ data: ... }` eller `{ error: { code, message, details? } }`.
 Mutationer kräver korrekt Origin. JSON-anrop kräver Content-Type: application/json.
-Request bodies begränsas till 16 KiB, utom produktimport (3 100 000 byte för JSON). CSV-innehållet begränsas separat till 500 kB och 500 produkter.
+Request bodies begränsas till 16 KiB, utom platsräkning (100 000 byte), produkt-POST/PATCH med foto (2 900 000 byte) och produktimport (3 100 000 byte för JSON). CSV-innehållet begränsas separat till 500 kB och 500 produkter.
 
 - POST /api/auth/register, /api/auth/login, /api/auth/logout
 - GET/POST /api/organizations
@@ -75,7 +79,15 @@ Request bodies begränsas till 16 KiB, utom produktimport (3 100 000 byte för J
 - POST /api/locations/batch
 - GET/POST /api/products (q, status och page på GET)
 - GET/PATCH /api/products/[id]
+- GET /api/products/[id]/photo (kräver företagsbehörighet)
 - POST /api/products/import (mode: preview eller commit)
+- GET/POST /api/inventory
+- GET /api/inventory/level (productId och locationId)
+- GET /api/inventory/history (admin; productId eller locationId, page)
+- GET/POST /api/inventory/sessions
+- GET /api/inventory/sessions/[id]
+- PUT /api/inventory/sessions/[id]/count/[locationId]
+- POST /api/inventory/sessions/[id]/complete (admin)
 - GET /api/health
 
 Organisation och roll hämtas från verifierad session och aktuellt medlemskap.
@@ -91,3 +103,27 @@ Konto- och globala databasgränser bör kompletteras med IP-begränsning vid bet
 - [Mongoose-transaktioner](https://mongoosejs.com/docs/transactions.html)
 - [Tailwind CSS](https://tailwindcss.com/docs/installation/framework-guides/nextjs)
 - [QR-generering](https://github.com/soldair/node-qrcode)
+
+## Prova lagersaldo
+1. Öppna en produkt och välj Lägg på plats.
+2. Välj lagerplats, ange totalt antal och en orsak.
+3. Öppna lagerplatsen för att se produkterna som finns där.
+4. Välj Ändra antal för att registrera ett nytt saldo.
+5. Visa saldohistorik för tidigare antal, ändring, orsak och utförare.
+
+Vid en samtidig ändring: välj Läs in aktuellt saldo, kontrollera antalet och spara igen.
+Starta om utvecklingsservern efter ändrade Mongoose-modeller så att de nya fälten laddas.
+
+## Prova inventering (etapp 5)
+1. Öppna Inventering och välj Starta inventering som administratör.
+2. Ange namn, välj lager och markera platserna som ska räknas (högst 200).
+3. Öppna en plats, ange faktiskt antal och bekräfta hela platsen. Även tomma platser bekräftas.
+4. Hittat en annan produkt? Sök och lägg till den i räkningen. Högst 500 produkter per plats.
+5. Räkningarna sparas separat från lagersaldot. Ändrade saldon kräver omläsning och omräkning.
+6. När alla platser är räknade väljer admin Granska och avsluta, bekräftar och uppdaterar saldona.
+7. Avslutad inventering visar historiska räkningar; saldohistoriken länkar tillbaka till inventeringen.
+
+Kör `npm run db:indexes` efter uppdateringen och starta om utvecklingsservern.
+Kommandot lägger till collections och index utan att ta bort befintliga index.
+Lagerarbetare kan räkna men kan inte starta eller avsluta inventeringar.
+Inbyggd kamerascanning tillkommer i etapp 6.

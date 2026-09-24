@@ -9,6 +9,7 @@ const schema = new Schema({
   position: { type: String, required: true },
   qrToken: { type: String, required: true },
   active: { type: Boolean, default: true, required: true },
+  stockRevision: { type: Number, default: 0, required: true },
 }, { timestamps: true, collection: "locations" });
 schema.index({ organizationId: 1, warehouseId: 1, code: 1 }, { unique: true });
 schema.index({ qrToken: 1 }, { unique: true });

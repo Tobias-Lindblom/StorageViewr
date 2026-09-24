@@ -8,17 +8,19 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "next typegen && tsc --noEmit",
-    "test": "node --conditions=react-server --import tsx --test tests/foundation.test.ts tests/warehouse.test.ts tests/product.test.ts",
+    "test": "node --conditions=react-server --import tsx --test tests/foundation.test.ts tests/warehouse.test.ts tests/product.test.ts tests/inventory.test.ts tests/counting.test.ts",
     "db:indexes": "node --conditions=react-server --import tsx --env-file=.env.local scripts/create-indexes.ts"
   },
   "dependencies": {
     "csv-parse": "^6.2.1",
+    "jsqr": "^1.4.0",
     "mongoose": "^9",
     "next": "latest",
     "qrcode": "^1.5.4",
     "react": "latest",
     "react-dom": "latest",
     "server-only": "^0.0.1",
+    "sharp": "^0.35.4",
     "zod": "^4"
   },
   "devDependencies": {

@@ -1,8 +1,10 @@
 import "server-only";
+import { assertNoOpenInventory } from "@/features/inventory/open-references";
 import { randomBytes } from "node:crypto";
 import { Types, type ClientSession } from "mongoose";
 import { Location, type LocationRecord } from "@/models/location";
 import { Warehouse } from "@/models/warehouse";
+import { InventoryLevel } from "@/models/inventory-level";
 import { AppError } from "@/lib/server/errors";
 import { connectDb } from "@/lib/server/db";
 import { requireAdmin, type TenantContext } from "@/lib/server/tenant";
@@ -195,7 +197,7 @@ export async function updateLocation(
     await lockWarehouse(context, current.warehouseId, session);
     const record = await Location.findOneAndUpdate(
       { _id: locationId, organizationId: context.organizationId },
-      { $set: { ...data, code: locationCode(data) } },
+      { $set: { ...data, code: locationCode(data) }, $inc: { stockRevision: 1 } },
       { session, returnDocument: "after", runValidators: true },
     );
     if (!record)
@@ -204,6 +206,10 @@ export async function updateLocation(
         "LOCATION_NOT_FOUND",
         "Lagerplatsen kunde inte hittas.",
       );
+    if (!data.active && await InventoryLevel.exists({ organizationId: context.organizationId, locationId: record._id, quantity: { $gt: 0 } }).session(session)) {
+      throw new AppError(409, "LOCATION_HAS_STOCK", "Lagerplatsen har kvarvarande saldo. Nollställ saldot innan du inaktiverar platsen.");
+    }
+    if (!data.active) await assertNoOpenInventory(context, { locationId: record._id }, session);
     return serialize(record);
   });
 }

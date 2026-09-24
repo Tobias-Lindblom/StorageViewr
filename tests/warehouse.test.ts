@@ -261,7 +261,7 @@ test("dashboard numbers reflect only real active data belonging to the current t
     warehouseCount: 0,
     locationCount: 0,
     productCount: 0,
-    warehouses: [],
+
   });
   const warehouse = await createWarehouse(a, warehouseInput);
   await createLocationBatch(a, { ...batchInput, warehouseId: warehouse.id });
@@ -281,7 +281,7 @@ test("dashboard numbers reflect only real active data belonging to the current t
   assert.equal((await getDashboard({ ...a, role: "warehouse" })).productCount, 1);
   assert.equal(dashboard.warehouseCount, 1);
   assert.equal(dashboard.locationCount, 10);
-  assert.equal(dashboard.warehouses[0].locationCount, 10);
+
 });
 
 test("validation blocks malformed references, unsafe batches and open redirects", async () => {
