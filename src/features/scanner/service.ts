@@ -37,6 +37,9 @@ export async function resolveInventoryLocation(context: TenantContext, inventory
   if (!location.active || !location.warehouseActive || location.warehouseId !== inventory.warehouseId || !inventory.places.some(place => place.id === location.id)) {
     throw new AppError(404, "LOCATION_NOT_IN_SCOPE", "Platsen ingår inte i den här inventeringen. Kontrollera etiketten och valt lager.");
   }
+  if (data.locationId && location.id !== data.locationId.toLowerCase()) {
+    throw new AppError(409, "WRONG_LOCATION", "QR-koden eller platskoden hör till en annan plats. Skanna etiketten för platsen du valt.");
+  }
   return { inventory, locationId: location.id };
 }
 

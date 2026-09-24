@@ -1,5 +1,7 @@
 import type { SVGProps } from "react";
 const paths = {
+  download: "M12 3v12m-5-5 5 5 5-5M4 17v4h16v-4",
+  check: "M5 12l4 4L19 6",
   inventory: "M9 3h6v4H9zM9 5H5v16h14V5h-4M8 12l2 2 5-5M8 18h8",
   camera: "M3 7h4l2-3h6l2 3h4v14H3V7Zm13 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z",
   product: "m12 3 9 5v8l-9 5-9-5V8l9-5Zm0 9 9-4M12 12 3 8m9 4v9M7.5 5.5l9 5",

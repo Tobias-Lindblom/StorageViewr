@@ -16,7 +16,7 @@ export default async function ScannedLocationPage({ params }: { params: Promise<
   const context = await pageTenant("/location/" + qrToken);
   const location = await pageResource(() => getLocationByToken(context, qrToken));
   const inventories = await inventoriesForLocation(context, location.id);
-  const destination = (id: string) => "/inventories/" + id + "?location=" + location.id;
+  const destination = (id: string) => "/inventories/" + id + "?location=" + location.id + "&qr=" + qrToken;
   if (inventories.length === 1) redirect(destination(inventories[0].id));
   return <AppShell context={context}>
     {inventories.length ? <>

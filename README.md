@@ -49,7 +49,7 @@ I produktion används HTTPS. Hemligheter ligger i .env.local och ignoreras av Gi
 För att skanna från en fysisk telefon måste APP_URL vara nåbar från telefonen.
 localhost på telefonen pekar på telefonen, inte din dator. Använd den konfigurerade
 adressen även i webbläsaren eftersom API:t verifierar Origin.
-Platsbaserad inventering finns i etapp 5. Inbyggt kamerascannerläge tillkommer i etapp 6.
+Platsbaserad inventering finns i etapp 5. Kameraskanning finns i platsens räkningsruta; fysisk telefonverifiering återstår.
 
 ## Verifiera
 - `npm run lint`
@@ -88,6 +88,8 @@ Request bodies begränsas till 16 KiB, utom platsräkning (100 000 byte), produk
 - GET /api/inventory/sessions/[id]
 - PUT /api/inventory/sessions/[id]/count/[locationId]
 - POST /api/inventory/sessions/[id]/complete (admin)
+- POST /api/inventory/sessions/[id]/scan (QR-länk eller platskod; kontrollerar vald plats)
+- GET /api/inventory/sessions/[id]/report (PDF för avslutad inventering)
 - GET /api/health
 
 Organisation och roll hämtas från verifierad session och aktuellt medlemskap.
@@ -126,4 +128,26 @@ Starta om utvecklingsservern efter ändrade Mongoose-modeller så att de nya fä
 Kör `npm run db:indexes` efter uppdateringen och starta om utvecklingsservern.
 Kommandot lägger till collections och index utan att ta bort befintliga index.
 Lagerarbetare kan räkna men kan inte starta eller avsluta inventeringar.
-Inbyggd kamerascanning tillkommer i etapp 6.
+Kameraskanning och manuell reservinmatning finns nu i räkningsrutan.
+
+## Skanna vid inventering
+Öppna en plats i inventeringen. Rutan Räkna visar först Skanna platsens QR-kod.
+Material och antalsfält visas först när rätt platskod har verifierats.
+Räkna sedan produkterna, ange antal och bekräfta. Koden måste matcha den valda platsen.
+Om kameran inte går att använda kan platskoden anges manuellt i samma ruta.
+Kameran behöver HTTPS eller localhost; en vanlig HTTP-adress på det lokala nätverket räcker inte.
+
+En QR-etikett som öppnas med telefonens kamera leder direkt till räkningen när platsen
+ingår i en pågående inventering. Vid flera pågående inventeringar får användaren välja.
+Test på fysisk telefon med utskrivna etiketter återstår.
+
+## Ladda ner inventeringsrapport
+När inventeringen är avslutad väljer du Ladda ner PDF.
+Rapporten innehåller sammanfattning och alla produkter per lagerplats med förväntat antal,
+räknat antal, avvikelse, räknare och tid. Även tomma platser och rader utan avvikelse ingår.
+Rapporten använder de historiska räkningarna och påverkas inte av senare saldoändringar.
+
+Servern behöver assets/fonts vid körning; next.config.ts inkluderar typsnitten i route tracing.
+Starta om utvecklingsservern efter ändrade InventorySession-modeller för att nya
+ansvarig- och företagsnamn ska sparas historiskt. Ingen datamigrering eller nytt index krävs.
+Äldre inventeringar kan exporteras även när vissa historiska namn saknas.

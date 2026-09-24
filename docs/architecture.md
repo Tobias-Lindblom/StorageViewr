@@ -273,3 +273,59 @@ Webbläsartest mot isolerad databas täcker skapande, räkning, konflikt/omläsn
 granskning, avslut, hittad produkt och skrivskydd; vyer kontrollerade vid 320, 390 och 1440 px.
 
 Nästa etapp: fas 6, inbyggd kamerascanner och manuell reservinmatning samt test på fysisk telefon.
+
+## QR-flöde för inventering
+Räkningsrutan visar först en uppmaning att skanna platsens QR-kod. Material, antalsfält,
+produktsökning och sparaknapp renderas först efter att rätt platskod har verifierats.
+Flödet är: öppna inventering → välj plats → skanna platsens QR-kod → räkna → ange antal → bekräfta.
+Ingen skanningsknapp ligger på inventeringens första sida. Kameran öppnas inne i samma ruta.
+Tillbaka från kameran visar skanningssteget om platsen ännu inte verifierats.
+Verifieringen återställs när rutan stängs eller en annan plats öppnas; omläsning efter
+saldokonflikt behåller verifieringen för samma öppna plats. Manuell platskod är reservvägen.
+Servern verifierar att koden tillhör den valda platsen, inventeringens frysta omfattning,
+rätt lager och aktuell organisation. En kod för en annan plats avvisas.
+Inmatade antal behålls när användaren går till kameran och tillbaka; uppdaterade saldon och
+räkningsrevisioner läses vid kontrollen och kräver ny bekräftelse före sparande.
+
+Kameran använder getUserMedia och jsQR (https://github.com/cozmo/jsQR), laddat vid behov.
+Videobilder bearbetas lokalt. Kameran stoppas efter avläsning, när rutan stängs,
+vid återgång till räkningen och när sidan hamnar i bakgrunden.
+Kamerafel och nekad behörighet visar manuell platskod som reserv. HTTPS eller localhost krävs.
+
+Befintliga /location/{token}-etiketter fungerar även från telefonens vanliga kamera.
+Med en pågående inventering öppnas platsens räkningsruta direkt. QR-token följer med länken
+ och verifieras på servern mot aktiv plats, företag och inventering innan materialet visas. Vid flera pågående
+inventeringar väljer användaren rätt inventering; utan pågående inventering visas platsuppgifterna.
+Inloggning och företagsval bevarar QR-returlänken. Token ger ingen extra behörighet.
+
+Verifierat med integrationstester och webbläsartest inklusive faktisk QR-avkodning från en
+simulerad videoström, fel plats, nekad kamera, manuell kod, bibehållna antal och kamerastopp.
+Fas 6 har därmed kameraflöde och reservinmatning implementerade, men test med fysisk telefon
+och utskriven etikett återstår innan fasens kontrollpunkt är helt klar.
+
+## PDF-rapport för avslutad inventering
+Avslutade inventeringar har knappen Ladda ner PDF, bredvid Visa resultat.
+GET /api/inventory/sessions/[id]/report kräver verifierad session och medlemskap i rätt företag.
+Både admin och lagerarbetare har samma läsrätt till rapporten som till inventeringsresultatet.
+Pågående inventering ger 409; främmande inventering ger 404 och anonymt anrop 401.
+PDF-svaret skickas som attachment med säkert filnamn, private/no-store och nosniff.
+Generering begränsas till tio anrop per användare och minut.
+
+Rapporten genereras på servern med PDFKit och lokalt medföljande Roboto-typsnitt.
+Layouten är ljus A4 med StorageViewrs logotyp, lila detaljer, sidnummer och rapport-ID.
+Den innehåller företag, lager, start/avslut, ansvariga, antal platser/produkter/rader,
+avvikelser, exakta totalsummor, separata över-/underskott och samtliga räkningar per plats.
+Även rader utan avvikelse och bekräftat tomma platser ingår. Långa namn radbryts och
+tabellrubriker upprepas vid sidbrytningar. Alla tider visas i Europe/Stockholm.
+
+Rapportunderlaget läses från completed InventorySession, InventorySessionLocation och
+InventoryCount, aldrig dagens InventoryLevel eller produktnamn.
+Nya sessioner sparar startedByName vid start samt organizationName och completedByName
+vid avslut. Äldre sessioner går också att exportera: osparade ansvarignamn anges som
+Ej sparat; om företagsnamnets historik saknas används dagens namn med tydlig upplysning.
+Inga historiska namn har gissats eller skrivits tillbaka till äldre inventeringar.
+
+Verifiering: integrationstester för slutförd status, tenant-isolering, historiska snapshots,
+oförändrade rader, tomma platser, stora heltal, äldre sessioner och flersidiga dokument.
+PDF-text, alla produktrader, sidnumrering och sidgränser har kontrollerats i renderade PDF-filer.
+Webbläsartest verifierar faktisk nedladdning, filnamn, PDF-headers, mobilvy och felhantering.
