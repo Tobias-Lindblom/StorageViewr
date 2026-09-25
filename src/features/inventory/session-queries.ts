@@ -14,19 +14,24 @@ import { objectIdSchema } from "@/validation/organization";
 export async function listInventories(
   context: TenantContext,
   input: unknown = 1,
+  statusInput?: unknown,
 ) {
   const requested = z.coerce.number().int().min(1).max(100000).parse(input);
-  const filter = { organizationId: context.organizationId };
+  const status = z.enum(["active", "completed"]).optional().parse(statusInput);
+  const filter = {
+    organizationId: context.organizationId,
+    ...(status ? { status } : {}),
+  };
   const total = await InventorySession.countDocuments(filter);
   const pages = Math.max(1, Math.ceil(total / 20)),
     page = Math.min(requested, pages);
   const records = await InventorySession.find(filter)
-    .sort({ startedAt: -1, _id: -1 })
+    .sort(status === "completed" ? { completedAt: -1, _id: -1 } : { startedAt: -1, _id: -1 })
     .skip((page - 1) * 20)
     .limit(20)
     .lean();
   const scopes = await InventorySessionLocation.find({
-    ...filter,
+    organizationId: context.organizationId,
     inventorySessionId: { $in: records.map((row) => row._id) },
   }).lean();
   return {
@@ -44,6 +49,7 @@ export async function listInventories(
         total: places.length,
         counted: places.filter((scope) => scope.status === "counted").length,
         startedAt: row.startedAt.toISOString(),
+        completedAt: row.completedAt?.toISOString() ?? null,
       };
     }),
   };

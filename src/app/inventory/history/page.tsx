@@ -75,6 +75,16 @@ export default async function StockHistoryPage({
                   ·{" "}
                   {item.type === "INITIAL"
                     ? "Första placering"
+                    : item.type === "RECEIPT"
+                      ? "Inleverans"
+                      : item.type === "ISSUE"
+                        ? "Uttag"
+                        : item.type === "TRANSFER_OUT"
+                          ? "Flytt från plats"
+                          : item.type === "TRANSFER_IN"
+                            ? "Flytt till plats"
+                            : item.type === "CORRECTION"
+                              ? "Korrigering"
                     : item.type === "INVENTORY"
                       ? "Inventering"
                       : "Saldoändring"}

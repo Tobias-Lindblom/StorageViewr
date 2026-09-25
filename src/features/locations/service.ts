@@ -41,19 +41,30 @@ export async function listLocations(
     .sort({ active: -1, code: 1, _id: 1 })
     .lean();
   // Explicit tenant constraint also on referenced warehouses.
-  const warehouses = await Warehouse.find({
-    organizationId: context.organizationId,
-    _id: { $in: records.map((record) => record.warehouseId) },
-    ...(context.role !== "admin" ? { active: true } : {}),
-  }).lean();
+  const [warehouses, occupiedLocationIds] = await Promise.all([
+    Warehouse.find({
+      organizationId: context.organizationId,
+      _id: { $in: records.map((record) => record.warehouseId) },
+      ...(context.role !== "admin" ? { active: true } : {}),
+    }).lean(),
+    records.length
+      ? InventoryLevel.distinct("locationId", {
+          organizationId: context.organizationId,
+          locationId: { $in: records.map((record) => record._id) },
+          quantity: { $gt: 0 },
+        })
+      : Promise.resolve([]),
+  ]);
   const names = new Map(
     warehouses.map((warehouse) => [warehouse._id.toString(), warehouse.name]),
   );
+  const occupied = new Set(occupiedLocationIds.map(String));
   return records
     .filter((record) => names.has(record.warehouseId.toString()))
     .map((record) => ({
       ...serialize(record),
       warehouseName: names.get(record.warehouseId.toString())!,
+      occupied: occupied.has(record._id.toString()),
     }));
 }
 export async function getLocation(context: TenantContext, id: string) {

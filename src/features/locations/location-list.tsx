@@ -213,11 +213,33 @@ export function LocationList({
                             <span className="block break-all text-sm font-medium tabular-nums">
                               {location.code}
                             </span>
-                            {!location.active && (
-                              <span className="mt-1 block text-xs text-amber-200">
-                                Inaktiv
-                              </span>
-                            )}
+                            <span
+                              className={
+                                "mt-1 inline-flex items-center gap-1.5 text-xs " +
+                                (!location.active
+                                  ? "text-amber-200"
+                                  : location.occupied
+                                    ? "text-cyan"
+                                    : "text-muted")
+                              }
+                            >
+                              <span
+                                aria-hidden="true"
+                                className={
+                                  "h-1.5 w-1.5 rounded-full " +
+                                  (!location.active
+                                    ? "bg-amber-200"
+                                    : location.occupied
+                                      ? "bg-cyan"
+                                      : "border border-muted")
+                                }
+                              />
+                              {!location.active
+                                ? "Inaktiv"
+                                : location.occupied
+                                  ? "Upptagen"
+                                  : "Tom"}
+                            </span>
                           </span>
                           <span
                             aria-hidden="true"

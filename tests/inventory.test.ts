@@ -16,8 +16,8 @@ import { InventoryMovement } from "../src/models/inventory-movement";
 import { createProduct, updateProduct, getProduct } from "../src/features/products/service";
 import { createWarehouse, updateWarehouse } from "../src/features/warehouses/service";
 import { createLocation, updateLocation, getLocation } from "../src/features/locations/service";
-import { adjustStock, getStockPair, listStock, listMovements } from "../src/features/inventory/service";
-import { stockAdjustmentSchema } from "../src/validation/inventory";
+import { adjustStock, getStockPair, listStock, listMovements, registerStockMovement } from "../src/features/inventory/service";
+import { stockAdjustmentSchema, stockMovementSchema } from "../src/validation/inventory";
 
 let replica: MongoMemoryReplSet;
 before(async () => {
@@ -79,6 +79,210 @@ test("warehouse users read current stock but cannot adjust it or read administra
   await assert.rejects(adjustStock(worker, f.change(4, 1)), status(403));
   await assert.rejects(listMovements(worker, { productId: f.product.id }), status(403));
   assert.equal((await getStockPair(worker, { productId: f.product.id, locationId: f.location.id })).quantity, 3);
+});
+
+test("warehouse users register receipts and issues while corrections remain administrative", async () => {
+  const f = await fixture();
+  const worker: TenantContext = { ...f.context, role: "warehouse" };
+  await registerStockMovement(worker, {
+    type: "RECEIPT",
+    productId: f.product.id,
+    locationId: f.location.id,
+    quantity: 10,
+    expectedVersion: null,
+    reason: "Leverans 1001",
+  });
+  assert.deepEqual(
+    await getStockPair(worker, {
+      productId: f.product.id,
+      locationId: f.location.id,
+    }),
+    {
+      productId: f.product.id,
+      locationId: f.location.id,
+      quantity: 10,
+      version: 1,
+    },
+  );
+  await registerStockMovement(worker, {
+    type: "ISSUE",
+    productId: f.product.id,
+    locationId: f.location.id,
+    quantity: 3,
+    expectedVersion: 1,
+    reason: "Utlämning till montör",
+  });
+  await assert.rejects(
+    registerStockMovement(worker, {
+      type: "CORRECTION",
+      productId: f.product.id,
+      locationId: f.location.id,
+      quantity: 6,
+      expectedVersion: 2,
+      reason: "Felregistrering",
+    }),
+    status(403),
+  );
+  await registerStockMovement(f.context, {
+    type: "CORRECTION",
+    productId: f.product.id,
+    locationId: f.location.id,
+    quantity: 6,
+    expectedVersion: 2,
+    reason: "Felregistrering verifierad",
+  });
+  const history = await listMovements(f.context, { productId: f.product.id });
+  assert.deepEqual(
+    history.items.map((row) => row.type),
+    ["CORRECTION", "ISSUE", "RECEIPT"],
+  );
+  assert.equal(history.items[1].difference, -3);
+  assert.equal(
+    (
+      await getStockPair(worker, {
+        productId: f.product.id,
+        locationId: f.location.id,
+      })
+    ).quantity,
+    6,
+  );
+});
+
+test("transfers update both places atomically and retain one linked audit pair", async () => {
+  const f = await fixture();
+  const worker: TenantContext = { ...f.context, role: "warehouse" };
+  const secondWarehouse = await createWarehouse(f.context, {
+    name: "Reservlager",
+    code: "RESERVE",
+  });
+  const destination = await createLocation(f.context, {
+    ...parts,
+    warehouseId: secondWarehouse.id,
+  });
+  await registerStockMovement(worker, {
+    type: "RECEIPT",
+    productId: f.product.id,
+    locationId: f.location.id,
+    quantity: 10,
+    expectedVersion: null,
+    reason: "Startsaldo",
+  });
+  const transfer = await registerStockMovement(worker, {
+    type: "TRANSFER",
+    productId: f.product.id,
+    sourceLocationId: f.location.id,
+    destinationLocationId: destination.id,
+    quantity: 4,
+    expectedSourceVersion: 1,
+    expectedDestinationVersion: null,
+    reason: "Påfyllning av reservlager",
+  });
+  assert.equal(transfer.type, "TRANSFER");
+  assert.equal(
+    (
+      await getStockPair(worker, {
+        productId: f.product.id,
+        locationId: f.location.id,
+      })
+    ).quantity,
+    6,
+  );
+  assert.equal(
+    (
+      await getStockPair(worker, {
+        productId: f.product.id,
+        locationId: destination.id,
+      })
+    ).quantity,
+    4,
+  );
+  assert.equal((await listStock(worker, { productId: f.product.id })).total, "10");
+  const transferRows = await InventoryMovement.find({
+    transferId: new Types.ObjectId(transfer.transferId),
+  }).lean();
+  assert.equal(transferRows.length, 2);
+  assert.deepEqual(
+    new Set(transferRows.map((row) => row.type)),
+    new Set(["TRANSFER_OUT", "TRANSFER_IN"]),
+  );
+  await assert.rejects(
+    registerStockMovement(worker, {
+      type: "TRANSFER",
+      productId: f.product.id,
+      sourceLocationId: f.location.id,
+      destinationLocationId: destination.id,
+      quantity: 7,
+      expectedSourceVersion: 2,
+      expectedDestinationVersion: 1,
+      reason: "För stor flytt",
+    }),
+    status(400),
+  );
+  await assert.rejects(
+    registerStockMovement(worker, {
+      type: "TRANSFER",
+      productId: f.product.id,
+      sourceLocationId: f.location.id,
+      destinationLocationId: destination.id,
+      quantity: 1,
+      expectedSourceVersion: 1,
+      expectedDestinationVersion: 1,
+      reason: "Gammal version",
+    }),
+    status(409),
+  );
+  const foreign = await fixture();
+  await assert.rejects(
+    registerStockMovement(worker, {
+      type: "TRANSFER",
+      productId: f.product.id,
+      sourceLocationId: f.location.id,
+      destinationLocationId: foreign.location.id,
+      quantity: 1,
+      expectedSourceVersion: 2,
+      expectedDestinationVersion: null,
+      reason: "Otillåten flytt",
+    }),
+    status(404),
+  );
+  const failure = mock.method(InventoryMovement, "create", async () => {
+    throw new Error("Injected transfer history failure");
+  });
+  try {
+    await assert.rejects(
+      registerStockMovement(worker, {
+        type: "TRANSFER",
+        productId: f.product.id,
+        sourceLocationId: f.location.id,
+        destinationLocationId: destination.id,
+        quantity: 1,
+        expectedSourceVersion: 2,
+        expectedDestinationVersion: 1,
+        reason: "Flytt som rullas tillbaka",
+      }),
+      /Injected transfer history failure/,
+    );
+  } finally {
+    failure.mock.restore();
+  }
+  assert.equal(
+    (
+      await getStockPair(worker, {
+        productId: f.product.id,
+        locationId: f.location.id,
+      })
+    ).quantity,
+    6,
+  );
+  assert.equal(
+    (
+      await getStockPair(worker, {
+        productId: f.product.id,
+        locationId: destination.id,
+      })
+    ).quantity,
+    4,
+  );
 });
 
 test("history records before/after, signed difference, actor, reason and original names", async () => {
@@ -168,6 +372,40 @@ test("input rejects unsafe quantities, missing versions, foreign tenant fields a
     { organizationId: new Types.ObjectId().toString() }, { warehouseId: f.warehouse.id }, { productId: { $ne: null } }]) {
     assert.equal(stockAdjustmentSchema.safeParse({ ...f.change(1), ...bad }).success, false);
   }
+  const receipt = {
+    type: "RECEIPT",
+    productId: f.product.id,
+    locationId: f.location.id,
+    quantity: 1,
+    expectedVersion: null,
+    reason: "Leverans",
+  } as const;
+  assert.equal(stockMovementSchema.safeParse(receipt).success, true);
+  for (const bad of [
+    { quantity: 0 },
+    { quantity: -1 },
+    { quantity: "1" },
+    { expectedVersion: 0 },
+    { reason: "" },
+    { organizationId: f.context.organizationId.toString() },
+  ])
+    assert.equal(
+      stockMovementSchema.safeParse({ ...receipt, ...bad }).success,
+      false,
+    );
+  assert.equal(
+    stockMovementSchema.safeParse({
+      type: "TRANSFER",
+      productId: f.product.id,
+      sourceLocationId: f.location.id,
+      destinationLocationId: f.location.id,
+      quantity: 1,
+      expectedSourceVersion: 1,
+      expectedDestinationVersion: 1,
+      reason: "Samma plats",
+    }).success,
+    false,
+  );
 });
 
 test("totals remain exact above a safe JS integer and history pagination has no duplicate rows", async () => {

@@ -8,17 +8,20 @@ import type { StockData, StockPair } from "./service";
 
 type Scope = { kind: "product" | "location"; id: string; label: string };
 type Choice = { id: string; label: string };
+type MovementType = "RECEIPT" | "ISSUE" | "TRANSFER" | "CORRECTION";
 export function StockSection({
   data,
   scope,
   choices,
-  editable,
+  transferLocations,
+  operable,
   admin,
 }: {
   data: StockData;
   scope: Scope;
   choices: Choice[];
-  editable: boolean;
+  transferLocations: Choice[];
+  operable: boolean;
   admin: boolean;
 }) {
   const [selection, setSelection] = useState<string | null>(null);
@@ -52,11 +55,9 @@ export function StockSection({
               : data.items.length + " produkter"}
           </p>
         </div>
-        {editable && (
+        {operable && (
           <button className="button px-4!" onClick={() => open()}>
-            {scope.kind === "product"
-              ? "+ Lägg på plats"
-              : "+ Lägg till produkt"}
+            + Registrera händelse
           </button>
         )}
       </div>
@@ -97,7 +98,7 @@ export function StockSection({
                   Inaktiv produkt eller plats
                 </p>
               )}
-              {editable && row.active && (
+              {operable && row.active && (
                 <button
                   className="mt-2 min-h-13 text-sm text-accent"
                   onClick={() =>
@@ -106,7 +107,7 @@ export function StockSection({
                     )
                   }
                 >
-                  Ändra antal
+                  Registrera händelse
                   <span className="sr-only">
                     {" "}
                     för{" "}
@@ -140,23 +141,16 @@ export function StockSection({
         </Link>
       )}
       {selection !== null && (
-        <BottomSheet
-          title={
-            selection
-              ? "Ändra antal"
-              : scope.kind === "product"
-                ? "Lägg på lagerplats"
-                : "Lägg till produkt"
-          }
-          onClose={close}
-        >
+        <BottomSheet title="Registrera lagerhändelse" onClose={close}>
           <StockEditor
             scope={scope}
             choices={choices}
+            transferLocations={transferLocations}
             initialChoice={selection}
+            admin={admin}
             onSaved={() => {
               close();
-              setNotice("Saldot har sparats.");
+              setNotice("Lagerhändelsen har registrerats.");
               router.refresh();
             }}
           />
@@ -168,32 +162,41 @@ export function StockSection({
 function StockEditor({
   scope,
   choices,
+  transferLocations,
   initialChoice,
+  admin,
   onSaved,
 }: {
   scope: Scope;
   choices: Choice[];
+  transferLocations: Choice[];
   initialChoice: string;
+  admin: boolean;
   onSaved: () => void;
 }) {
+  const [type, setType] = useState<MovementType>("RECEIPT");
   const [choice, setChoice] = useState(initialChoice);
+  const [destination, setDestination] = useState("");
   const [search, setSearch] = useState("");
   const [pair, setPair] = useState<StockPair | null>(null);
+  const [destinationPair, setDestinationPair] = useState<StockPair | null>(null);
   const [quantity, setQuantity] = useState("");
   const [reason, setReason] = useState("");
   const [loading, setLoading] = useState(Boolean(initialChoice));
+  const [destinationLoading, setDestinationLoading] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const [conflict, setConflict] = useState(false);
   const [refresh, setRefresh] = useState(0);
+  const productId = scope.kind === "product" ? scope.id : choice;
+  const sourceLocationId = scope.kind === "product" ? choice : scope.id;
   useEffect(() => {
-    if (!choice) return;
+    if (!productId || !sourceLocationId) return;
     const controller = new AbortController();
-    const params = new URLSearchParams(
-      scope.kind === "product"
-        ? { productId: scope.id, locationId: choice }
-        : { productId: choice, locationId: scope.id },
-    );
+    const params = new URLSearchParams({
+      productId,
+      locationId: sourceLocationId,
+    });
     fetch("/api/inventory/level?" + params, {
       signal: controller.signal,
       cache: "no-store",
@@ -202,10 +205,7 @@ function StockEditor({
         const result = await response.json();
         if (!response.ok)
           throw new Error(result.error?.message ?? "Kunde inte läsa saldot.");
-        if (!controller.signal.aborted) {
-          setPair(result.data);
-          setQuantity(String(result.data.quantity));
-        }
+        if (!controller.signal.aborted) setPair(result.data);
       })
       .catch((error) => {
         if (!controller.signal.aborted)
@@ -217,30 +217,89 @@ function StockEditor({
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [choice, scope.kind, scope.id, refresh]);
+  }, [productId, sourceLocationId, refresh]);
+
+  useEffect(() => {
+    if (type !== "TRANSFER" || !productId || !destination) return;
+    const controller = new AbortController();
+    const params = new URLSearchParams({
+      productId,
+      locationId: destination,
+    });
+    fetch("/api/inventory/level?" + params, {
+      signal: controller.signal,
+      cache: "no-store",
+    })
+      .then(async (response) => {
+        const result = await response.json();
+        if (!response.ok)
+          throw new Error(
+            result.error?.message ?? "Kunde inte läsa destinationssaldot.",
+          );
+        if (!controller.signal.aborted) setDestinationPair(result.data);
+      })
+      .catch((error) => {
+        if (!controller.signal.aborted)
+          setError(
+            error instanceof Error
+              ? error.message
+              : "Kunde inte läsa destinationssaldot.",
+          );
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setDestinationLoading(false);
+      });
+    return () => controller.abort();
+  }, [type, productId, destination, refresh]);
   function reload() {
-    setLoading(true);
+    setLoading(Boolean(productId && sourceLocationId));
+    setDestinationLoading(
+      Boolean(type === "TRANSFER" && productId && destination),
+    );
     setPair(null);
+    setDestinationPair(null);
     setError("");
     setConflict(false);
     setRefresh((value) => value + 1);
   }
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!pair || loading || pending || conflict) return;
+    if (
+      !pair ||
+      loading ||
+      destinationLoading ||
+      pending ||
+      conflict ||
+      (type === "TRANSFER" && !destinationPair)
+    )
+      return;
     setPending(true);
     setError("");
     try {
-      const response = await fetch("/api/inventory", {
+      const payload =
+        type === "TRANSFER"
+          ? {
+              type,
+              productId: pair.productId,
+              sourceLocationId: pair.locationId,
+              destinationLocationId: destinationPair!.locationId,
+              quantity: Number(quantity),
+              expectedSourceVersion: pair.version,
+              expectedDestinationVersion: destinationPair!.version,
+              reason,
+            }
+          : {
+              type,
+              productId: pair.productId,
+              locationId: pair.locationId,
+              quantity: Number(quantity),
+              expectedVersion: pair.version,
+              reason,
+            };
+      const response = await fetch("/api/inventory/movements", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          productId: pair.productId,
-          locationId: pair.locationId,
-          quantity: Number(quantity),
-          expectedVersion: pair.version,
-          reason,
-        }),
+        body: JSON.stringify(payload),
       });
       const result = await response.json();
       if (!response.ok) {
@@ -248,13 +307,15 @@ function StockEditor({
         throw new Error(
           result.error?.details?.[0]?.message ??
             result.error?.message ??
-            "Kunde inte spara saldot.",
+            "Kunde inte registrera lagerhändelsen.",
         );
       }
       onSaved();
     } catch (error) {
       setError(
-        error instanceof Error ? error.message : "Kunde inte spara saldot.",
+        error instanceof Error
+          ? error.message
+          : "Kunde inte registrera lagerhändelsen.",
       );
     } finally {
       setPending(false);
@@ -267,9 +328,49 @@ function StockEditor({
         .toLocaleLowerCase("sv")
         .includes(search.toLocaleLowerCase("sv")),
   );
+  const destinations = transferLocations.filter(
+    (item) => item.id !== sourceLocationId,
+  );
+  const quantityLabel =
+    type === "RECEIPT"
+      ? "Antal att lägga till"
+      : type === "ISSUE"
+        ? "Antal att ta ut"
+        : type === "TRANSFER"
+          ? "Antal att flytta"
+          : "Nytt saldo";
+  const ready =
+    Boolean(pair) &&
+    !loading &&
+    !destinationLoading &&
+    !pending &&
+    !conflict &&
+    (type !== "TRANSFER" || Boolean(destinationPair));
   return (
     <form className="space-y-5" onSubmit={submit}>
       <p className="wrap-break-word text-sm text-muted">{scope.label}</p>
+      <label>
+        Händelse
+        <select
+          value={type}
+          onChange={(event) => {
+            const next = event.target.value as MovementType;
+            setType(next);
+            setDestination("");
+            setDestinationPair(null);
+            setDestinationLoading(false);
+            setQuantity("");
+            setError("");
+            setConflict(false);
+          }}
+          disabled={pending}
+        >
+          <option value="RECEIPT">Inleverans</option>
+          <option value="ISSUE">Uttag</option>
+          <option value="TRANSFER">Flytta</option>
+          {admin && <option value="CORRECTION">Korrigera saldo</option>}
+        </select>
+      </label>
       {!choices.length ? (
         <p className="text-sm leading-7 text-muted">
           {scope.kind === "product"
@@ -298,6 +399,8 @@ function StockEditor({
                   onChange={(event) => {
                     setChoice(event.target.value);
                     setPair(null);
+                    setDestination("");
+                    setDestinationPair(null);
                     setQuantity("");
                     setError("");
                     setConflict(false);
@@ -340,13 +443,50 @@ function StockEditor({
                   {pair.quantity.toLocaleString("sv-SE")} st
                 </strong>
               </p>
+              {type === "TRANSFER" && (
+                <label>
+                  Flytta till
+                  <select
+                    required
+                    value={destination}
+                    onChange={(event) => {
+                      setDestination(event.target.value);
+                      setDestinationPair(null);
+                      setDestinationLoading(Boolean(event.target.value));
+                      setError("");
+                      setConflict(false);
+                    }}
+                    disabled={pending}
+                  >
+                    <option value="">Välj destinationsplats</option>
+                    {destinations.map((item) => (
+                      <option value={item.id} key={item.id}>
+                        {item.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              {destinationLoading && (
+                <p className="text-sm text-muted" role="status">
+                  Hämtar destinationssaldo…
+                </p>
+              )}
+              {type === "TRANSFER" && destinationPair && (
+                <p className="rounded-xl bg-canvas p-4 text-sm text-muted">
+                  Saldo på destinationen:{" "}
+                  <strong className="text-foreground">
+                    {destinationPair.quantity.toLocaleString("sv-SE")} st
+                  </strong>
+                </p>
+              )}
               <label>
-                Nytt antal
+                {quantityLabel}
                 <input
                   type="number"
                   inputMode="numeric"
                   required
-                  min={0}
+                  min={type === "CORRECTION" ? 0 : 1}
                   max={Number.MAX_SAFE_INTEGER}
                   step={1}
                   value={quantity}
@@ -362,13 +502,20 @@ function StockEditor({
                   maxLength={500}
                   value={reason}
                   onChange={(event) => setReason(event.target.value)}
-                  placeholder="Exempel: Inleverans eller korrigering"
+                  placeholder={
+                    type === "CORRECTION"
+                      ? "Beskriv varför saldot korrigeras"
+                      : "Exempel: Order, leverans eller intern flytt"
+                  }
                   disabled={pending}
                 />
               </label>
-              <p className="text-xs leading-6 text-muted">
-                Ange det totala antalet på platsen efter ändringen.
-              </p>
+              {type === "CORRECTION" && (
+                <p className="text-xs leading-6 text-muted">
+                  Det nya saldot ersätter det nuvarande. Korrigeringen sparas i
+                  historiken med din anledning.
+                </p>
+              )}
             </>
           )}
           {error && (
@@ -382,10 +529,15 @@ function StockEditor({
               className="button-secondary w-full"
               onClick={reload}
             >
-              Läs in aktuellt saldo
+              Läs in aktuella saldon
             </button>
           )}
-          {!pair && choice && !loading && error && (
+          {((!pair && choice && !loading) ||
+            (type === "TRANSFER" &&
+              destination &&
+              !destinationPair &&
+              !destinationLoading)) &&
+            error && (
             <button
               type="button"
               className="button-secondary w-full"
@@ -393,12 +545,9 @@ function StockEditor({
             >
               Försök igen
             </button>
-          )}
-          <button
-            className="button w-full"
-            disabled={!pair || loading || pending || conflict}
-          >
-            {pending ? "Sparar…" : "Spara saldo"}
+            )}
+          <button className="button w-full" disabled={!ready}>
+            {pending ? "Registrerar…" : "Registrera lagerhändelse"}
           </button>
         </>
       )}

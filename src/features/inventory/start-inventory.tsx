@@ -45,7 +45,7 @@ export function StartInventory({
   return (
     <>
       <button
-        className="button"
+        className="button px-3! sm:px-6!"
         onClick={() => {
           setError("");
           setOpen(true);

@@ -294,3 +294,65 @@ test("QR parsing rejects arbitrary destinations, malformed tokens and ambiguous 
     assert.equal(scanLocationSchema.safeParse(input).success, false);
   }
 });
+
+test("inventory lists separate active and completed sessions without losing place counts", async () => {
+  const f = await fixture(3);
+  await saveLocationCount(f.context, f.inventory.id, f.location.id, f.count(3));
+  let active = await listInventories(f.context, 1, "active");
+  assert.equal(active.items.length, 1);
+  assert.equal(active.items[0].total, 2);
+  assert.equal(active.items[0].counted, 1);
+  assert.equal((await listInventories(f.context, 1, "completed")).items.length, 0);
+  await saveLocationCount(f.context, f.inventory.id, f.empty.id, f.blank);
+  await finish(f);
+  active = await listInventories(f.context, 1, "active");
+  assert.equal(active.items.length, 0);
+  const completed = await listInventories({ ...f.context, role: "warehouse" }, 1, "completed");
+  assert.equal(completed.items.length, 1);
+  assert.equal(completed.items[0].id, f.inventory.id);
+  assert.equal(completed.items[0].total, 2);
+  assert.equal(completed.items[0].counted, 2);
+  assert.ok(completed.items[0].completedAt);
+  assert.equal((await listInventories(tenant(), 1, "completed")).items.length, 0);
+  await assert.rejects(listInventories(f.context, 1, "invalid"));
+});
+
+test("inventory pagination filters before counting and sorts completed sessions by completion date", async () => {
+  const context = tenant();
+  const warehouseId = new Types.ObjectId();
+  const rows = Array.from({ length: 21 }, (_, index) => ({
+    organizationId: context.organizationId,
+    warehouseId,
+    warehouseName: "Testlager",
+    startedBy: context.userId,
+    name: "Genomförd " + index,
+    status: "completed",
+    startedAt: new Date(Date.UTC(2020, 0, 22 - index)),
+    completedAt: new Date(Date.UTC(2020, 1, index + 1)),
+  }));
+  await InventorySession.insertMany([
+    ...rows,
+    ...Array.from({ length: 21 }, (_, index) => ({
+      ...rows[index],
+      name: "Pågående " + index,
+      status: "active",
+      completedAt: undefined,
+    })),
+    { ...rows[0], organizationId: new Types.ObjectId(), name: "Annat företag" },
+  ]);
+  for (const status of ["active", "completed"] as const) {
+    const first = await listInventories(context, 1, status);
+    const last = await listInventories(context, 100, status);
+    assert.equal(first.pages, 2);
+    assert.equal(first.items.length, 20);
+    assert.equal(last.page, 2);
+    assert.equal(last.items.length, 1);
+    assert.ok([...first.items, ...last.items].every(item => item.status === status));
+    assert.equal(new Set([...first.items, ...last.items].map(item => item.id)).size, 21);
+    if (status === "completed") {
+      assert.equal(first.items[0].name, "Genomförd 20");
+      assert.equal(last.items[0].name, "Genomförd 0");
+    }
+  }
+  assert.equal((await listInventories(context)).pages, 3);
+});

@@ -8,6 +8,9 @@ import type { TenantContext } from "../src/lib/server/tenant";
 import { Warehouse } from "../src/models/warehouse";
 import { Location } from "../src/models/location";
 import { Product } from "../src/models/product";
+import { InventorySession } from "../src/models/inventory-session";
+import { InventorySessionLocation } from "../src/models/inventory-session-location";
+import { InventoryLevel } from "../src/models/inventory-level";
 import {
   createWarehouse,
   getWarehouse,
@@ -37,7 +40,14 @@ before(async () => {
   process.env.MONGODB_DB = "storageviewr_warehouse_tests";
   process.env.APP_URL = "http://localhost:3000";
   await connectDb();
-  for (const model of [Warehouse, Location, Product]) {
+  for (const model of [
+    Warehouse,
+    Location,
+    Product,
+    InventoryLevel,
+    InventorySession,
+    InventorySessionLocation,
+  ]) {
     await model.createCollection();
     await model.createIndexes();
   }
@@ -133,6 +143,33 @@ test("location references, QR lookup, list and edit cannot cross tenant boundari
       warehouseId: foreign.id,
     }),
   );
+  await InventoryLevel.create({
+    organizationId: b.organizationId,
+    warehouseId: foreign.id,
+    productId: new Types.ObjectId(),
+    locationId: location.id,
+    quantity: 8,
+    version: 1,
+  });
+  assert.equal((await listLocations(a))[0].occupied, false);
+  await InventoryLevel.create({
+    organizationId: a.organizationId,
+    warehouseId: own.id,
+    productId: new Types.ObjectId(),
+    locationId: location.id,
+    quantity: 0,
+    version: 1,
+  });
+  assert.equal((await listLocations(a))[0].occupied, false);
+  await InventoryLevel.create({
+    organizationId: a.organizationId,
+    warehouseId: own.id,
+    productId: new Types.ObjectId(),
+    locationId: location.id,
+    quantity: 2,
+    version: 1,
+  });
+  assert.equal((await listLocations(a))[0].occupied, true);
   assert.deepEqual(
     (await listLocations(a)).map((row) => row.id),
     [location.id],
@@ -261,7 +298,8 @@ test("dashboard numbers reflect only real active data belonging to the current t
     warehouseCount: 0,
     locationCount: 0,
     productCount: 0,
-
+    activeInventoryCount: 0,
+    activeInventories: [],
   });
   const warehouse = await createWarehouse(a, warehouseInput);
   await createLocationBatch(a, { ...batchInput, warehouseId: warehouse.id });
@@ -276,12 +314,83 @@ test("dashboard numbers reflect only real active data belonging to the current t
     { organizationId: a.organizationId, sku: "INACTIVE", name: "Inaktiv produkt", active: false },
     { organizationId: b.organizationId, sku: "FOREIGN", name: "Annat företags produkt" },
   ]);
+  const [activeInventory, completedInventory, foreignInventory] =
+    await InventorySession.create([
+      {
+        organizationId: a.organizationId,
+        warehouseId: warehouse.id,
+        warehouseName: warehouse.name,
+        name: "Pågående inventering",
+        status: "active",
+        startedBy: a.userId,
+      },
+      {
+        organizationId: a.organizationId,
+        warehouseId: warehouse.id,
+        warehouseName: warehouse.name,
+        name: "Genomförd inventering",
+        status: "completed",
+        startedBy: a.userId,
+        completedAt: new Date(),
+      },
+      {
+        organizationId: b.organizationId,
+        warehouseId: foreign.id,
+        warehouseName: foreign.name,
+        name: "Annat företags inventering",
+        status: "active",
+        startedBy: b.userId,
+      },
+    ]);
+  await InventorySessionLocation.create([
+    {
+      organizationId: a.organizationId,
+      inventorySessionId: activeInventory._id,
+      locationId: new Types.ObjectId(),
+      locationCode: "A-01-01",
+      status: "counted",
+    },
+    {
+      organizationId: a.organizationId,
+      inventorySessionId: activeInventory._id,
+      locationId: new Types.ObjectId(),
+      locationCode: "A-01-02",
+      status: "pending",
+    },
+    {
+      organizationId: a.organizationId,
+      inventorySessionId: completedInventory._id,
+      locationId: new Types.ObjectId(),
+      locationCode: "B-01-01",
+      status: "counted",
+    },
+    {
+      organizationId: b.organizationId,
+      inventorySessionId: foreignInventory._id,
+      locationId: new Types.ObjectId(),
+      locationCode: "C-01-01",
+      status: "counted",
+    },
+  ]);
   const dashboard = await getDashboard(a);
   assert.equal(dashboard.productCount, 1);
   assert.equal((await getDashboard({ ...a, role: "warehouse" })).productCount, 1);
   assert.equal(dashboard.warehouseCount, 1);
   assert.equal(dashboard.locationCount, 10);
-
+  assert.equal(dashboard.activeInventoryCount, 1);
+  assert.deepEqual(dashboard.activeInventories, [
+    {
+      id: String(activeInventory._id),
+      name: "Pågående inventering",
+      warehouseName: warehouse.name,
+      counted: 1,
+      total: 2,
+    },
+  ]);
+  assert.deepEqual(
+    (await getDashboard({ ...a, role: "warehouse" })).activeInventories,
+    dashboard.activeInventories,
+  );
 });
 
 test("validation blocks malformed references, unsafe batches and open redirects", async () => {

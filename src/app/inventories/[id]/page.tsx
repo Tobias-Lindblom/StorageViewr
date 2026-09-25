@@ -41,11 +41,11 @@ export default async function InventoryPage({
   return (
     <AppShell context={context}>
       <Link
-        href="/inventories"
+        href={inventory.status === "completed" ? "/inventories/completed" : "/inventories"}
         className="mb-4 inline-flex min-h-13 items-center gap-2 text-sm text-accent"
       >
         <MaterialArrow name="back" />
-        Alla inventeringar
+        {inventory.status === "completed" ? "Genomförda inventeringar" : "Pågående inventeringar"}
       </Link>
       <InventoryWorkspace
         initial={inventory}

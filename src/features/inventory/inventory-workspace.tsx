@@ -200,26 +200,26 @@ export function InventoryWorkspace({
       </div>
       <div className="mt-6 flex flex-wrap items-start gap-3">
         {completed && <DownloadInventoryReport inventoryId={data.id} />}
-        <button
-          className={
-            (!completed && admin && ready ? "button" : "button-secondary") +
-            (completed ? " flex-1 sm:flex-none" : " w-full sm:w-auto")
-          }
-          onClick={() => {
-            opener.current = document.activeElement as HTMLElement;
-            setConfirmed(false);
-            setError("");
-            setReview(true);
-          }}
-        >
-          {completed
-            ? "Visa resultat"
-            : admin && ready
+        {!completed && (
+          <button
+            className={
+              (admin && ready ? "button" : "button-secondary") +
+              " w-full sm:w-auto"
+            }
+            onClick={() => {
+              opener.current = document.activeElement as HTMLElement;
+              setConfirmed(false);
+              setError("");
+              setReview(true);
+            }}
+          >
+            {admin && ready
               ? "Granska och genomför"
               : data.discrepancies.length
                 ? "Granska avvikelser"
                 : "Granska räkningar"}
-        </button>
+          </button>
+        )}
         {!completed && admin && !ready && (
           <p className="mt-3 text-xs leading-6 text-muted">
             Alla platser måste vara räknade med aktuella saldon innan du kan
@@ -244,15 +244,14 @@ export function InventoryWorkspace({
           />
         </BottomSheet>
       )}
-      {review && (
+      {review && !completed && (
         <BottomSheet
-          title={completed ? "Inventeringsresultat" : "Granska inventering"}
+          title="Granska inventering"
           onClose={close}
         >
           <p className="mb-5 text-sm leading-7 text-muted">
             {data.counted} av {data.places.length} platser räknade.{" "}
-            {data.discrepancies.length} avvikelser
-            {completed ? " registrerades." : " att granska."}
+            {data.discrepancies.length} avvikelser att granska.
           </p>
           {data.discrepancies.length ? (
             <ul className="mb-5 divide-y divide-line">
@@ -299,7 +298,7 @@ export function InventoryWorkspace({
               Inga registrerade avvikelser.
             </p>
           )}
-          {!completed && admin && (
+          {admin && (
             <>
               <label className="flex min-h-13 items-start gap-3 text-sm leading-6">
                 <input
