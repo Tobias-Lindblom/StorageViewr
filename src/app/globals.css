@@ -13,6 +13,47 @@
 
 @layer base {
   html { color-scheme: dark; scroll-behavior: smooth; }
+  *::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: transparent;
+    transition: background-color 180ms ease;
+  }
+  *.is-scrolling::-webkit-scrollbar-thumb {
+    background: rgb(184 177 202 / 0.34);
+  }
+  *.is-scrolling::-webkit-scrollbar-thumb:hover {
+    background: rgb(184 177 202 / 0.55);
+  }
+  *::-webkit-scrollbar-button,
+  *::-webkit-scrollbar-button:single-button,
+  *::-webkit-scrollbar-button:start,
+  *::-webkit-scrollbar-button:end {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    -webkit-appearance: none;
+  }
+  *::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+  @supports not selector(::-webkit-scrollbar) {
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: transparent transparent;
+    }
+    *.is-scrolling {
+      scrollbar-color: rgb(184 177 202 / 0.34) transparent;
+    }
+  }
   body {
     @apply m-0 min-h-svh bg-canvas text-foreground antialiased;
     font-family: Arial, Helvetica, sans-serif;
@@ -24,6 +65,14 @@
   label { @apply block text-sm font-medium text-foreground; }
   input {
     @apply mt-2 min-h-13 w-full rounded-xl border border-line bg-canvas px-4 text-base text-foreground outline-none placeholder:text-muted/70 focus:border-accent focus:ring-2 focus:ring-accent/25;
+  }
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--color-foreground);
+    caret-color: var(--color-foreground);
+    box-shadow: 0 0 0 1000px var(--color-canvas) inset;
+    transition: background-color 9999s ease-out;
   }
   button, a { @apply focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cyan; }
   button { @apply cursor-pointer disabled:cursor-wait; }
@@ -59,17 +108,12 @@
     position: absolute;
     inset: 8% -3% 4%;
     z-index: -1;
-    background: radial-gradient(ellipse, #7837ff35, transparent 68%);
+    background: radial-gradient(ellipse, #7837ff24, transparent 68%);
   }
   .preview-card {
     @apply relative overflow-hidden rounded-[2rem] border border-violet-300/25 p-5 sm:p-6;
-    background: linear-gradient(150deg, #3f257d 0%, #21153f 26%, #110e1c 65%, #20103d 100%);
-    box-shadow: inset 0 1px 0 #ffffff25, 0 24px 80px #00000075;
-  }
-  .preview-scan {
-    @apply flex items-center justify-center rounded-2xl border border-violet-300/25;
-    background: radial-gradient(ellipse, #823cdb65, #261340 70%);
-    box-shadow: inset 0 0 28px #9c52ff12;
+    background: linear-gradient(180deg, #151221 0%, #100e1a 100%);
+    box-shadow: inset 0 1px 0 #ffffff0d, 0 24px 70px #00000070;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -85,20 +129,21 @@
   html, body { background: white !important; color: black !important; }
   .print-hidden { display: none !important; }
   .label-sheet { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 8mm !important; }
-  .qr-label { break-inside: avoid; border: 1px solid #ccc !important; border-radius: 0 !important; color: black !important; background: white !important; padding: 5mm !important; print-color-adjust: exact; }
+  .qr-label { break-inside: avoid; border: 1px solid #ccc !important; border-radius: 0 !important; color: black !important; background: white !important; padding: 5mm !important; box-shadow: none !important; print-color-adjust: exact; }
   .qr-label img { width: 44mm !important; height: 44mm !important; }
 }
 
 /* Modal company settings panel, above the current page. */
 .bottom-sheet {
   position: fixed;
+  display: none;
+  flex-direction: column;
   inset: auto 0 0;
   margin: 0 auto;
   width: min(100%, 40rem);
   max-width: 100%;
   max-height: 90dvh;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  overflow: hidden;
   padding: 0;
   border: 1px solid var(--color-line);
   border-bottom: 0;
@@ -108,6 +153,7 @@
   box-shadow: 0 -12px 60px #00000060;
 }
 .bottom-sheet[open] {
+  display: flex;
   animation: sheet-enter 260ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 .bottom-sheet::backdrop {

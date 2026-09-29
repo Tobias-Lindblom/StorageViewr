@@ -14,8 +14,8 @@ export default async function WarehousesPage() {
   return (
     <AppShell context={context}>
       <PageHeading
-        title="Dina lager"
-        description="Fysiska lager och deras lagerplatser."
+        title="Lager"
+        description="Fysiska lager och tillhörande lagerplatser."
         action={
           admin ? (
             <Link className="button" href="/warehouses/new">
@@ -39,35 +39,52 @@ export default async function WarehousesPage() {
           och platser.{!admin && " Be en administratör om hjälp."}
         </EmptyState>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="overflow-hidden rounded-2xl border border-line bg-surface">
           {warehouses.map((warehouse) => (
             <Link
               key={warehouse.id}
               href={"/warehouses/" + warehouse.id}
-              className="panel p-5! transition hover:border-accent/60"
+              className="group flex min-h-24 items-center gap-4 border-b border-line/60 px-5 py-4 transition last:border-0 hover:bg-surface-raised sm:px-6"
             >
-              <div className="mb-5 flex items-center justify-between">
-                <span className="rounded-xl bg-violet-500/10 p-3 text-accent">
-                  <AppIcon name="warehouse" />
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-accent ring-1 ring-inset ring-violet-400/15">
+                <AppIcon name="warehouse" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <strong className="block wrap-break-word font-semibold">
+                  {warehouse.name}
+                </strong>
+                <span className="mt-1 block wrap-break-word text-xs leading-5 text-muted">
+                  {warehouse.code}
+                  <span aria-hidden="true"> · </span>
+                  {warehouse.locationCount}{" "}
+                  {warehouse.locationCount === 1
+                    ? "aktiv plats"
+                    : "aktiva platser"}
                 </span>
+              </span>
+              <span
+                className={
+                  warehouse.active
+                    ? "inline-flex shrink-0 items-center gap-2 text-xs text-cyan"
+                    : "inline-flex shrink-0 items-center gap-2 text-xs text-muted"
+                }
+              >
                 <span
                   className={
                     warehouse.active
-                      ? "text-xs text-cyan"
-                      : "text-xs text-muted"
+                      ? "h-1.5 w-1.5 rounded-full bg-cyan"
+                      : "h-1.5 w-1.5 rounded-full bg-muted"
                   }
-                >
+                  aria-hidden="true"
+                />
+                <span className="sr-only sm:not-sr-only">
                   {warehouse.active ? "Aktivt" : "Inaktivt"}
                 </span>
-              </div>
-              <h2 className="mb-2 wrap-break-word text-lg">{warehouse.name}</h2>
-              <p className="mb-5 text-xs text-muted">{warehouse.code}</p>
-              <div className="flex items-center justify-between border-t border-line pt-4 text-sm">
-                <span>{warehouse.locationCount} aktiva platser</span>
-                <span className="text-accent" aria-hidden="true">
-                  <MaterialArrow name="forward" />
-                </span>
-              </div>
+              </span>
+              <MaterialArrow
+                size={18}
+                className="shrink-0 text-muted transition group-hover:translate-x-0.5 group-hover:text-accent"
+              />
             </Link>
           ))}
         </div>

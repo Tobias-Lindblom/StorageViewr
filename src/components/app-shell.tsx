@@ -18,8 +18,8 @@ export async function AppShell({
     getAccount(context),
   ]);
   return (
-    <div className="mx-auto max-w-7xl px-4 pb-12 sm:px-7">
-      <header className="print-hidden flex min-h-24 items-center justify-between gap-3 border-b border-line/60">
+    <div className="mx-auto flex h-dvh max-w-7xl flex-col overflow-hidden px-4 sm:px-7 print:h-auto print:max-w-none print:overflow-visible print:px-0">
+      <header className="print-hidden relative z-40 flex min-h-20 shrink-0 items-center justify-between gap-3 sm:min-h-22">
         <BrandLogo href="/dashboard" />
         <AccountMenu
           account={account}
@@ -30,11 +30,14 @@ export async function AppShell({
           }}
         />
       </header>
-      <div className="grid items-start gap-7 pt-6 lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-9 print:pt-0">
-        <aside className="print-hidden">
+      <div className="grid min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] lg:grid-cols-[200px_minmax(0,1fr)] lg:grid-rows-1 lg:gap-9 print:block">
+        <aside className="print-hidden pb-5 pt-1 lg:min-h-0 lg:overflow-y-auto lg:py-6">
           <AppNav />
         </aside>
-        <main id="main-content" className="min-w-0">
+        <main
+          id="main-content"
+          className="min-w-0 overflow-y-auto overscroll-contain pb-12 lg:py-6 print:overflow-visible print:py-0"
+        >
           {children}
         </main>
       </div>

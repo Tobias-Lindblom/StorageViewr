@@ -8,6 +8,27 @@ import { pageResource } from "@/lib/server/page-resource";
 import { listMovements } from "@/features/inventory/service";
 import { historyQuerySchema } from "@/validation/inventory";
 
+function movementLabel(type: string) {
+  switch (type) {
+    case "INITIAL":
+      return "Första placering";
+    case "RECEIPT":
+      return "Inleverans";
+    case "ISSUE":
+      return "Uttag";
+    case "TRANSFER_OUT":
+      return "Flytt från plats";
+    case "TRANSFER_IN":
+      return "Flytt till plats";
+    case "CORRECTION":
+      return "Korrigering";
+    case "INVENTORY":
+      return "Inventering";
+    default:
+      return "Saldoändring";
+  }
+}
+
 export default async function StockHistoryPage({
   searchParams,
 }: {
@@ -37,17 +58,20 @@ export default async function StockHistoryPage({
         className="mb-4 inline-flex min-h-13 items-center gap-2 text-sm text-accent"
       >
         <MaterialArrow name="back" />
-        Tillbaka
+        {query.productId ? "Till produkten" : "Till lagerplatsen"}
       </Link>
       <PageHeading
         title="Saldohistorik"
-        description="Varje ändring, med antal, orsak och vem som registrerade den."
+        description="Alla lagerhändelser med saldo, orsak och utförare."
       />
       {result.items.length ? (
-        <ol className="space-y-4">
+        <ol className="overflow-hidden rounded-2xl border border-line bg-surface">
           {result.items.map((item) => (
-            <li key={item.id} className="panel p-5!">
-              <div className="flex flex-wrap items-start justify-between gap-3">
+            <li
+              key={item.id}
+              className="border-b border-line/60 p-5 last:border-0 sm:p-6"
+            >
+              <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
                   <p className="wrap-break-word font-semibold">
                     {item.productName}
@@ -58,7 +82,7 @@ export default async function StockHistoryPage({
                 </div>
                 <span
                   className={
-                    "rounded-lg px-3 py-2 text-sm font-semibold tabular-nums " +
+                    "shrink-0 rounded-full px-2.5 py-1 text-sm font-semibold tabular-nums " +
                     (item.difference < 0
                       ? "bg-rose-400/10 text-rose-200"
                       : "bg-cyan/10 text-cyan")
@@ -68,50 +92,41 @@ export default async function StockHistoryPage({
                   {item.difference.toLocaleString("sv-SE")} st
                 </span>
               </div>
-              <p className="mt-3 flex flex-wrap items-center gap-2 text-sm">
-                {item.previousQuantity.toLocaleString("sv-SE")}{" "}
-                <MaterialArrow /> {item.newQuantity.toLocaleString("sv-SE")} st
-                <span className="text-xs text-muted">
-                  ·{" "}
-                  {item.type === "INITIAL"
-                    ? "Första placering"
-                    : item.type === "RECEIPT"
-                      ? "Inleverans"
-                      : item.type === "ISSUE"
-                        ? "Uttag"
-                        : item.type === "TRANSFER_OUT"
-                          ? "Flytt från plats"
-                          : item.type === "TRANSFER_IN"
-                            ? "Flytt till plats"
-                            : item.type === "CORRECTION"
-                              ? "Korrigering"
-                    : item.type === "INVENTORY"
-                      ? "Inventering"
-                      : "Saldoändring"}
+              <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
+                <span className="font-medium text-accent">
+                  {movementLabel(item.type)}
                 </span>
-              </p>
-              <p className="mt-3 wrap-break-word text-sm leading-7">
+                <span className="inline-flex items-center gap-2 tabular-nums">
+                  {item.previousQuantity.toLocaleString("sv-SE")}
+                  <MaterialArrow size={17} className="text-muted" />
+                  {item.newQuantity.toLocaleString("sv-SE")} st
+                </span>
+              </div>
+              <p className="mt-3 wrap-break-word text-sm leading-6">
                 {item.reason}
               </p>
-              {item.inventorySessionId && (
-                <Link
-                  className="mt-1 inline-flex min-h-11 items-center gap-2 text-sm text-cyan"
-                  href={"/inventories/" + item.inventorySessionId}
-                >
-                  Visa inventering
-                  <MaterialArrow />
-                </Link>
-              )}
-              <p className="mt-3 text-xs leading-6 text-muted">
-                {item.performedByName} ·{" "}
-                <time dateTime={item.createdAt}>
-                  {new Date(item.createdAt).toLocaleString("sv-SE", {
-                    timeZone: "Europe/Stockholm",
-                    dateStyle: "medium",
-                    timeStyle: "short",
-                  })}
-                </time>
-              </p>
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-xs leading-6 text-muted">
+                <p>
+                  {item.performedByName}
+                  <span aria-hidden="true"> · </span>
+                  <time dateTime={item.createdAt}>
+                    {new Date(item.createdAt).toLocaleString("sv-SE", {
+                      timeZone: "Europe/Stockholm",
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    })}
+                  </time>
+                </p>
+                {item.inventorySessionId && (
+                  <Link
+                    className="inline-flex min-h-9 items-center gap-2 text-sm text-cyan"
+                    href={"/inventories/" + item.inventorySessionId}
+                  >
+                    Visa inventering
+                    <MaterialArrow size={18} />
+                  </Link>
+                )}
+              </div>
             </li>
           ))}
         </ol>

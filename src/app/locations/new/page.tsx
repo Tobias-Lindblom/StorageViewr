@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
+import { MaterialArrow } from "@/components/material-arrow";
 import { PageHeading } from "@/components/page-heading";
 import { EmptyState } from "@/components/empty-state";
 import { LocationForm } from "@/features/locations/location-form";
@@ -27,10 +28,16 @@ export default async function NewLocationPage({
   );
   return (
     <AppShell context={context}>
+      <Link
+        href="/locations"
+        className="mb-4 inline-flex min-h-13 items-center gap-2 text-sm text-accent"
+      >
+        <MaterialArrow name="back" />
+        Alla lagerplatser
+      </Link>
       <PageHeading
-        eyebrow="Lagerstruktur"
         title="Skapa lagerplatser"
-        description="Välj zon och sektion. Skapa en plats eller en följd med upp till 100 positioner."
+        description="Skapa en lagerplats eller en följd med upp till 100 positioner."
       />
       {warehouses.length ? (
         <LocationForm warehouses={warehouses} warehouseId={warehouseId} />

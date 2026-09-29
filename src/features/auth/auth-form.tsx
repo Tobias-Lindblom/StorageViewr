@@ -45,20 +45,25 @@ export function AuthForm({
           <input
             name="name"
             autoComplete="name"
+            placeholder="Exempel: Tobias Andersson"
             required
             minLength={2}
             maxLength={100}
+            disabled={pending}
           />
         </label>
       )}
       <label>
-        E-post
+        E-postadress
         <input
           name="email"
           type="email"
           autoComplete="email"
+          placeholder="namn@foretag.se"
+          spellCheck={false}
           required
           maxLength={254}
+          disabled={pending}
         />
       </label>
       <label>
@@ -70,23 +75,32 @@ export function AuthForm({
           required
           minLength={registration ? 12 : 1}
           maxLength={128}
+          disabled={pending}
         />
+        {registration && (
+          <span className="mt-2 block text-xs leading-5 font-normal text-muted">
+            Använd minst 12 tecken.
+          </span>
+        )}
       </label>
-      {registration && (
-        <p className="text-sm text-muted">Använd minst 12 tecken.</p>
-      )}
       {error && (
         <p role="alert" className="error">
           {error}
         </p>
       )}
       <button className="button w-full" disabled={pending}>
-        {pending ? "Vänta…" : registration ? "Skapa konto" : "Logga in"}
+        {pending
+          ? registration
+            ? "Skapar konto…"
+            : "Loggar in…"
+          : registration
+            ? "Skapa konto"
+            : "Logga in"}
       </button>
-      <p className="text-center text-sm text-muted">
+      <p className="border-t border-line/60 pt-5 text-center text-sm text-muted">
         {registration ? "Har du redan ett konto? " : "Ny här? "}
         <Link
-          className="text-cyan underline"
+          className="font-medium text-cyan hover:underline"
           href={
             (registration ? "/login" : "/register") +
             (returnTo ? "?next=" + encodeURIComponent(returnTo) : "")

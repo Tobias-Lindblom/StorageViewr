@@ -2,8 +2,9 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { clientApi } from "@/lib/client-api";
+import { AppIcon } from "./app-icon";
 export function LogoutButton({
-  className = "button-secondary",
+  className = "button-secondary gap-3",
 }: {
   className?: string;
 }) {
@@ -28,7 +29,8 @@ export function LogoutButton({
           }
         }}
       >
-        Logga ut
+        <AppIcon name="logout" />
+        <span>{pending ? "Loggar ut…" : "Logga ut"}</span>
       </button>
       {error && (
         <p role="alert" className="error">

@@ -40,13 +40,7 @@ export function OrganizationList({
 
   return (
     <div>
-      <div
-        className={
-          organizations.length === 1
-            ? "grid gap-4"
-            : "grid gap-4 md:grid-cols-2"
-        }
-      >
+      <div className="overflow-hidden rounded-2xl border border-line bg-surface">
         {organizations.map((organization) => {
           const selected = organization.id === selectedOrganizationId;
           const opening = organization.id === pendingId;
@@ -65,46 +59,43 @@ export function OrganizationList({
               onClick={() => selectOrganization(organization.id)}
               disabled={pendingId !== null}
               aria-busy={opening}
-              className={`group flex min-w-0 flex-col rounded-2xl border p-5 text-left transition hover:border-accent/70 hover:bg-surface-raised disabled:opacity-60 sm:p-6 ${selected ? "border-violet-400/40 bg-linear-to-br from-violet-900/20 to-surface" : "border-line bg-surface"}`}
+              className={`group flex min-h-22 w-full min-w-0 items-center gap-4 border-b border-line/60 px-4 py-4 text-left transition last:border-0 hover:bg-surface-raised disabled:opacity-60 sm:px-5 ${selected ? "bg-violet-500/5" : ""}`}
             >
-              <span className="mb-5 flex w-full items-center justify-between gap-3">
-                <span
-                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-violet-400/25 bg-violet-500/10 text-lg font-semibold text-accent"
-                  aria-hidden="true"
-                >
-                  {initials}
-                </span>
-                <span
-                  className={`rounded-full border px-2.5 py-1 text-[11px] ${organization.role === "admin" ? "border-cyan/15 bg-cyan/5 text-cyan" : "border-line bg-surface-raised text-muted"}`}
-                >
+              <span
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-base font-semibold text-accent ring-1 ring-inset ring-violet-400/20"
+                aria-hidden="true"
+              >
+                {initials}
+              </span>
+              <span className="min-w-0 flex-1">
+                <strong className="block wrap-break-word font-semibold">
+                  {organization.name}
+                </strong>
+                <span className="mt-1 block wrap-break-word text-xs leading-5 text-muted">
+                  {organization.slug}
+                  <span aria-hidden="true"> · </span>
                   {organization.role === "admin"
                     ? "Administratör"
                     : "Lagerpersonal"}
+                  {selected && (
+                    <span className="text-accent"> · Valt företag</span>
+                  )}
                 </span>
               </span>
-              <strong className="mb-1.5 w-full wrap-break-word text-lg font-semibold sm:text-xl">
-                {organization.name}
-              </strong>
-              <span className="mb-5 w-full wrap-break-word text-xs leading-5 text-muted">
-                {organization.slug}
-                {selected && (
-                  <span className="ml-2 text-accent">· Valt företag</span>
-                )}
-              </span>
-              <span className="mt-auto flex min-h-11 w-full items-center justify-between gap-3 border-t border-line/70 pt-4 text-sm font-medium text-foreground">
-                <span>
-                  {opening
-                    ? "Öppnar…"
-                    : returnTo
-                      ? "Öppna lagerplats"
-                      : "Öppna översikt"}
+              {opening ? (
+                <span className="shrink-0 text-xs text-muted" role="status">
+                  Öppnar…
                 </span>
+              ) : (
                 <span
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-accent transition group-hover:bg-violet-500/20"
+                  className="shrink-0 text-muted transition group-hover:translate-x-0.5 group-hover:text-accent"
                   aria-hidden="true"
                 >
                   <MaterialArrow name="forward" />
                 </span>
+              )}
+              <span className="sr-only">
+                {returnTo ? "Öppna lagerplats" : "Öppna översikt"}
               </span>
             </button>
           );

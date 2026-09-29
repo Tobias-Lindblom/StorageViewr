@@ -73,11 +73,13 @@ export function LocationList({
   warehouses,
   warehouseId,
   admin,
+  totalShownInHeading = false,
 }: {
   locations: Locations;
   warehouses?: { id: string; name: string; active: boolean }[];
   warehouseId?: string;
   admin: boolean;
+  totalShownInHeading?: boolean;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -93,6 +95,7 @@ export function LocationList({
     (count, warehouse) => count + warehouse.shelves.length,
     0,
   );
+  const showWarehouseHeadings = Boolean(warehouses) || groups.length > 1;
 
   return (
     <div>
@@ -130,12 +133,12 @@ export function LocationList({
           </div>
         )}
         <label className="min-w-0">
-          Sök lagerplats
+          Sök
           <input
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Platskod eller lagernamn"
+            placeholder={warehouses ? "Platskod eller lagernamn" : "Platskod"}
           />
         </label>
       </div>
@@ -145,10 +148,16 @@ export function LocationList({
           "Hämtar lagerplatser…"
         ) : (
           <>
-            {normalized
-              ? filtered.length + " av " + locations.length
-              : filtered.length}{" "}
-            {filtered.length === 1 && !normalized ? "plats" : "platser"} ·{" "}
+            {normalized ? (
+              <>
+                {filtered.length} av {locations.length} platser ·{" "}
+              </>
+            ) : totalShownInHeading ? null : (
+              <>
+                {filtered.length}{" "}
+                {filtered.length === 1 ? "plats" : "platser"} ·{" "}
+              </>
+            )}
             {shelfCount} {shelfCount === 1 ? "sektion" : "sektioner"}
           </>
         )}
@@ -161,30 +170,39 @@ export function LocationList({
         {groups.map((warehouse) => (
           <section
             key={warehouse.id}
-            aria-labelledby={"warehouse-" + warehouse.id}
+            aria-labelledby={
+              showWarehouseHeadings ? "warehouse-" + warehouse.id : undefined
+            }
+            aria-label={
+              showWarehouseHeadings
+                ? undefined
+                : warehouse.name + " lagerplatser"
+            }
           >
-            <div className="mb-3 flex min-w-0 items-center gap-2 text-muted">
-              <AppIcon
-                name="warehouse"
-                className="shrink-0"
-                width={18}
-                height={18}
-              />
-              <h2
-                id={"warehouse-" + warehouse.id}
-                className="mb-0! min-w-0 wrap-break-word text-sm font-medium"
-              >
-                {warehouse.name}
-              </h2>
-            </div>
-            <div className="space-y-3">
+            {showWarehouseHeadings && (
+              <div className="mb-3 flex min-w-0 items-center gap-2 text-muted">
+                <AppIcon
+                  name="warehouse"
+                  className="shrink-0"
+                  width={18}
+                  height={18}
+                />
+                <h2
+                  id={"warehouse-" + warehouse.id}
+                  className="mb-0! min-w-0 wrap-break-word text-sm font-medium"
+                >
+                  {warehouse.name}
+                </h2>
+              </div>
+            )}
+            <div className="overflow-hidden rounded-2xl border border-line bg-surface">
               {warehouse.shelves.map((shelf) => (
                 <details
                   key={shelf.key + ":" + normalized}
                   open={normalized.length > 0}
-                  className="group rounded-2xl border border-line bg-surface"
+                  className="group border-b border-line/60 last:border-0"
                 >
-                  <summary className="flex min-h-20 cursor-pointer list-none items-center gap-3 rounded-2xl px-4 py-4 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cyan sm:px-5 [&::-webkit-details-marker]:hidden">
+                  <summary className="flex min-h-20 cursor-pointer list-none items-center gap-3 px-4 py-4 transition hover:bg-surface-raised focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-cyan sm:px-5 [&::-webkit-details-marker]:hidden">
                     <div className="min-w-0 flex-1">
                       <h3 className="wrap-break-word text-base font-semibold">
                         {shelf.key}
@@ -207,7 +225,7 @@ export function LocationList({
                       <li key={location.id} className="min-w-0">
                         <Link
                           href={"/locations/" + location.id}
-                          className="flex min-h-16 items-center justify-between gap-3 rounded-lg px-2 py-3 transition hover:bg-surface-raised"
+                          className="group/location flex min-h-16 items-center justify-between gap-3 rounded-lg px-2 py-3 transition hover:bg-surface-raised"
                         >
                           <span className="min-w-0">
                             <span className="block break-all text-sm font-medium tabular-nums">
@@ -231,7 +249,7 @@ export function LocationList({
                                     ? "bg-amber-200"
                                     : location.occupied
                                       ? "bg-cyan"
-                                      : "border border-muted")
+                                      : "bg-muted/40")
                                 }
                               />
                               {!location.active
@@ -243,9 +261,9 @@ export function LocationList({
                           </span>
                           <span
                             aria-hidden="true"
-                            className="shrink-0 text-accent"
+                            className="shrink-0 text-muted transition group-hover/location:translate-x-0.5 group-hover/location:text-accent"
                           >
-                            <MaterialArrow name="forward" />
+                            <MaterialArrow name="forward" size={18} />
                           </span>
                         </Link>
                       </li>

@@ -30,7 +30,9 @@ export function AccountMenu({
     .join("")
     .toLocaleUpperCase("sv");
   const menuLink =
-    "flex min-h-13 items-center gap-3 rounded-xl px-3 text-sm transition hover:bg-violet-400/10";
+    "group flex min-h-12 items-center gap-3 rounded-xl px-3 text-sm font-medium text-foreground transition hover:bg-white/[0.045]";
+  const menuIcon =
+    "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/[0.035] text-muted transition group-hover:text-accent";
 
   useEffect(() => {
     if (!open) return;
@@ -71,10 +73,10 @@ export function AccountMenu({
           aria-label="Företag och konto"
           aria-expanded={open}
           aria-controls={menuId}
-          className="group inline-flex h-13 w-13 items-center justify-center rounded-xl text-accent"
+          className="group inline-flex h-12 w-12 items-center justify-center rounded-xl text-accent"
           onClick={() => setOpen((value) => !value)}
         >
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-violet-400/40 bg-violet-500/15 transition group-hover:border-violet-300/60 group-hover:bg-violet-500/25 group-aria-expanded:bg-violet-500/25">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-violet-400/35 bg-violet-500/12 transition group-hover:border-violet-300/60 group-hover:bg-violet-500/20 group-aria-expanded:border-violet-300/60 group-aria-expanded:bg-violet-500/25">
             <svg
               aria-hidden="true"
               width="19"
@@ -95,22 +97,22 @@ export function AccountMenu({
         <div
           id={menuId}
           hidden={!open}
-          className="absolute right-0 top-full z-50 mt-3 max-h-[calc(100dvh-7rem)] w-80 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-3xl border border-violet-300/20 bg-surface p-3 shadow-2xl shadow-black/60"
+          className="absolute right-0 top-full z-50 mt-2 max-h-[calc(100dvh-6rem)] w-76 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-2xl border border-line/55 bg-surface/95 p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.025),0_18px_48px_rgba(0,0,0,0.5)] backdrop-blur-xl"
         >
           <section aria-label="Ditt konto">
-            <div className="px-3 pb-5 pt-3 text-center">
+            <div className="flex min-w-0 items-center gap-3 px-2 py-3">
               <span
                 aria-hidden="true"
-                className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full border border-violet-300/40 bg-linear-to-br from-violet-400/30 via-violet-600/25 to-surface-raised text-xl font-semibold text-accent shadow-lg shadow-violet-950/30"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-violet-400/25 bg-violet-500/12 text-sm font-semibold text-accent"
               >
                 {initials}
               </span>
-              <p className="wrap-break-word text-base font-semibold">
-                {account.name}
-              </p>
-              <p className="mt-1 break-all text-xs leading-5 text-muted">
-                {account.email}
-              </p>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold">{account.name}</p>
+                <p className="mt-1 truncate text-xs text-muted">
+                  {account.email}
+                </p>
+              </div>
             </div>
             <button
               type="button"
@@ -119,25 +121,33 @@ export function AccountMenu({
                 setOpen(false);
                 setActiveSheet("account");
               }}
-              className="flex min-h-13 w-full items-center gap-3 rounded-full bg-violet-400/15 px-4 text-sm font-medium transition hover:bg-violet-400/25"
+              className={menuLink + " w-full text-left"}
             >
-              <span className="shrink-0 text-accent">
+              <span className={menuIcon}>
                 <AppIcon name="user" />
               </span>
-              Kontoinställningar
+              <span>Kontoinställningar</span>
+              <MaterialArrow
+                name="forward"
+                size={17}
+                className="ml-auto text-muted/70"
+              />
             </button>
           </section>
           {organization && (
             <section
               aria-label="Aktuellt företag"
-              className="mt-3 rounded-2xl bg-surface-raised/70 p-2"
+              className="mt-2 border-t border-line/50 pt-2"
             >
-              <div className="flex items-start gap-3 px-3 py-3">
-                <span className="mt-0.5 shrink-0 text-accent">
+              <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">
+                Aktuellt företag
+              </p>
+              <div className="flex items-center gap-3 px-3 py-2.5">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-accent">
                   <AppIcon name="warehouse" />
                 </span>
                 <div className="min-w-0">
-                  <p className="wrap-break-word text-sm font-semibold">
+                  <p className="truncate text-sm font-semibold">
                     {organization.name}
                   </p>
                   <p className="mt-1 text-xs text-muted">
@@ -157,10 +167,15 @@ export function AccountMenu({
                   }}
                   className={menuLink + " w-full text-left"}
                 >
-                  <span className="shrink-0 text-muted">
+                  <span className={menuIcon}>
                     <AppIcon name="settings" />
                   </span>
-                  Företagsinställningar
+                  <span>Företagsinställningar</span>
+                  <MaterialArrow
+                    name="forward"
+                    size={17}
+                    className="ml-auto text-muted/70"
+                  />
                 </button>
               )}
               <Link
@@ -168,13 +183,15 @@ export function AccountMenu({
                 onClick={() => setOpen(false)}
                 className={menuLink}
               >
-                <MaterialArrow name="swap" className="text-muted" />
-                Byt företag
+                <span className={menuIcon}>
+                  <MaterialArrow name="swap" size={19} />
+                </span>
+                <span>Byt företag</span>
               </Link>
             </section>
           )}
-          <div className="mt-4">
-            <LogoutButton className="flex min-h-13 w-full items-center justify-center rounded-full border border-violet-300/25 bg-violet-400/10 px-4 text-sm font-medium transition hover:border-accent/60 hover:bg-violet-400/20 disabled:opacity-60" />
+          <div className="mt-2 border-t border-line/50 pt-2">
+            <LogoutButton className="flex min-h-12 w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-medium text-muted transition hover:bg-rose-400/10 hover:text-rose-200 disabled:opacity-60" />
           </div>
         </div>
       </div>

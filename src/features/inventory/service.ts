@@ -78,6 +78,7 @@ export async function listStock(context: TenantContext, input: unknown) {
   const records = await InventoryLevel.find({
     ...scope,
     organizationId: context.organizationId,
+    quantity: { $gt: 0 },
   })
     .sort({ _id: 1 })
     .lean();

@@ -6,25 +6,32 @@ import { InventoryPreview } from "@/components/inventory-preview";
 const steps = [
   {
     number: "01",
-    title: "Hitta rätt plats",
-    text: "En QR-kod på hyllan gör det enkelt att hitta produkterna där de faktiskt ligger.",
+    title: "Strukturera lagret",
+    text: "Skapa lager och platser, skriv ut QR-etiketter och se direkt vilka platser som är tomma eller upptagna.",
   },
   {
     number: "02",
-    title: "Räkna på mobilen",
-    text: "Ange det du ser framför dig. Ett tydligt flöde, direkt ute på lagret.",
+    title: "Registrera händelser",
+    text: "Hantera inleveranser, uttag och interna flyttar med en spårbar historik för varje saldo.",
   },
   {
     number: "03",
-    title: "Följ upp skillnaden",
-    text: "Se vilka antal som avviker och följ lagerförändringarna i historiken.",
+    title: "Inventera och följ upp",
+    text: "Skanna platsen, räkna på mobilen, granska avvikelser och exportera resultatet som PDF.",
   },
+];
+
+const highlights = [
+  "QR-märkta lagerplatser",
+  "Spårbar saldohistorik",
+  "Mobil inventering",
+  "PDF-rapporter",
 ];
 
 export default function Home() {
   return (
     <main id="toppen" className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-12">
-      <header className="flex min-h-24 items-center justify-between gap-4 border-b border-line/50">
+      <header className="flex min-h-20 items-center justify-between gap-4 sm:min-h-22">
         <BrandLogo />
         <nav aria-label="Huvudmeny" className="flex items-center gap-8">
           <Link className="button-secondary min-h-11! px-4!" href="/login">
@@ -42,26 +49,35 @@ export default function Home() {
             <span className="gradient-text">Under kontroll.</span>
           </h1>
           <p className="mb-8 max-w-lg text-base leading-7 text-muted sm:text-lg sm:leading-8">
-            Vi bygger ett enklare sätt att se vad som finns, var det ligger och
-            om antalet stämmer. För små företag med riktiga lager.
+            Samla lagerplatser, produkter, saldon och inventeringar i ett
+            mobilanpassat system. För mindre företag som vill veta vad som
+            finns och var det ligger.
           </p>
           <div className="flex flex-col gap-3 min-[400px]:flex-row">
             <Link href="/register" className="button">
-              Skapa ditt konto{" "}
+              Skapa konto{" "}
               <span aria-hidden="true">
                 <MaterialArrow name="outward" />
               </span>
             </Link>
             <Link href="#flode" className="button-secondary">
-              Utforska flödet{" "}
+              Se hur det fungerar{" "}
               <span className="ml-3 text-accent" aria-hidden="true">
                 <MaterialArrow name="down" />
               </span>
             </Link>
           </div>
-          <p className="mt-5 text-xs leading-6 text-muted">
-            Under utveckling · Börja med ditt konto och företag.
-          </p>
+          <ul className="mt-6 flex max-w-xl flex-wrap gap-x-5 gap-y-2 text-xs text-muted">
+            {highlights.map((highlight) => (
+              <li key={highlight} className="flex items-center gap-2">
+                <span
+                  aria-hidden="true"
+                  className="h-1.5 w-1.5 rounded-full bg-accent"
+                />
+                {highlight}
+              </li>
+            ))}
+          </ul>
         </div>
         <InventoryPreview />
       </section>
@@ -72,11 +88,11 @@ export default function Home() {
       >
         <div className="mb-9 max-w-xl">
           <h2 className="mb-3 text-2xl font-semibold tracking-tight sm:text-3xl">
-            Från hylla till överblick.
+            Från lagerplats till färdig rapport.
           </h2>
           <p className="leading-7 text-muted">
-            Byggt med mobilen i åtanke. Med utrymme för administration på en
-            större skärm.
+            Ett sammanhängande arbetsflöde på mobilen, med överblick och
+            administration när du behöver det.
           </p>
         </div>
         <div className="grid gap-4 md:grid-cols-3">

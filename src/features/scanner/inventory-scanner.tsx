@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { AppIcon } from "@/components/app-icon";
 import type { InventoryDetail } from "@/features/inventory/session-queries";
 
 type Resolved = { inventory: InventoryDetail; locationId: string };
@@ -23,6 +24,7 @@ export function InventoryScanner({
     "starting",
   );
   const [error, setError] = useState("");
+  const [cameraIssue, setCameraIssue] = useState(false);
   const [busy, setBusy] = useState(false);
   const [code, setCode] = useState("");
 
@@ -33,6 +35,7 @@ export function InventoryScanner({
     setState("paused");
     setBusy(true);
     setError("");
+    setCameraIssue(false);
     const controller = new AbortController();
     request.current = controller;
     try {
@@ -96,7 +99,7 @@ export function InventoryScanner({
       try {
         if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
           throw new Error(
-            "Kameran behöver en säker anslutning (HTTPS). Ange platskoden nedan för att fortsätta.",
+            "Kameran kräver en säker anslutning (HTTPS).",
           );
         }
         const { default: jsQR } = await import("jsqr");
@@ -121,12 +124,13 @@ export function InventoryScanner({
         element.srcObject = stream;
         await element.play();
         if (disposed || stopped) return;
+        setCameraIssue(false);
         setState("scanning");
         const canvas = document.createElement("canvas");
         const context = canvas.getContext("2d", { willReadFrequently: true });
         if (!context)
           throw new Error(
-            "Kamerabilden kunde inte läsas. Ange platskoden nedan.",
+            "Kamerabilden kunde inte läsas.",
           );
         function frame() {
           if (disposed || stopped || !element || !context) return;
@@ -159,8 +163,9 @@ export function InventoryScanner({
           } catch {
             stop();
             setState("paused");
+            setCameraIssue(true);
             setError(
-              "Kamerabilden kunde inte läsas. Försök igen eller ange platskoden.",
+              "Kamerabilden kunde inte läsas. Försök starta kameran igen.",
             );
           }
         }
@@ -169,16 +174,17 @@ export function InventoryScanner({
         stop();
         if (disposed) return;
         setState("paused");
+        setCameraIssue(true);
         setError(
           error instanceof DOMException && error.name === "NotAllowedError"
-            ? "Kameraåtkomst nekades. Tillåt kameran i webbläsaren eller ange platskoden nedan."
+            ? "Kameraåtkomst nekades. Tillåt kameran i webbläsarens inställningar och försök igen."
             : error instanceof DOMException &&
                 (error.name === "NotFoundError" ||
                   error.name === "NotReadableError")
-              ? "Ingen tillgänglig kamera hittades. Kontrollera kameran eller ange platskoden nedan."
+              ? "Ingen tillgänglig kamera hittades. Kontrollera att kameran inte används av en annan app."
               : error instanceof Error
                 ? error.message
-                : "Kameran kunde inte startas. Ange platskoden nedan.",
+                : "Kameran kunde inte startas.",
         );
       }
     }
@@ -201,59 +207,84 @@ export function InventoryScanner({
     void resolve({ code });
   }
   return (
-    <div className="space-y-5">
-      <p className="text-sm leading-7 text-muted">
-        Rikta kameran mot QR-etiketten för {locationCode}. Material och
-        antalsfält visas när rätt kod har lästs.
+    <div>
+      <p className="text-sm leading-6 text-muted">
+        Rikta kameran mot QR-etiketten på {locationCode}. Räkningen öppnas automatiskt när rätt kod har lästs.
       </p>
-      <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-line bg-canvas">
-        <video
-          ref={video}
-          muted
-          playsInline
-          autoPlay
-          aria-label="Kamera för QR-skanning"
-          className="h-full w-full object-contain"
-        />
-        {state === "scanning" && (
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-[15%] rounded-xl border-2 border-accent/70"
+      {state === "starting" || state === "scanning" ? (
+        <div className="relative mt-5 aspect-[4/3] overflow-hidden rounded-2xl border border-line bg-canvas">
+          <video
+            ref={video}
+            muted
+            playsInline
+            autoPlay
+            aria-label="Kamera för QR-skanning"
+            className="h-full w-full object-cover"
           />
-        )}
-        {state !== "scanning" && (
-          <div
-            className="absolute inset-0 flex items-center justify-center p-6 text-center text-sm text-muted"
-            role="status"
-          >
-            {busy
-              ? "Öppnar platsen…"
-              : state === "starting"
-                ? "Startar kameran…"
-                : "Kameran är pausad"}
+          {state === "scanning" ? (
+            <>
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-[16%] rounded-2xl border-2 border-white/70 shadow-[0_0_0_999px_rgba(9,8,16,0.3)]"
+              />
+              <p className="absolute inset-x-0 bottom-4 text-center text-xs font-medium text-white">
+                Söker efter QR-kod…
+              </p>
+            </>
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center bg-canvas/80 p-6 text-center text-sm text-muted" role="status">
+              Startar kameran…
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="mt-5 flex min-h-28 items-center gap-4 rounded-2xl border border-line bg-canvas p-5" role="status">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-surface-raised text-muted">
+            <AppIcon name="camera" />
+          </span>
+          <div>
+            <p className="text-sm font-medium">
+              {busy
+                ? "Verifierar platskoden…"
+                : error
+                  ? cameraIssue
+                    ? "Kameran är inte tillgänglig"
+                    : "Verifieringen avbröts"
+                  : "Kameran är pausad"}
+            </p>
+            {!busy && <p className="mt-1 text-xs leading-5 text-muted">Starta kameran igen eller verifiera platsen manuellt.</p>}
           </div>
-        )}
-      </div>
+        </div>
+      )}
       {error && (
-        <p role="alert" className="text-sm leading-6 text-rose-200">
-          {error}
-        </p>
+        <div role="alert" className="error mt-4">
+          <p className="font-medium">
+            {cameraIssue ? "Kunde inte använda kameran" : "Platsen kunde inte verifieras"}
+          </p>
+          <p className="mt-1 leading-5">{error}</p>
+        </div>
       )}
       {state === "paused" && !busy && (
         <button
-          className="button-secondary w-full"
+          type="button"
+          className="button-secondary mt-4 w-full"
           onClick={() => {
             setError("");
+            setCameraIssue(false);
             setState("starting");
             setAttempt((value) => value + 1);
           }}
         >
-          Starta kameran igen
+          Försök med kameran igen
         </button>
       )}
-      <form onSubmit={manual} className="border-t border-line/60 pt-5">
+      <form onSubmit={manual} className="mt-6 border-t border-line/60 pt-5">
+        <div className="mb-4">
+          <h3 className="mb-1! text-base!">Verifiera manuellt</h3>
+          <p className="text-xs leading-5 text-muted">Ange platskoden om QR-koden inte kan skannas.</p>
+        </div>
         <label>
-          Kan du inte skanna? Ange platskoden
+          Platskod
           <input
             name="locationCode"
             value={code}
@@ -261,7 +292,8 @@ export function InventoryScanner({
             maxLength={16}
             autoComplete="off"
             autoCapitalize="characters"
-            placeholder="A-01-02"
+            placeholder={locationCode}
+            spellCheck={false}
             disabled={busy}
             onChange={(event) => setCode(event.target.value)}
           />
@@ -270,7 +302,7 @@ export function InventoryScanner({
           className="button-secondary mt-3 w-full"
           disabled={busy || !code.trim()}
         >
-          Öppna plats
+          Verifiera plats
         </button>
       </form>
     </div>

@@ -29,12 +29,11 @@ export async function LocationDetail({
         Alla lagerplatser
       </Link>
 
-      <section className="panel" aria-labelledby="location-details-heading">
-        <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
+      <header className="mb-7">
+        <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <h1
-              id="location-details-heading"
-              className="mb-0! break-all text-xl! font-semibold sm:text-2xl!"
+              className="mb-0! break-all text-3xl! font-bold sm:text-4xl!"
             >
               {location.code}
             </h1>
@@ -44,56 +43,27 @@ export async function LocationDetail({
           </div>
           <span
             className={
-              "rounded-full border px-3 py-1 text-xs font-medium " +
-              (location.active
-                ? "border-cyan/20 bg-cyan/5 text-cyan"
-                : "border-line bg-canvas text-muted")
+              "inline-flex shrink-0 items-center gap-2 pt-2 text-xs " +
+              (location.active && location.warehouseActive
+                ? "text-cyan"
+                : "text-muted")
             }
           >
-            {location.active ? "Aktiv" : "Inaktiv"}
+            <span
+              aria-hidden="true"
+              className={
+                "h-1.5 w-1.5 rounded-full " +
+                (location.active && location.warehouseActive
+                  ? "bg-cyan"
+                  : "bg-muted")
+              }
+            />
+            {location.active && location.warehouseActive ? "Aktiv" : "Inaktiv"}
           </span>
         </div>
 
-        <div
-          className={
-            qr
-              ? "grid gap-7 md:grid-cols-[minmax(0,1fr)_280px] md:items-start"
-              : ""
-          }
-        >
-          <div className="min-w-0">
-            <h2 className="mb-5! text-lg!">Platsuppgifter</h2>
-            <dl className="grid grid-cols-2 gap-x-5 gap-y-6 text-sm sm:grid-cols-3">
-              {[
-                ["Zon", location.zone],
-                ["Sektion", location.shelf],
-                ["Position", location.position],
-              ].map(([label, value]) => (
-                <div key={label} className="min-w-0">
-                  <dt className="text-xs text-muted">{label}</dt>
-                  <dd className="mt-2 break-all font-medium">{value}</dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-
-          {qr && (
-            <div className="flex flex-col items-center rounded-2xl border border-line/60 bg-canvas p-4">
-              <h2 className="mb-4! text-base!">Platsens QR-kod</h2>
-              <Image
-                src={qr.image}
-                alt={"QR-kod för " + location.code}
-                width={196}
-                height={196}
-                unoptimized
-                className="h-auto max-w-full rounded-xl bg-white"
-              />
-            </div>
-          )}
-        </div>
-
         {admin && location.warehouseActive && (
-          <div className="mt-7 flex justify-end border-t border-line/60 pt-5">
+          <div className="mt-5">
             <Link
               className="button-secondary w-full sm:w-auto"
               href={"/locations/" + location.id + "/edit"}
@@ -102,6 +72,45 @@ export async function LocationDetail({
             </Link>
           </div>
         )}
+      </header>
+
+      <section aria-labelledby="location-details-heading">
+        <h2 id="location-details-heading" className="mb-4! text-xl!">
+          Platsuppgifter
+        </h2>
+        <div className="overflow-hidden rounded-2xl border border-line bg-surface">
+          <dl className="grid grid-cols-3 gap-4 p-5 text-sm sm:gap-6 sm:p-6">
+            {[
+              ["Zon", location.zone],
+              ["Sektion", location.shelf],
+              ["Position", location.position],
+            ].map(([label, value]) => (
+              <div key={label} className="min-w-0">
+                <dt className="text-xs text-muted">{label}</dt>
+                <dd className="mt-2 break-all font-medium">{value}</dd>
+              </div>
+            ))}
+          </dl>
+
+          {qr && (
+            <div className="border-t border-line/60 p-5 sm:grid sm:grid-cols-[minmax(0,1fr)_160px] sm:items-center sm:gap-7 sm:p-6">
+              <div className="min-w-0">
+                <h3 className="mb-2! text-base!">QR-kod</h3>
+                <p className="text-sm leading-6 text-muted">
+                  Används vid inventering och för att öppna platsen direkt.
+                </p>
+              </div>
+              <Image
+                src={qr.image}
+                alt={"QR-kod för " + location.code}
+                width={160}
+                height={160}
+                unoptimized
+                className="mx-auto mt-5 h-auto w-40 max-w-full rounded-xl bg-white sm:mt-0"
+              />
+            </div>
+          )}
+        </div>
       </section>
 
       <StockPanel

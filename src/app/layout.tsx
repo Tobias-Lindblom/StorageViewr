@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { ScrollbarActivity } from "@/components/scrollbar-activity";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -17,7 +18,10 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="sv">
-      <body>{children}</body>
+      <body>
+        <ScrollbarActivity />
+        {children}
+      </body>
     </html>
   );
 }

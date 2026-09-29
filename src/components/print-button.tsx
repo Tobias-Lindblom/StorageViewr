@@ -1,7 +1,7 @@
 "use client";
 export function PrintButton() {
   return (
-    <button className="button" onClick={() => window.print()}>
+    <button type="button" className="button w-full sm:w-auto" onClick={() => window.print()}>
       Skriv ut etiketter
     </button>
   );

@@ -23,7 +23,9 @@ export default async function WarehousePage({
     <AppShell context={context}>
       <PageHeading
         title={warehouse.name}
-        description={warehouse.address || "Ingen adress angiven."}
+        description={
+          warehouse.code + (warehouse.address ? " · " + warehouse.address : "")
+        }
         action={
           admin ? (
             <div className="flex gap-2">
@@ -45,11 +47,18 @@ export default async function WarehousePage({
           ) : undefined
         }
       />
-      <h2>
-        Lagerplatser <span className="text-muted">({locations.length})</span>
-      </h2>
+      <div className="mb-4 flex items-center gap-3">
+        <h2 className="mb-0! text-xl!">Lagerplatser</h2>
+        <span className="rounded-full border border-line bg-surface px-2.5 py-1 text-xs tabular-nums text-muted">
+          {locations.length}
+        </span>
+      </div>
       {locations.length ? (
-        <LocationList locations={locations} admin={admin} />
+        <LocationList
+          locations={locations}
+          admin={admin}
+          totalShownInHeading
+        />
       ) : (
         <EmptyState title="Ge varje plats en kod">
           Lägg till platser som A-01-01. Du kan skapa en hel sektion med

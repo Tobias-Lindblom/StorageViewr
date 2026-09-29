@@ -2,7 +2,17 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { clientApi } from "@/lib/client-api";
-export function OrganizationForm({ name }: { name?: string }) {
+export function OrganizationForm({
+  name,
+  id,
+  hideSubmit = false,
+  onPendingChange,
+}: {
+  name?: string;
+  id?: string;
+  hideSubmit?: boolean;
+  onPendingChange?: (pending: boolean) => void;
+}) {
   const router = useRouter();
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -11,6 +21,7 @@ export function OrganizationForm({ name }: { name?: string }) {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setPending(true);
+    onPendingChange?.(true);
     setError("");
     setMessage("");
     const form = new FormData(event.currentTarget);
@@ -34,10 +45,11 @@ export function OrganizationForm({ name }: { name?: string }) {
       setError(error instanceof Error ? error.message : "Försök igen.");
     } finally {
       setPending(false);
+      onPendingChange?.(false);
     }
   }
   return (
-    <form onSubmit={submit} className="space-y-5">
+    <form id={id} onSubmit={submit} className="space-y-6">
       <label>
         Företagsnamn
         <input
@@ -47,7 +59,11 @@ export function OrganizationForm({ name }: { name?: string }) {
           maxLength={100}
           required
           autoComplete="organization"
+          disabled={pending}
         />
+        <span className="mt-2 block text-xs leading-5 font-normal text-muted">
+          Visas för företagets medlemmar och i inventeringsrapporter.
+        </span>
       </label>
       {!editing && (
         <label>
@@ -59,6 +75,7 @@ export function OrganizationForm({ name }: { name?: string }) {
             maxLength={60}
             pattern="[a-z0-9]+(-[a-z0-9]+)*"
             placeholder="mitt-foretag"
+            disabled={pending}
           />
           <span className="mt-2 block text-sm font-normal text-muted">
             En unik kod med små bokstäver, siffror och bindestreck.
@@ -71,13 +88,22 @@ export function OrganizationForm({ name }: { name?: string }) {
         </p>
       )}
       {message && (
-        <p role="status" className="text-cyan">
+        <p
+          role="status"
+          className="rounded-xl border border-emerald-400/20 bg-emerald-400/8 p-3 text-sm text-emerald-200"
+        >
           {message}
         </p>
       )}
-      <button className="button" disabled={pending}>
-        {pending ? "Sparar…" : editing ? "Spara ändringar" : "Skapa företag"}
-      </button>
+      {!hideSubmit && (
+        <button className="button w-full sm:w-auto" disabled={pending}>
+          {pending
+            ? "Sparar…"
+            : editing
+              ? "Spara ändringar"
+              : "Skapa företag"}
+        </button>
+      )}
     </form>
   );
 }

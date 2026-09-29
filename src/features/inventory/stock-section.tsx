@@ -46,13 +46,15 @@ export function StockSection({
         <div>
           <h2 id={"stock-" + scope.kind} className="mb-1!">
             {scope.kind === "product"
-              ? "Lagerplatser och saldo"
+              ? "Lagersaldo"
               : "Produkter på platsen"}
           </h2>
           <p className="text-sm text-muted">
             {scope.kind === "product"
               ? "Totalt " + BigInt(data.total).toLocaleString("sv-SE") + " st"
-              : data.items.length + " produkter"}
+              : data.items.length === 1
+                ? "1 produkt"
+                : data.items.length + " produkter"}
           </p>
         </div>
         {operable && (
@@ -88,43 +90,27 @@ export function StockSection({
                     {scope.kind === "product" ? row.warehouseName : row.sku}
                   </p>
                 </Link>
-                <p className="shrink-0 text-xl font-semibold tabular-nums">
-                  {row.quantity.toLocaleString("sv-SE")}{" "}
-                  <span className="text-xs font-normal text-muted">st</span>
-                </p>
+                <div className="flex shrink-0 items-center gap-3">
+                  <p className="text-xl font-semibold tabular-nums">
+                    {row.quantity.toLocaleString("sv-SE")}{" "}
+                    <span className="text-xs font-normal text-muted">st</span>
+                  </p>
+                  <MaterialArrow size={18} className="text-muted" />
+                </div>
               </div>
               {!row.active && (
                 <p className="mt-2 text-xs text-muted">
                   Inaktiv produkt eller plats
                 </p>
               )}
-              {operable && row.active && (
-                <button
-                  className="mt-2 min-h-13 text-sm text-accent"
-                  onClick={() =>
-                    open(
-                      scope.kind === "product" ? row.locationId : row.productId,
-                    )
-                  }
-                >
-                  Registrera händelse
-                  <span className="sr-only">
-                    {" "}
-                    för{" "}
-                    {scope.kind === "product"
-                      ? row.locationCode
-                      : row.productName}
-                  </span>
-                </button>
-              )}
             </li>
           ))}
         </ul>
       ) : (
-        <p className="rounded-2xl border border-dashed border-line p-5 text-sm leading-7 text-muted">
+        <p className="rounded-2xl border border-line bg-surface p-5 text-sm leading-7 text-muted">
           {scope.kind === "product"
-            ? "Produkten har inte placerats på någon lagerplats ännu."
-            : "Det finns inga produkter registrerade på den här platsen."}
+            ? "Produkten har inget registrerat saldo på någon lagerplats."
+            : "Platsen har inget registrerat produktsaldo."}
         </p>
       )}
       {admin && (
@@ -177,6 +163,7 @@ function StockEditor({
   const [type, setType] = useState<MovementType>("RECEIPT");
   const [choice, setChoice] = useState(initialChoice);
   const [destination, setDestination] = useState("");
+  const [destinationSearch, setDestinationSearch] = useState("");
   const [search, setSearch] = useState("");
   const [pair, setPair] = useState<StockPair | null>(null);
   const [destinationPair, setDestinationPair] = useState<StockPair | null>(null);
@@ -262,6 +249,24 @@ function StockEditor({
     setConflict(false);
     setRefresh((value) => value + 1);
   }
+  function selectChoice(nextChoice: string) {
+    setChoice(nextChoice);
+    setPair(null);
+    setDestination("");
+    setDestinationSearch("");
+    setDestinationPair(null);
+    setQuantity("");
+    setError("");
+    setConflict(false);
+    setLoading(Boolean(nextChoice));
+  }
+  function selectDestination(nextDestination: string) {
+    setDestination(nextDestination);
+    setDestinationPair(null);
+    setDestinationLoading(Boolean(nextDestination));
+    setError("");
+    setConflict(false);
+  }
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (
@@ -323,13 +328,23 @@ function StockEditor({
   }
   const matching = choices.filter(
     (item) =>
-      item.id === choice ||
       item.label
         .toLocaleLowerCase("sv")
         .includes(search.toLocaleLowerCase("sv")),
   );
+  const visibleChoices = matching.slice(0, 8);
+  const selectedChoice = choices.find((item) => item.id === choice);
   const destinations = transferLocations.filter(
     (item) => item.id !== sourceLocationId,
+  );
+  const matchingDestinations = destinations.filter((item) =>
+    item.label
+      .toLocaleLowerCase("sv")
+      .includes(destinationSearch.toLocaleLowerCase("sv")),
+  );
+  const visibleDestinations = matchingDestinations.slice(0, 8);
+  const selectedDestination = destinations.find(
+    (item) => item.id === destination,
   );
   const quantityLabel =
     type === "RECEIPT"
@@ -348,29 +363,56 @@ function StockEditor({
     (type !== "TRANSFER" || Boolean(destinationPair));
   return (
     <form className="space-y-5" onSubmit={submit}>
-      <p className="wrap-break-word text-sm text-muted">{scope.label}</p>
-      <label>
-        Händelse
-        <select
-          value={type}
-          onChange={(event) => {
-            const next = event.target.value as MovementType;
-            setType(next);
-            setDestination("");
-            setDestinationPair(null);
-            setDestinationLoading(false);
-            setQuantity("");
-            setError("");
-            setConflict(false);
-          }}
-          disabled={pending}
-        >
-          <option value="RECEIPT">Inleverans</option>
-          <option value="ISSUE">Uttag</option>
-          <option value="TRANSFER">Flytta</option>
-          {admin && <option value="CORRECTION">Korrigera saldo</option>}
-        </select>
-      </label>
+      <div className="rounded-xl bg-canvas px-4 py-3">
+        <p className="text-xs text-muted">
+          {scope.kind === "product" ? "Produkt" : "Lagerplats"}
+        </p>
+        <p className="mt-1 wrap-break-word text-sm font-medium">
+          {scope.label}
+        </p>
+      </div>
+
+      <fieldset>
+        <legend className="mb-2 text-sm font-medium">Händelse</legend>
+        <div className="grid grid-cols-2 gap-2" role="radiogroup">
+          {[
+            ["RECEIPT", "Inleverans"],
+            ["ISSUE", "Uttag"],
+            ["TRANSFER", "Flytta"],
+            ...(admin ? [["CORRECTION", "Korrigera saldo"]] : []),
+          ].map(([value, label]) => {
+            const selected = type === value;
+            return (
+              <button
+                key={value}
+                type="button"
+                role="radio"
+                aria-checked={selected}
+                className={
+                  "min-h-12 rounded-xl border px-3 py-2 text-sm font-medium transition " +
+                  (selected
+                    ? "border-violet-400/40 bg-violet-500/15 text-foreground ring-1 ring-inset ring-violet-400/20"
+                    : "border-line bg-canvas text-muted hover:border-accent/60 hover:text-foreground")
+                }
+                onClick={() => {
+                  const next = value as MovementType;
+                  setType(next);
+                  setDestination("");
+                  setDestinationSearch("");
+                  setDestinationPair(null);
+                  setDestinationLoading(false);
+                  setQuantity("");
+                  setError("");
+                  setConflict(false);
+                }}
+                disabled={pending}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      </fieldset>
       {!choices.length ? (
         <p className="text-sm leading-7 text-muted">
           {scope.kind === "product"
@@ -379,7 +421,7 @@ function StockEditor({
         </p>
       ) : (
         <>
-          {!initialChoice && (
+          {!choice && (
             <div className="space-y-4">
               <label>
                 Sök {scope.kind === "product" ? "lagerplats" : "produkt"}
@@ -391,44 +433,58 @@ function StockEditor({
                   placeholder="Skriv namn eller kod"
                 />
               </label>
-              <label>
-                {scope.kind === "product" ? "Lagerplats" : "Produkt"}
-                <select
-                  required
-                  value={choice}
-                  onChange={(event) => {
-                    setChoice(event.target.value);
-                    setPair(null);
-                    setDestination("");
-                    setDestinationPair(null);
-                    setQuantity("");
-                    setError("");
-                    setConflict(false);
-                    setLoading(Boolean(event.target.value));
-                  }}
-                  disabled={pending}
-                >
-                  <option value="">
+              {visibleChoices.length ? (
+                <div>
+                  <p className="mb-2 text-sm font-medium">
                     Välj {scope.kind === "product" ? "lagerplats" : "produkt"}
-                  </option>
-                  {matching.map((item) => (
-                    <option value={item.id} key={item.id}>
-                      {item.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              {!matching.length && (
+                  </p>
+                  <div className="max-h-56 overflow-y-auto rounded-xl border border-line bg-canvas">
+                    {visibleChoices.map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        className="flex min-h-13 w-full items-center border-b border-line/60 px-4 py-3 text-left text-sm transition last:border-0 hover:bg-surface-raised"
+                        onClick={() => selectChoice(item.id)}
+                        disabled={pending}
+                      >
+                        <span className="wrap-break-word">{item.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                  {matching.length > visibleChoices.length && (
+                    <p className="mt-2 text-xs text-muted">
+                      Skriv mer för att begränsa resultatet.
+                    </p>
+                  )}
+                </div>
+              ) : (
                 <p className="text-xs text-muted">
                   Inga träffar. Prova en annan sökning.
                 </p>
               )}
             </div>
           )}
-          {initialChoice && (
-            <p className="wrap-break-word font-medium">
-              {choices.find((item) => item.id === initialChoice)?.label}
-            </p>
+          {choice && selectedChoice && (
+            <div>
+              <p className="mb-2 text-sm font-medium">
+                {scope.kind === "product" ? "Lagerplats" : "Produkt"}
+              </p>
+              <div className="flex min-h-13 items-center justify-between gap-3 rounded-xl border border-line bg-canvas px-4 py-3">
+                <span className="min-w-0 wrap-break-word text-sm">
+                  {selectedChoice.label}
+                </span>
+                {!initialChoice && (
+                  <button
+                    type="button"
+                    className="shrink-0 text-sm text-cyan"
+                    onClick={() => selectChoice("")}
+                    disabled={pending}
+                  >
+                    Byt
+                  </button>
+                )}
+              </div>
+            </div>
           )}
           {loading && (
             <p className="text-sm text-muted" role="status">
@@ -444,28 +500,73 @@ function StockEditor({
                 </strong>
               </p>
               {type === "TRANSFER" && (
-                <label>
-                  Flytta till
-                  <select
-                    required
-                    value={destination}
-                    onChange={(event) => {
-                      setDestination(event.target.value);
-                      setDestinationPair(null);
-                      setDestinationLoading(Boolean(event.target.value));
-                      setError("");
-                      setConflict(false);
-                    }}
-                    disabled={pending}
-                  >
-                    <option value="">Välj destinationsplats</option>
-                    {destinations.map((item) => (
-                      <option value={item.id} key={item.id}>
-                        {item.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <div className="space-y-4">
+                  {!destination ? (
+                    <>
+                      <label>
+                        Sök destinationsplats
+                        <input
+                          type="search"
+                          value={destinationSearch}
+                          onChange={(event) =>
+                            setDestinationSearch(event.target.value)
+                          }
+                          placeholder="Lagernamn eller platskod"
+                          disabled={pending}
+                        />
+                      </label>
+                      {visibleDestinations.length ? (
+                        <div>
+                          <p className="mb-2 text-sm font-medium">
+                            Flytta till
+                          </p>
+                          <div className="max-h-56 overflow-y-auto rounded-xl border border-line bg-canvas">
+                            {visibleDestinations.map((item) => (
+                              <button
+                                key={item.id}
+                                type="button"
+                                className="flex min-h-13 w-full items-center border-b border-line/60 px-4 py-3 text-left text-sm transition last:border-0 hover:bg-surface-raised"
+                                onClick={() => selectDestination(item.id)}
+                                disabled={pending}
+                              >
+                                <span className="wrap-break-word">
+                                  {item.label}
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+                          {matchingDestinations.length >
+                            visibleDestinations.length && (
+                            <p className="mt-2 text-xs text-muted">
+                              Skriv mer för att begränsa resultatet.
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-muted">
+                          Ingen annan aktiv lagerplats matchar sökningen.
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <div>
+                      <p className="mb-2 text-sm font-medium">Flytta till</p>
+                      <div className="flex min-h-13 items-center justify-between gap-3 rounded-xl border border-line bg-canvas px-4 py-3">
+                        <span className="min-w-0 wrap-break-word text-sm">
+                          {selectedDestination?.label}
+                        </span>
+                        <button
+                          type="button"
+                          className="shrink-0 text-sm text-cyan"
+                          onClick={() => selectDestination("")}
+                          disabled={pending}
+                        >
+                          Byt
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               )}
               {destinationLoading && (
                 <p className="text-sm text-muted" role="status">

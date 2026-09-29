@@ -1,5 +1,5 @@
-import { BrandLogo } from "@/components/brand-logo";
 import { AuthForm } from "@/features/auth/auth-form";
+import { AuthPageShell } from "@/features/auth/auth-page-shell";
 import { locationReturnPath } from "@/validation/return-path";
 
 export default async function AuthPage({
@@ -9,13 +9,11 @@ export default async function AuthPage({
 }) {
   const returnTo = locationReturnPath((await searchParams).next);
   return (
-    <main className="mx-auto max-w-md px-5 py-12">
-      <BrandLogo />
-      <div className="panel mt-10">
-        <p className="eyebrow">Kom igång</p>
-        <h1 className="text-3xl">Skapa konto</h1>
-        <AuthForm mode="register" returnTo={returnTo} />
-      </div>
-    </main>
+    <AuthPageShell
+      title="Skapa konto"
+      description="Skapa ditt personliga konto. Därefter skapar eller väljer du företag."
+    >
+      <AuthForm mode="register" returnTo={returnTo} />
+    </AuthPageShell>
   );
 }

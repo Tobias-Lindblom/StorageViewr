@@ -148,20 +148,32 @@ export function CountPlace({
   return (
     <>
       {!verified && !scanning && (
-        <div className="space-y-5">
-          <p className="text-sm leading-7 text-muted">
-            Skanna QR-koden på {place.code} för att visa materialet och ange
-            räknat antal.
-          </p>
+        <section aria-labelledby="verify-location-heading">
+          <div className="flex items-start gap-4 rounded-2xl border border-line bg-canvas p-5">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-400/10 text-accent">
+              <AppIcon name="qr" />
+            </span>
+            <div className="min-w-0">
+              <h3 id="verify-location-heading" className="mb-1! text-base!">
+                Verifiera lagerplatsen
+              </h3>
+              <p className="text-sm leading-6 text-muted">
+                Skanna etiketten på <strong className="font-medium text-foreground">{place.code}</strong>. Produkterna visas när platsen har verifierats.
+              </p>
+            </div>
+          </div>
           <button
             type="button"
-            className="button w-full"
+            className="button mt-5 w-full"
             onClick={() => setScanning(true)}
           >
             <AppIcon name="qr" />
             Skanna platsens QR-kod
           </button>
-        </div>
+          <p className="mt-3 text-center text-xs leading-5 text-muted">
+            Kameran öppnas i nästa steg. Platskoden kan även anges manuellt.
+          </p>
+        </section>
       )}
       {scanning && (
         <div className="space-y-4">
@@ -215,8 +227,8 @@ export function CountPlace({
         </div>
       )}
       {verified && (
-        <form onSubmit={save} className={scanning ? "hidden" : "space-y-5"}>
-          <div className="flex flex-wrap items-center justify-between gap-3">
+        <form onSubmit={save} className={scanning ? "hidden" : ""}>
+          <div className="flex items-center justify-between gap-3 rounded-xl border border-emerald-400/20 bg-emerald-400/5 px-4 py-3">
             <p
               role="status"
               className="inline-flex items-center gap-2 text-sm font-medium text-emerald-400"
@@ -226,7 +238,7 @@ export function CountPlace({
             </p>
             <button
               type="button"
-              className="inline-flex min-h-11 items-center gap-2 text-sm text-accent"
+              className="inline-flex min-h-11 shrink-0 items-center gap-2 text-sm text-accent"
               disabled={busy}
               onClick={() => setScanning(true)}
             >
@@ -234,126 +246,137 @@ export function CountPlace({
               Skanna igen
             </button>
           </div>
-          <p className="text-sm leading-7 text-muted">
-            Ange faktiskt antal för varje produkt. Inga saldon ändras när du
-            sparar räkningen.
+          <p className="mt-4 text-sm leading-6 text-muted">
+            Ange faktiskt antal för varje produkt. Saldot ändras först när hela inventeringen genomförs.
           </p>
           {snapshot.stale && (
-            <p className="rounded-xl border border-amber-200/30 p-3 text-sm text-amber-200">
+            <p className="mt-4 rounded-xl border border-amber-200/30 bg-amber-200/5 p-4 text-sm leading-6 text-amber-200">
               Saldot har ändrats sedan förra räkningen. Kontrollera antal mot
               aktuellt saldo nedan.
             </p>
           )}
-          <fieldset disabled={busy || conflict} className="space-y-4">
+          <fieldset disabled={busy || conflict} className="mt-6">
             <legend className="sr-only">Produkter att räkna</legend>
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <h3 className="text-base font-semibold">Produkter</h3>
+              <span className="text-xs text-muted">
+                {rows.length} {rows.length === 1 ? "produkt" : "produkter"}
+              </span>
+            </div>
             {rows.length ? (
-              rows.map((row) => (
-                <div
-                  key={row.productId}
-                  className="rounded-xl border border-line bg-canvas p-4"
-                >
-                  <p className="wrap-break-word font-semibold">
-                    {row.productName}
-                  </p>
-                  <p className="mt-1 text-xs text-muted">
-                    {row.sku} · Aktuellt saldo{" "}
-                    {row.currentQuantity.toLocaleString("sv-SE")} st
-                  </p>
-                  <label className="mt-4">
-                    Räknat antal
-                    <span className="sr-only"> {row.productName}</span>
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      min={0}
-                      max={Number.MAX_SAFE_INTEGER}
-                      step={1}
-                      required
-                      value={row.value}
-                      onChange={(event) => {
-                        setRows((current) =>
-                          current.map((item) =>
-                            item.productId === row.productId
-                              ? { ...item, value: event.target.value }
-                              : item,
-                          ),
-                        );
-                        setConfirmed(false);
-                      }}
-                    />
-                  </label>
-                  {row.value !== "" &&
+              <div className="overflow-hidden rounded-2xl border border-line bg-surface">
+                {rows.map((row) => {
+                  const valid =
+                    row.value !== "" &&
                     Number.isSafeInteger(Number(row.value)) &&
-                    Number(row.value) >= 0 && (
-                      <p className="mt-2 text-xs text-accent">
-                        Avvikelse:{" "}
-                        {(
-                          Number(row.value) - row.currentQuantity
-                        ).toLocaleString("sv-SE")}{" "}
-                        st
+                    Number(row.value) >= 0;
+                  const difference = valid
+                    ? Number(row.value) - row.currentQuantity
+                    : 0;
+                  return (
+                    <div key={row.productId} className="border-b border-line/60 p-4 last:border-0 sm:p-5">
+                      <p className="wrap-break-word font-semibold">{row.productName}</p>
+                      <p className="mt-1 text-xs text-muted">
+                        {row.sku} · Aktuellt saldo {row.currentQuantity.toLocaleString("sv-SE")} st
                       </p>
-                    )}
-                </div>
-              ))
+                      <label className="mt-4">
+                        Räknat antal
+                        <span className="sr-only"> {row.productName}</span>
+                        <input
+                          type="number"
+                          inputMode="numeric"
+                          min={0}
+                          max={Number.MAX_SAFE_INTEGER}
+                          step={1}
+                          required
+                          value={row.value}
+                          onChange={(event) => {
+                            setRows((current) =>
+                              current.map((item) =>
+                                item.productId === row.productId
+                                  ? { ...item, value: event.target.value }
+                                  : item,
+                              ),
+                            );
+                            setConfirmed(false);
+                          }}
+                        />
+                      </label>
+                      {valid && (
+                        <p
+                          className={
+                            "mt-2 text-xs " +
+                            (difference < 0
+                              ? "text-rose-200"
+                              : difference > 0
+                                ? "text-cyan"
+                                : "text-muted")
+                          }
+                        >
+                          {difference === 0
+                            ? "Ingen avvikelse"
+                            : "Avvikelse " + (difference > 0 ? "+" : "") + difference.toLocaleString("sv-SE") + " st"}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             ) : (
-              <p className="rounded-xl border border-dashed border-line p-4 text-sm leading-7 text-muted">
+              <p className="rounded-2xl border border-line bg-surface p-5 text-sm leading-6 text-muted">
                 Inga produkter finns registrerade här. Bekräfta att platsen är
                 tom, eller lägg till en produkt du hittat.
               </p>
             )}
-            <details className="rounded-xl border border-line p-4">
-              <summary className="cursor-pointer text-sm text-cyan">
-                Hittat en annan produkt?
+            <details className="group mt-4 overflow-hidden rounded-xl border border-line bg-surface">
+              <summary className="flex min-h-13 cursor-pointer list-none items-center justify-between gap-3 px-4 text-sm text-cyan">
+                Lägg till hittad produkt
+                <MaterialArrow name="expand" size={18} className="transition group-open:rotate-180" />
               </summary>
-              <label className="mt-4">
-                Sök produkt
-                <input
-                  value={search}
-                  maxLength={100}
-                  placeholder="Namn eller artikelnummer"
-                  onChange={(event) => {
-                    setSearch(event.target.value);
-                    setSearched(false);
-                    setChoices([]);
-                  }}
-                />
-              </label>
-              <button
-                type="button"
-                className="button-secondary mt-3 w-full"
-                onClick={findProducts}
-              >
-                Sök produkter
-              </button>
-              <ul>
-                {choices.map((choice) => (
-                  <li key={choice.id}>
-                    <button
-                      type="button"
-                      className="mt-2 min-h-13 w-full rounded-lg px-2 py-3 text-left text-sm hover:bg-surface-raised"
-                      onClick={() => addProduct(choice)}
-                    >
-                      {choice.name}
-                      <span className="ml-2 text-xs text-muted">
-                        {choice.sku}
-                      </span>
-                      <span className="block text-xs text-cyan">
-                        Lägg till i räkningen
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-              {searched && (
-                <p className="mt-3 text-xs text-muted">
-                  {choices.length
-                    ? "Visar upp till 24 träffar. Sök mer specifikt vid behov."
-                    : "Inga fler matchande produkter hittades."}
-                </p>
-              )}
+              <div className="border-t border-line/60 p-4">
+                <label>
+                  Sök produkt
+                  <input
+                    value={search}
+                    maxLength={100}
+                    placeholder="Namn eller artikelnummer"
+                    onChange={(event) => {
+                      setSearch(event.target.value);
+                      setSearched(false);
+                      setChoices([]);
+                    }}
+                  />
+                </label>
+                <button type="button" className="button-secondary mt-3 w-full" onClick={findProducts}>
+                  Sök produkter
+                </button>
+                {choices.length > 0 && (
+                  <ul className="mt-3 overflow-hidden rounded-xl border border-line bg-canvas">
+                    {choices.map((choice) => (
+                      <li key={choice.id} className="border-b border-line/60 last:border-0">
+                        <button
+                          type="button"
+                          className="min-h-14 w-full px-4 py-3 text-left text-sm transition hover:bg-surface-raised"
+                          onClick={() => addProduct(choice)}
+                        >
+                          <span className="block font-medium">{choice.name}</span>
+                          <span className="mt-1 block text-xs text-muted">{choice.sku}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {searched && (
+                  <p className="mt-3 text-xs text-muted">
+                    {choices.length
+                      ? "Visar upp till 24 träffar. Sök mer specifikt vid behov."
+                      : "Inga fler matchande produkter hittades."}
+                  </p>
+                )}
+              </div>
             </details>
             {recount && (
-              <label className="flex min-h-13 items-start gap-3 text-sm leading-6">
+              <label className="mt-4 flex min-h-13 items-start gap-3 rounded-xl border border-line bg-surface p-4 text-sm leading-6">
                 <input
                   type="checkbox"
                   className="mt-1! h-4! min-h-0! w-4! shrink-0 px-0! accent-violet-500"
@@ -363,7 +386,7 @@ export function CountPlace({
                 <span>Ersätt den tidigare räkningen på den här platsen.</span>
               </label>
             )}
-            <label className="flex min-h-13 items-start gap-3 text-sm leading-6">
+            <label className="mt-4 flex min-h-13 items-start gap-3 rounded-xl border border-line bg-surface p-4 text-sm leading-6">
               <input
                 type="checkbox"
                 className="mt-1! h-4! min-h-0! w-4! shrink-0 px-0! accent-violet-500"
@@ -378,14 +401,14 @@ export function CountPlace({
             </label>
           </fieldset>
           {error && (
-            <p role="alert" className="text-sm text-rose-200">
+            <p role="alert" className="error mt-4">
               {error}
             </p>
           )}
           {conflict && (
             <button
               type="button"
-              className="button-secondary w-full"
+              className="button-secondary mt-4 w-full"
               disabled={busy}
               onClick={async () => {
                 setBusy(true);
@@ -400,12 +423,14 @@ export function CountPlace({
               Läs in platsen igen
             </button>
           )}
-          <button
-            className="button w-full"
-            disabled={busy || conflict || !confirmed || (recount && !replace)}
-          >
-            {busy ? "Sparar…" : "Bekräfta och spara plats"}
-          </button>
+          <div className="mt-6 border-t border-line/60 pt-5">
+            <button
+              className="button w-full"
+              disabled={busy || conflict || !confirmed || (recount && !replace)}
+            >
+              {busy ? "Sparar…" : "Bekräfta och spara plats"}
+            </button>
+          </div>
         </form>
       )}
     </>

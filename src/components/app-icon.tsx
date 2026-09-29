@@ -11,6 +11,7 @@ const paths = {
   location:
     "M20 10c0 6-8 11-8 11S4 16 4 10a8 8 0 1 1 16 0ZM9 10a3 3 0 1 0 6 0 3 3 0 1 0-6 0",
   settings: "M4 7h16M4 17h16M8 4v6M16 14v6",
+  logout: "M10 5H5v14h5M14 8l4 4-4 4M8 12h10",
   qr: "M3 3h6v6H3zM15 3h6v6h-6zM3 15h6v6H3zM15 15h3v3h3v3h-6z",
 };
 export function AppIcon({

@@ -1,6 +1,7 @@
 import { MaterialArrow } from "@/components/material-arrow";
 import Link from "next/link";
 import { AppIcon } from "@/components/app-icon";
+import { PageHeading } from "@/components/page-heading";
 import { pageSession } from "@/lib/server/page-auth";
 import { listOrganizations } from "@/features/organizations/service";
 import { OrganizationList } from "@/features/organizations/organization-list";
@@ -19,20 +20,23 @@ export default async function OrganizationsPage({
 
   return (
     <OrganizationShell session={session} organizations={organizations}>
-      <div className="mb-8 sm:mb-10">
-        <h1 className="mb-4 text-3xl sm:text-4xl lg:text-5xl">
-          {hasOrganizations
-            ? "Välkommen tillbaka."
-            : "Välkommen till StorageViewr."}
-        </h1>
-        <p className="max-w-xl text-sm leading-7 text-muted sm:text-base">
-          {returnTo
+      <PageHeading
+        title={hasOrganizations ? "Välj företag" : "Välkommen till StorageViewr"}
+        description={
+          returnTo
             ? "Välj företaget som den skannade lagerplatsen tillhör."
             : hasOrganizations
-              ? "Välj ditt företag och fortsätt där lagerarbetet börjar."
-              : "Skapa ett arbetsutrymme för ditt företag. Där samlar du lager, platser och kollegor."}
-        </p>
-      </div>
+              ? "Fortsätt till företagets lager och inventeringar."
+              : "Skapa ett arbetsutrymme för företagets lager, platser och medlemmar."
+        }
+        action={
+          hasOrganizations ? (
+            <Link href="/organizations/new" className="button-secondary">
+              + Skapa företag
+            </Link>
+          ) : undefined
+        }
+      />
 
       {returnTo && (
         <div className="mb-7 flex items-start gap-3 rounded-xl border border-cyan/20 bg-cyan/5 p-4 text-sm leading-6 text-cyan">
@@ -46,45 +50,24 @@ export default async function OrganizationsPage({
       )}
 
       {hasOrganizations ? (
-        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_280px] lg:gap-8">
-          <section aria-labelledby="organizations-heading" className="min-w-0">
-            <div className="mb-4 flex items-center gap-3">
-              <h2 id="organizations-heading" className="mb-0! text-lg">
-                Dina företag
-              </h2>
-              <span className="rounded-full border border-line bg-surface px-2.5 py-1 text-xs tabular-nums text-muted">
-                {organizations.length}
-              </span>
-            </div>
-            <OrganizationList
-              organizations={organizations}
-              returnTo={returnTo}
-              selectedOrganizationId={session.organizationId?.toString()}
-            />
-          </section>
-
-          <aside className="rounded-2xl border border-violet-400/20 bg-linear-to-br from-violet-900/20 to-surface p-5 lg:mt-12 lg:p-6">
-            <div className="mb-4 flex items-center gap-3 lg:mb-5">
-              <span
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-violet-400/25 bg-violet-500/10 text-xl text-accent"
-                aria-hidden="true"
-              >
-                +
-              </span>
-              <h2 className="mb-0! text-base lg:text-lg">Ett till företag?</h2>
-            </div>
-            <p className="mb-5 text-sm leading-6 text-muted">
-              Skapa ett eget arbetsutrymme för ett nytt företag, med separata
-              lager och medlemmar.
-            </p>
-            <Link href="/organizations/new" className="button-secondary w-full">
-              Skapa företag{" "}
-              <span className="ml-3 text-accent" aria-hidden="true">
-                <MaterialArrow name="outward" />
-              </span>
-            </Link>
-          </aside>
-        </div>
+        <section
+          aria-labelledby="organizations-heading"
+          className="max-w-4xl"
+        >
+          <div className="mb-4 flex items-center gap-3">
+            <h2 id="organizations-heading" className="mb-0! text-xl!">
+              Företag
+            </h2>
+            <span className="rounded-full border border-line bg-surface px-2.5 py-1 text-xs tabular-nums text-muted">
+              {organizations.length}
+            </span>
+          </div>
+          <OrganizationList
+            organizations={organizations}
+            returnTo={returnTo}
+            selectedOrganizationId={session.organizationId?.toString()}
+          />
+        </section>
       ) : (
         <section className="max-w-3xl rounded-2xl border border-violet-400/25 bg-linear-to-br from-violet-900/25 to-surface p-6 sm:p-8">
           <span className="mb-6 inline-flex h-14 w-14 items-center justify-center rounded-2xl border border-violet-400/25 bg-violet-500/10 text-accent">

@@ -28,16 +28,47 @@ export default async function ProductPage({
         Alla produkter
       </Link>
 
-      <section className="panel" aria-labelledby="product-details-heading">
-        <div className={photo ? "grid gap-6 sm:grid-cols-[minmax(0,1fr)_minmax(0,240px)] lg:grid-cols-[minmax(0,1fr)_minmax(0,320px)]" : ""}>
+      <header className="mb-7">
+        <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-              <h1 id="product-details-heading" className="mb-0! min-w-0 text-xl! font-semibold sm:text-2xl!">{product.name}</h1>
-              <span className={"rounded-full border px-3 py-1 text-xs font-medium " + (product.active ? "border-cyan/20 bg-cyan/5 text-cyan" : "border-line bg-canvas text-muted")}>
-                {product.active ? "Aktiv" : "Inaktiv"}
-              </span>
-            </div>
-            <dl className="grid grid-cols-2 gap-x-5 gap-y-6">
+            <h1 id="product-details-heading" className="mb-0! text-3xl! font-bold sm:text-4xl!">
+              {product.name}
+            </h1>
+            <p className="mt-2 break-all text-sm text-muted">{product.sku}</p>
+          </div>
+          <span
+            className={
+              "inline-flex shrink-0 items-center gap-2 pt-2 text-xs " +
+              (product.active ? "text-cyan" : "text-muted")
+            }
+          >
+            <span
+              aria-hidden="true"
+              className={
+                "h-1.5 w-1.5 rounded-full " +
+                (product.active ? "bg-cyan" : "bg-muted")
+              }
+            />
+            {product.active ? "Aktiv" : "Inaktiv"}
+          </span>
+        </div>
+
+        {context.role === "admin" && (
+          <div className="mt-5">
+            <Link
+              className="button-secondary w-full sm:w-auto"
+              href={"/products/" + id + "/edit"}
+            >
+              Redigera produkt
+            </Link>
+          </div>
+        )}
+      </header>
+
+      <section aria-label="Produktuppgifter">
+        <div className="overflow-hidden rounded-2xl border border-line bg-surface">
+          <div className={photo ? "grid sm:grid-cols-[minmax(0,1fr)_220px]" : ""}>
+            <dl className="grid grid-cols-2 gap-x-5 gap-y-6 p-5 sm:p-6">
               <div className="min-w-0">
                 <dt className="text-xs text-muted">Artikelnummer</dt>
                 <dd className="mt-2 break-all text-sm font-medium">{product.sku}</dd>
@@ -57,25 +88,21 @@ export default async function ProductPage({
                 </div>
               )}
             </dl>
+            {photo && (
+              <div className="border-t border-line/60 p-5 sm:border-t-0 sm:border-l sm:p-4">
+                <p className="mb-3 text-xs text-muted">Produktbild</p>
+                <div className="flex min-h-40 items-center justify-center overflow-hidden rounded-xl bg-canvas p-2">
+                  <ProductPhoto
+                    src={photo}
+                    alt={"Produktbild: " + product.name}
+                    eager
+                    className="max-h-48 w-full object-contain"
+                  />
+                </div>
+              </div>
+            )}
           </div>
-          {photo && (
-            <div className="flex items-center justify-center overflow-hidden rounded-xl border border-line/60 bg-canvas p-2">
-              <ProductPhoto
-                src={photo}
-                alt={"Produktbild: " + product.name}
-                eager
-                className="max-h-64 w-full object-contain sm:max-h-80"
-              />
-            </div>
-          )}
         </div>
-        {context.role === "admin" && (
-          <div className="mt-6 flex justify-end border-t border-line/60 pt-5">
-            <Link className="button-secondary w-full sm:w-auto" href={"/products/" + id + "/edit"}>
-              Redigera produkt
-            </Link>
-          </div>
-        )}
       </section>
 
       <StockPanel

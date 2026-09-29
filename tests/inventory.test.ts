@@ -283,6 +283,33 @@ test("transfers update both places atomically and retain one linked audit pair",
     ).quantity,
     4,
   );
+  await registerStockMovement(worker, {
+    type: "TRANSFER",
+    productId: f.product.id,
+    sourceLocationId: f.location.id,
+    destinationLocationId: destination.id,
+    quantity: 6,
+    expectedSourceVersion: 2,
+    expectedDestinationVersion: 1,
+    reason: "Flytta återstående saldo",
+  });
+  const emptySource = await listStock(worker, {
+    locationId: f.location.id,
+  });
+  assert.equal(emptySource.items.length, 0);
+  assert.equal(emptySource.total, "0");
+  assert.deepEqual(
+    await getStockPair(worker, {
+      productId: f.product.id,
+      locationId: f.location.id,
+    }),
+    {
+      productId: f.product.id,
+      locationId: f.location.id,
+      quantity: 0,
+      version: 3,
+    },
+  );
 });
 
 test("history records before/after, signed difference, actor, reason and original names", async () => {

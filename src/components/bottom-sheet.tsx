@@ -6,10 +6,12 @@ import { createPortal } from "react-dom";
 export function BottomSheet({
   title,
   children,
+  footer,
   onClose,
 }: {
   title: string;
   children: ReactNode;
+  footer?: ReactNode;
   onClose: () => void;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
@@ -162,9 +164,14 @@ export function BottomSheet({
           {title}
         </h2>
       </div>
-      <div className="px-5 pt-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-7 sm:pt-6">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pt-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-7 sm:pt-6">
         {children}
       </div>
+      {footer && (
+        <div className="shrink-0 border-t border-line/60 bg-surface px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-7">
+          {footer}
+        </div>
+      )}
     </dialog>,
     document.body,
   );

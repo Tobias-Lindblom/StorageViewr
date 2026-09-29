@@ -2,7 +2,6 @@ import Link from "next/link";
 import { ProductPhoto } from "@/components/product-photo";
 import { AppShell } from "@/components/app-shell";
 import { PageHeading } from "@/components/page-heading";
-import { EmptyState } from "@/components/empty-state";
 import { AppIcon } from "@/components/app-icon";
 import { MaterialArrow } from "@/components/material-arrow";
 import { pageTenant } from "@/lib/server/page-auth";
@@ -32,11 +31,18 @@ export default async function ProductsPage({
       status: query.status,
       page: String(page),
     });
+  const statusLink = (status: "active" | "inactive" | "all") =>
+    "/products?" +
+    new URLSearchParams({
+      q: query.q,
+      status,
+      page: "1",
+    });
   return (
     <AppShell context={context}>
       <PageHeading
         title="Produkter"
-        description="Företagets artiklar, samlade på ett ställe."
+        description="Artiklar och produktregister för företaget."
         action={
           admin ? (
             <div className="flex gap-2">
@@ -56,9 +62,10 @@ export default async function ProductsPage({
           ) : undefined
         }
       />
-      <form action="/products" className="mb-6 flex flex-wrap items-end gap-3">
-        <label className="min-w-0 basis-full sm:basis-auto sm:flex-1">
-          Sök produkt
+      <form action="/products" className="mb-4 flex items-end gap-2">
+        <input type="hidden" name="status" defaultValue={query.status} />
+        <label className="min-w-0 flex-1">
+          Sök
           <input
             type="search"
             name="q"
@@ -67,41 +74,58 @@ export default async function ProductsPage({
             placeholder="Namn, artikelnummer eller streckkod"
           />
         </label>
-        {admin && (
-          <label className="min-w-0 flex-1 sm:flex-none">
-            Status
-            <select name="status" defaultValue={query.status}>
-              <option value="active">Aktiva</option>
-              <option value="inactive">Inaktiva</option>
-              <option value="all">Alla</option>
-            </select>
-          </label>
-        )}
-        <button className="button-secondary" type="submit">
+        <button className="button-secondary shrink-0 px-5!" type="submit">
           Sök
         </button>
+      </form>
+
+      {admin && (
+        <nav
+          aria-label="Filtrera produkter efter status"
+          className="mb-5 grid grid-cols-3 rounded-xl border border-line bg-surface p-1"
+        >
+          {[
+            ["active", "Aktiva"],
+            ["inactive", "Inaktiva"],
+            ["all", "Alla"],
+          ].map(([status, label]) => (
+            <Link
+              key={status}
+              href={statusLink(status as "active" | "inactive" | "all")}
+              aria-current={query.status === status ? "page" : undefined}
+              className={
+                "flex min-h-10 items-center justify-center rounded-lg px-3 text-sm font-medium transition " +
+                (query.status === status
+                  ? "bg-violet-500/15 text-accent ring-1 ring-inset ring-violet-400/25"
+                  : "text-muted hover:bg-surface-raised hover:text-foreground")
+              }
+            >
+              {label}
+            </Link>
+          ))}
+        </nav>
+      )}
+
+      <div className="mb-3 flex min-h-9 items-center justify-between gap-3">
+        <p className="text-xs text-muted" role="status">
+          {result.total} {result.total === 1 ? "produkt" : "produkter"}
+        </p>
         {(query.q || query.status !== "active") && (
-          <Link
-            href="/products"
-            className="flex min-h-13 items-center px-2 text-sm text-accent"
-          >
-            Rensa
+          <Link href="/products" className="text-sm text-cyan">
+            Rensa filter
           </Link>
         )}
-      </form>
-      <p className="mb-3 text-xs text-muted" role="status">
-        {result.total} {result.total === 1 ? "produkt" : "produkter"}
-      </p>
+      </div>
       {result.items.length ? (
         <div className="overflow-hidden rounded-2xl border border-line bg-surface">
           {result.items.map((product) => (
             <Link
               key={product.id}
               href={"/products/" + product.id}
-              className="flex min-h-24 items-center gap-4 border-b border-line/60 p-4 transition last:border-0 hover:bg-surface-raised sm:p-5"
+              className="group flex min-h-22 items-center gap-4 border-b border-line/60 p-4 transition last:border-0 hover:bg-surface-raised sm:px-5"
             >
               {product.photoUrl ? (
-                <ProductPhoto src={product.photoUrl} alt="" className="h-14 w-14 shrink-0 rounded-xl border border-line bg-canvas object-cover" />
+                <ProductPhoto src={product.photoUrl} alt="" className="h-12 w-12 shrink-0 rounded-xl border border-line bg-canvas object-cover" />
               ) : (
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-400/10 text-accent"><AppIcon name="product" /></span>
               )}
@@ -109,29 +133,33 @@ export default async function ProductsPage({
                 <p className="wrap-break-word font-semibold">{product.name}</p>
                 <p className="mt-1 break-all text-xs text-muted">
                   {product.sku}
+                  {!product.active && " · Inaktiv"}
                 </p>
-                {!product.active && (
-                  <p className="mt-1 text-xs text-muted">Inaktiv</p>
-                )}
               </div>
-              <MaterialArrow className="text-accent" />
+              <MaterialArrow
+                size={18}
+                className="text-muted transition group-hover:translate-x-0.5 group-hover:text-accent"
+              />
             </Link>
           ))}
         </div>
       ) : (
-        <EmptyState
-          title={
+        <div className="rounded-2xl border border-line bg-surface p-6">
+          <h2 className="mb-2! text-lg!">
+            {
             query.q || query.status !== "active"
               ? "Inga produkter matchar"
               : "Ditt produktregister börjar här"
-          }
-        >
-          {query.q || query.status !== "active"
-            ? "Prova en annan sökning eller ändra statusfiltret."
-            : admin
-              ? "Lägg till din första produkt eller importera flera från en CSV-fil."
-              : "Företaget har inga aktiva produkter ännu."}
-        </EmptyState>
+            }
+          </h2>
+          <p className="max-w-lg text-sm leading-7 text-muted">
+            {query.q || query.status !== "active"
+              ? "Prova en annan sökning eller ändra statusfiltret."
+              : admin
+                ? "Lägg till din första produkt eller importera flera från en CSV-fil."
+                : "Företaget har inga aktiva produkter ännu."}
+          </p>
+        </div>
       )}
       {result.pages > 1 && (
         <nav

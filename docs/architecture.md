@@ -210,6 +210,8 @@ med orsak. Det operativa lagerhändelseflödet beskrivs i fas 8. Produktvyn visa
 även via QR-länk, visar produkter och antal. Saldoformuläret öppnas som en bottom sheet.
 Lagerplatslistan markerar en aktiv plats som Upptagen när minst en produkt har positivt saldo;
 placeringar med nollsaldo räknas som Tomma eftersom inget fysiskt antal finns på platsen.
+Produkt- och platsdetaljer visar endast placeringar med positivt saldo. Nollposter behålls
+för historik och versionskontroll men räknas inte som en produkt eller lagerplacering i vyn.
 Totalsaldon summeras med BigInt och skickas som decimalsträng för att undvika avrundning.
 
 Mutationer kräver expectedVersion (null för en ny placering). Servern läser aktuellt
@@ -345,9 +347,10 @@ Webbläsartest verifierar faktisk nedladdning, filnamn, PDF-headers, mobilvy och
 
 ## Genomförd fas 7 – Dashboard
 
-Översikten visar fyra faktiska, tenant-avgränsade nyckeltal: aktiva lager, aktiva lagerplatser,
-aktiva produkter och pågående inventeringar. Varje ruta länkar till motsvarande arbetsvy.
-Rutorna visas två och två på mobil och i fyra kolumner när utrymmet räcker.
+Översikten visar faktiska, tenant-avgränsade nyckeltal för aktiva lager, lagerplatser och
+produkter i en sammanhållen lagerstatuslista. Varje rad länkar till motsvarande arbetsvy.
+Inventering visas i en separat arbetssektion: pågående inventeringar visar progress, medan
+ett tomt läge förklarar statusen och leder vidare till inventeringsvyn.
 
 Dashboardfrågan räknar endast aktiva lager, platser och produkter samt InventorySession med
 status active i det valda företaget. Avslutade och andra företags inventeringar påverkar inte talet.
