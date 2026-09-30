@@ -2,6 +2,7 @@ import { MaterialArrow } from "@/components/material-arrow";
 import { BrandLogo } from "@/components/brand-logo";
 import Link from "next/link";
 import { InventoryPreview } from "@/components/inventory-preview";
+import { registrationEnabled } from "@/features/auth/registration";
 
 const steps = [
   {
@@ -29,6 +30,8 @@ const highlights = [
 ];
 
 export default function Home() {
+  const registrationAvailable = registrationEnabled();
+
   return (
     <main id="toppen" className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-12">
       <header className="flex min-h-20 items-center justify-between gap-4 sm:min-h-22">
@@ -54,8 +57,11 @@ export default function Home() {
             finns och var det ligger.
           </p>
           <div className="flex flex-col gap-3 min-[400px]:flex-row">
-            <Link href="/register" className="button">
-              Skapa konto{" "}
+            <Link
+              href={registrationAvailable ? "/register" : "/login"}
+              className="button"
+            >
+              {registrationAvailable ? "Skapa konto" : "Öppna appen"}{" "}
               <span aria-hidden="true">
                 <MaterialArrow name="outward" />
               </span>

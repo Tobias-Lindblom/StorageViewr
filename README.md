@@ -28,7 +28,7 @@ Ursprungliga krav: [Kravspecifikation](docs/requirements.md).
 1. Använd Node.js 22.13 eller senare, gärna aktuell LTS.
 2. Kör `npm install`.
 3. Skapa `.env.local` från `.env.example` om du saknar en lokal fil.
-4. Ange `APP_URL`, `MONGODB_URI` och `MONGODB_DB`.
+4. Ange `APP_URL`, `MONGODB_URI`, `MONGODB_DB` och `REGISTRATION_ENABLED`.
 5. Använd MongoDB Atlas eller lokal replica set; transaktioner krävs.
 6. Kör `npm run db:indexes` före första start och efter uppdateringar av modeller.
    Kommandot skapar collections/index men tar aldrig bort befintliga index.
@@ -37,6 +37,8 @@ Ursprungliga krav: [Kravspecifikation](docs/requirements.md).
 
 APP_URL ska vara webbläsarens exakta origin (schema, värd och port).
 I produktion används HTTPS. Hemligheter ligger i .env.local och ignoreras av Git.
+Sätt `REGISTRATION_ENABLED=false` för en stängd pilot. Om variabeln saknas är
+registreringen öppen i utveckling och stängd i produktion.
 
 ## Prova det nya flödet
 1. Välj företag → Översikt.

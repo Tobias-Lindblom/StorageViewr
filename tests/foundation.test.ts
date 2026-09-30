@@ -10,6 +10,10 @@ import { Session } from "../src/models/session";
 import { RateLimit } from "../src/models/rate-limit";
 import { register, login } from "../src/features/auth/service";
 import {
+  assertRegistrationEnabled,
+  registrationEnabled,
+} from "../src/features/auth/registration";
+import {
   createOrganization,
   selectOrganization,
   listOrganizations,
@@ -34,6 +38,7 @@ before(async () => {
   process.env.MONGODB_URI = replica.getUri();
   process.env.MONGODB_DB = "storageviewr_test";
   process.env.APP_URL = "http://localhost:3000";
+  process.env.REGISTRATION_ENABLED = "true";
   await connectDb();
   for (const model of [User, Organization, Membership, Session, RateLimit]) {
     await model.createCollection();
@@ -48,6 +53,33 @@ after(async () => {
 
 const hasStatus = (status: number) => (error: unknown) =>
   error instanceof AppError && error.status === status;
+
+test("registration is closed by default in production and can be configured explicitly", () => {
+  assert.equal(registrationEnabled({ NODE_ENV: "development" }), true);
+  assert.equal(registrationEnabled({ NODE_ENV: "production" }), false);
+  assert.equal(
+    registrationEnabled({
+      NODE_ENV: "production",
+      REGISTRATION_ENABLED: "true",
+    }),
+    true,
+  );
+  assert.equal(
+    registrationEnabled({
+      NODE_ENV: "development",
+      REGISTRATION_ENABLED: "false",
+    }),
+    false,
+  );
+  assert.throws(
+    () =>
+      assertRegistrationEnabled({
+        NODE_ENV: "production",
+        REGISTRATION_ENABLED: "false",
+      }),
+    hasStatus(403),
+  );
+});
 
 test("registration stores a password hash, login normalizes email, sessions expire and can be revoked", async () => {
   const input = {

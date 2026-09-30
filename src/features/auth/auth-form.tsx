@@ -7,9 +7,11 @@ import { clientApi } from "@/lib/client-api";
 export function AuthForm({
   mode,
   returnTo,
+  registrationAvailable = true,
 }: {
   mode: "login" | "register";
   returnTo?: string;
+  registrationAvailable?: boolean;
 }) {
   const router = useRouter();
   const [error, setError] = useState("");
@@ -97,18 +99,20 @@ export function AuthForm({
             ? "Skapa konto"
             : "Logga in"}
       </button>
-      <p className="border-t border-line/60 pt-5 text-center text-sm text-muted">
-        {registration ? "Har du redan ett konto? " : "Ny här? "}
-        <Link
-          className="font-medium text-cyan hover:underline"
-          href={
-            (registration ? "/login" : "/register") +
-            (returnTo ? "?next=" + encodeURIComponent(returnTo) : "")
-          }
-        >
-          {registration ? "Logga in" : "Skapa konto"}
-        </Link>
-      </p>
+      {(registration || registrationAvailable) && (
+        <p className="border-t border-line/60 pt-5 text-center text-sm text-muted">
+          {registration ? "Har du redan ett konto? " : "Ny här? "}
+          <Link
+            className="font-medium text-cyan hover:underline"
+            href={
+              (registration ? "/login" : "/register") +
+              (returnTo ? "?next=" + encodeURIComponent(returnTo) : "")
+            }
+          >
+            {registration ? "Logga in" : "Skapa konto"}
+          </Link>
+        </p>
+      )}
     </form>
   );
 }

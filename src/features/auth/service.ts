@@ -10,8 +10,10 @@ import {
 } from "@/lib/server/password";
 import { createSession } from "@/lib/server/session";
 import { rateLimit } from "@/lib/server/rate-limit";
+import { assertRegistrationEnabled } from "./registration";
 
 export async function register(input: unknown) {
+  assertRegistrationEnabled();
   const data = registerSchema.parse(input);
   await connectDb();
   await rateLimit("register:global", 30);
