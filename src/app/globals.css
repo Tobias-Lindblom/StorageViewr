@@ -152,6 +152,9 @@
   color: var(--color-foreground);
   box-shadow: 0 -12px 60px #00000060;
 }
+.bottom-sheet:focus {
+  outline: none;
+}
 .bottom-sheet[open] {
   display: flex;
   animation: sheet-enter 260ms cubic-bezier(0.22, 1, 0.36, 1);
