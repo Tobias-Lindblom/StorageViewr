@@ -28,6 +28,9 @@ export function BottomSheet({
     if (!element) return;
     const previousOverflow = document.body.style.overflow;
     element.showModal();
+    // WebKit otherwise focuses the full-width drag handle when the dialog
+    // opens, which paints a large focus ring across the top of the sheet.
+    element.focus({ preventScroll: true });
     document.body.style.overflow = "hidden";
     return () => {
       exitAnimation.current?.cancel();
@@ -65,6 +68,7 @@ export function BottomSheet({
   return createPortal(
     <dialog
       ref={dialog}
+      tabIndex={-1}
       aria-labelledby={titleId}
       className="bottom-sheet print:hidden"
       data-dragging={drag.active}
@@ -164,7 +168,7 @@ export function BottomSheet({
           {title}
         </h2>
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pt-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-7 sm:pt-6">
+      <div className="bottom-sheet-content min-h-0 overflow-y-auto overscroll-contain px-5 pt-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-7 sm:pt-6">
         {children}
       </div>
       {footer && (

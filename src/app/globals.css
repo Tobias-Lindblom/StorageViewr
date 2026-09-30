@@ -177,3 +177,10 @@
 .bottom-sheet::backdrop { transition: opacity 220ms ease-out; }
 .bottom-sheet[data-closing="true"] { pointer-events: none; }
 .bottom-sheet[data-closing="true"]::backdrop { opacity: 0; }
+
+/* Keep intrinsic sheet height on iOS. A zero flex-basis inside an auto-height
+   dialog makes Safari collapse the scroll area between header and footer. */
+.bottom-sheet-content {
+  flex: 0 1 auto;
+  -webkit-overflow-scrolling: touch;
+}
