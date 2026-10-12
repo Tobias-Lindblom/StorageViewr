@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { PageHeading } from "@/components/page-heading";
 import { EmptyState } from "@/components/empty-state";
@@ -7,6 +6,9 @@ import { pageResource } from "@/lib/server/page-resource";
 import { getWarehouse } from "@/features/warehouses/service";
 import { listLocations } from "@/features/locations/service";
 import { LocationList } from "@/features/locations/location-list";
+import { DownloadLocationReport } from "@/features/locations/download-location-report";
+import { WarehouseEditorSheet } from "@/features/warehouses/warehouse-editor-sheet";
+import { LocationEditorSheet } from "@/features/locations/location-editor-sheet";
 
 export default async function WarehousePage({
   params,
@@ -28,21 +30,23 @@ export default async function WarehousePage({
         }
         action={
           admin ? (
-            <div className="flex gap-2">
+            <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center">
               {warehouse.active && (
-                <Link
-                  className="button flex-1 whitespace-nowrap px-4! sm:flex-none"
-                  href={"/locations/new?warehouseId=" + id}
-                >
-                  + Skapa platser
-                </Link>
+                <LocationEditorSheet
+                  warehouses={[{ id: warehouse.id, name: warehouse.name }]}
+                  warehouseId={warehouse.id}
+                  label="+ Skapa platser"
+                  className="button col-span-2 w-full whitespace-nowrap px-4! sm:w-auto sm:flex-none"
+                />
               )}
-              <Link
-                className="button-secondary flex-1 whitespace-nowrap px-4! sm:flex-none"
-                href={"/warehouses/" + id + "/edit"}
-              >
-                Redigera lager
-              </Link>
+              <WarehouseEditorSheet
+                initial={warehouse}
+                label="Redigera lager"
+                className="button-secondary w-full whitespace-nowrap px-4! sm:w-auto sm:flex-none"
+              />
+              {locations.length > 0 && (
+                <DownloadLocationReport warehouseId={id} />
+              )}
             </div>
           ) : undefined
         }

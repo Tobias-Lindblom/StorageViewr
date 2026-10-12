@@ -142,7 +142,8 @@
   margin: 0 auto;
   width: min(100%, 40rem);
   max-width: 100%;
-  max-height: 90dvh;
+  max-height: 88vh;
+  max-height: min(88dvh, 52rem);
   overflow: hidden;
   padding: 0;
   border: 1px solid var(--color-line);
@@ -150,7 +151,8 @@
   border-radius: 1.5rem 1.5rem 0 0;
   background: var(--color-surface);
   color: var(--color-foreground);
-  box-shadow: 0 -12px 60px #00000060;
+  overscroll-behavior: contain;
+  box-shadow: inset 0 1px 0 #ffffff0a, 0 -16px 64px #00000070;
 }
 .bottom-sheet:focus {
   outline: none;
@@ -163,12 +165,20 @@
   background: #05040bcc;
   backdrop-filter: blur(3px);
 }
+.bottom-sheet[open]::backdrop {
+  animation: sheet-backdrop-enter 220ms ease-out;
+}
 @keyframes sheet-enter {
   from { transform: translateY(100%); }
   to { transform: translateY(0); }
 }
+@keyframes sheet-backdrop-enter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
 @media (prefers-reduced-motion: reduce) {
-  .bottom-sheet[open] { animation: none; }
+  .bottom-sheet[open],
+  .bottom-sheet[open]::backdrop { animation: none; }
 }
 
 .bottom-sheet { transition: translate 180ms ease-out; }
@@ -186,4 +196,7 @@
 .bottom-sheet-content {
   flex: 0 1 auto;
   -webkit-overflow-scrolling: touch;
+}
+.bottom-sheet-footer {
+  box-shadow: 0 -12px 28px #09081055;
 }

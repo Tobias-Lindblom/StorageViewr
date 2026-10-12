@@ -72,13 +72,113 @@ export async function getStockPair(context: TenantContext, input: unknown) {
     version: record?.version ?? null,
   };
 }
+
+export async function placeProduct(context: TenantContext, input: unknown) {
+  const data = stockPairSchema.parse(input);
+  const db = await connectDb();
+  try {
+    return await db.connection.transaction(async (session) => {
+      const location = await Location.findOne({
+        _id: data.locationId,
+        organizationId: context.organizationId,
+        active: true,
+      }).session(session);
+      if (!location)
+        throw new AppError(
+          404,
+          "LOCATION_NOT_FOUND",
+          "Välj en aktiv lagerplats i ditt företag.",
+        );
+      const warehouse = await Warehouse.findOneAndUpdate(
+        {
+          _id: location.warehouseId,
+          organizationId: context.organizationId,
+          active: true,
+        },
+        { $inc: { locationRevision: 1 } },
+        { session, returnDocument: "after" },
+      );
+      if (!warehouse)
+        throw new AppError(409, "WAREHOUSE_INACTIVE", "Lagret är inte aktivt.");
+      const lockedLocation = await Location.findOneAndUpdate(
+        {
+          _id: location._id,
+          organizationId: context.organizationId,
+          active: true,
+        },
+        { $inc: { stockRevision: 1 } },
+        { session, returnDocument: "after" },
+      );
+      if (!lockedLocation)
+        throw new AppError(
+          409,
+          "LOCATION_INACTIVE",
+          "Lagerplatsen är inte aktiv.",
+        );
+      const product = await Product.findOneAndUpdate(
+        {
+          _id: data.productId,
+          organizationId: context.organizationId,
+          active: true,
+        },
+        { $inc: { stockRevision: 1 } },
+        { session, returnDocument: "after" },
+      );
+      if (!product)
+        throw new AppError(
+          404,
+          "PRODUCT_NOT_FOUND",
+          "Välj en aktiv produkt i ditt företag.",
+        );
+      if (
+        await InventoryLevel.exists({
+          organizationId: context.organizationId,
+          productId: product._id,
+          locationId: location._id,
+        }).session(session)
+      )
+        throw new AppError(
+          409,
+          "PRODUCT_ALREADY_PLACED",
+          "Produkten är redan placerad på lagerplatsen.",
+        );
+      const [level] = await InventoryLevel.create(
+        [
+          {
+            organizationId: context.organizationId,
+            warehouseId: warehouse._id,
+            productId: product._id,
+            locationId: location._id,
+            quantity: 0,
+            version: 1,
+          },
+        ],
+        { session },
+      );
+      return {
+        productId: String(product._id),
+        locationId: String(location._id),
+        quantity: level.quantity,
+        version: level.version,
+      };
+    });
+  } catch (error) {
+    if (isDuplicateKey(error))
+      throw new AppError(
+        409,
+        "PRODUCT_ALREADY_PLACED",
+        "Produkten är redan placerad på lagerplatsen.",
+      );
+    throw error;
+  }
+}
+
 export async function listStock(context: TenantContext, input: unknown) {
   const scope = stockScopeSchema.parse(input);
   await checkScope(context, scope);
   const records = await InventoryLevel.find({
     ...scope,
     organizationId: context.organizationId,
-    quantity: { $gt: 0 },
   })
     .sort({ _id: 1 })
     .lean();

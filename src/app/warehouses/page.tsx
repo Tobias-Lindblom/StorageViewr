@@ -6,6 +6,7 @@ import { EmptyState } from "@/components/empty-state";
 import { AppIcon } from "@/components/app-icon";
 import { pageTenant } from "@/lib/server/page-auth";
 import { listWarehouses } from "@/features/warehouses/service";
+import { WarehouseEditorSheet } from "@/features/warehouses/warehouse-editor-sheet";
 
 export default async function WarehousesPage() {
   const context = await pageTenant();
@@ -18,9 +19,7 @@ export default async function WarehousesPage() {
         description="Fysiska lager och tillhörande lagerplatser."
         action={
           admin ? (
-            <Link className="button" href="/warehouses/new">
-              + Lägg till lager
-            </Link>
+            <WarehouseEditorSheet />
           ) : undefined
         }
       />
@@ -29,9 +28,7 @@ export default async function WarehousesPage() {
           title="Här börjar ditt lager"
           action={
             admin ? (
-              <Link className="button" href="/warehouses/new">
-                Skapa lager
-              </Link>
+              <WarehouseEditorSheet label="Skapa lager" />
             ) : undefined
           }
         >

@@ -11,6 +11,7 @@ import { Product } from "../src/models/product";
 import { InventorySession } from "../src/models/inventory-session";
 import { InventorySessionLocation } from "../src/models/inventory-session-location";
 import { InventoryLevel } from "../src/models/inventory-level";
+import { InventoryMovement } from "../src/models/inventory-movement";
 import {
   createWarehouse,
   getWarehouse,
@@ -20,6 +21,7 @@ import {
 import {
   createLocation,
   createLocationBatch,
+  deleteLocation,
   getLocation,
   getLocationByToken,
   listLocations,
@@ -47,6 +49,7 @@ before(async () => {
     InventoryLevel,
     InventorySession,
     InventorySessionLocation,
+    InventoryMovement,
   ]) {
     await model.createCollection();
     await model.createIndexes();
@@ -160,7 +163,10 @@ test("location references, QR lookup, list and edit cannot cross tenant boundari
     quantity: 0,
     version: 1,
   });
-  assert.equal((await listLocations(a))[0].occupied, false);
+  const placedAtZero = (await listLocations(a))[0];
+  assert.equal(placedAtZero.occupied, true);
+  assert.equal(placedAtZero.productCount, 1);
+  assert.equal(placedAtZero.totalQuantity, "0");
   await InventoryLevel.create({
     organizationId: a.organizationId,
     warehouseId: own.id,
@@ -169,7 +175,10 @@ test("location references, QR lookup, list and edit cannot cross tenant boundari
     quantity: 2,
     version: 1,
   });
-  assert.equal((await listLocations(a))[0].occupied, true);
+  const stocked = (await listLocations(a))[0];
+  assert.equal(stocked.occupied, true);
+  assert.equal(stocked.productCount, 2);
+  assert.equal(stocked.totalQuantity, "2");
   assert.deepEqual(
     (await listLocations(a)).map((row) => row.id),
     [location.id],
@@ -273,6 +282,95 @@ test("roles, stable QR tokens and inactive warehouse rules are enforced", async 
     (await getLocationByToken(worker, location.qrToken)).code,
     "A-01-01",
   );
+});
+
+test("only unused locations can be deleted by an admin", async () => {
+  const a = tenant(),
+    b = tenant(),
+    worker: TenantContext = { ...a, role: "warehouse" };
+  const warehouse = await createWarehouse(a, warehouseInput);
+  const foreignWarehouse = await createWarehouse(b, warehouseInput);
+  const unused = await createLocation(a, {
+    warehouseId: warehouse.id,
+    ...parts,
+  });
+  const foreign = await createLocation(b, {
+    warehouseId: foreignWarehouse.id,
+    ...parts,
+  });
+
+  await assert.rejects(deleteLocation(worker, unused.id), status(403));
+  await assert.rejects(deleteLocation(a, foreign.id), status(404));
+  await InventoryLevel.create({
+    organizationId: a.organizationId,
+    warehouseId: warehouse.id,
+    productId: new Types.ObjectId(),
+    locationId: unused.id,
+    quantity: 0,
+    version: 1,
+  });
+  assert.deepEqual(await deleteLocation(a, unused.id), {
+    id: unused.id,
+    code: "A-01-01",
+  });
+  await assert.rejects(getLocation(a, unused.id), status(404));
+  assert.equal(
+    await InventoryLevel.countDocuments({ locationId: unused.id }),
+    0,
+  );
+
+  const stocked = await createLocation(a, {
+    warehouseId: warehouse.id,
+    ...parts,
+    position: "02",
+  });
+  await InventoryLevel.create({
+    organizationId: a.organizationId,
+    warehouseId: warehouse.id,
+    productId: new Types.ObjectId(),
+    locationId: stocked.id,
+    quantity: 1,
+    version: 1,
+  });
+  await assert.rejects(deleteLocation(a, stocked.id), status(409));
+
+  const historical = await createLocation(a, {
+    warehouseId: warehouse.id,
+    ...parts,
+    position: "03",
+  });
+  await InventoryMovement.create({
+    organizationId: a.organizationId,
+    warehouseId: warehouse.id,
+    productId: new Types.ObjectId(),
+    locationId: historical.id,
+    type: "INITIAL",
+    previousQuantity: 0,
+    newQuantity: 0,
+    difference: 0,
+    performedBy: a.userId,
+    performedByName: "Testare",
+    productName: "Testprodukt",
+    sku: "TEST-1",
+    locationCode: historical.code,
+    warehouseName: warehouseInput.name,
+    reason: "Testhistorik",
+  });
+  await assert.rejects(deleteLocation(a, historical.id), status(409));
+
+  const inventoried = await createLocation(a, {
+    warehouseId: warehouse.id,
+    ...parts,
+    position: "04",
+  });
+  await InventorySessionLocation.create({
+    organizationId: a.organizationId,
+    inventorySessionId: new Types.ObjectId(),
+    locationId: inventoried.id,
+    locationCode: inventoried.code,
+    status: "pending",
+  });
+  await assert.rejects(deleteLocation(a, inventoried.id), status(409));
 });
 
 test("concurrent warehouse deactivation and location creation cannot leave active locations in an inactive warehouse", async () => {

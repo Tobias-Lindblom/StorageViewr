@@ -255,7 +255,14 @@ export function LocationList({
                               {!location.active
                                 ? "Inaktiv"
                                 : location.occupied
-                                  ? "Upptagen"
+                                  ? (location.productCount === 1
+                                      ? "1 produkt"
+                                      : location.productCount + " produkter") +
+                                    " · " +
+                                    BigInt(location.totalQuantity).toLocaleString(
+                                      "sv-SE",
+                                    ) +
+                                    " st"
                                   : "Tom"}
                             </span>
                           </span>

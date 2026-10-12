@@ -3,9 +3,12 @@ import { AppShell } from "@/components/app-shell";
 import { PageHeading } from "@/components/page-heading";
 import { LocationList } from "@/features/locations/location-list";
 import { listLocations } from "@/features/locations/service";
+import { DownloadLocationReport } from "@/features/locations/download-location-report";
 import { getWarehouse, listWarehouses } from "@/features/warehouses/service";
 import { pageTenant } from "@/lib/server/page-auth";
 import { pageResource } from "@/lib/server/page-resource";
+import { LocationEditorSheet } from "@/features/locations/location-editor-sheet";
+import { WarehouseEditorSheet } from "@/features/warehouses/warehouse-editor-sheet";
 
 export default async function LocationsPage({
   searchParams,
@@ -20,28 +23,47 @@ export default async function LocationsPage({
     listWarehouses(context),
   ]);
   const scope = warehouseId ? "?warehouseId=" + warehouseId : "";
+  const activeWarehouses = warehouses
+    .filter((warehouse) => warehouse.active)
+    .map(({ id, name }) => ({ id, name }));
 
   return (
     <AppShell context={context}>
       <PageHeading
         title="Lagerplatser"
         action={
-          <div className="flex flex-wrap gap-2">
+          <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap">
             {context.role === "admin" && (
-              <Link
-                className="button flex-1 whitespace-nowrap px-4! sm:flex-none"
-                href={"/locations/new" + scope}
-              >
-                + Skapa platser
-              </Link>
+              activeWarehouses.length ? (
+                <LocationEditorSheet
+                  warehouses={activeWarehouses}
+                  warehouseId={
+                    activeWarehouses.some(
+                      (warehouse) => warehouse.id === warehouseId,
+                    )
+                      ? warehouseId
+                      : undefined
+                  }
+                  label="+ Skapa platser"
+                  className="button col-span-2 w-full whitespace-nowrap px-4! sm:w-auto sm:flex-none"
+                />
+              ) : (
+                <WarehouseEditorSheet
+                  label="+ Skapa lager"
+                  className="button col-span-2 w-full whitespace-nowrap px-4! sm:w-auto sm:flex-none"
+                />
+              )
             )}
             {locations.some((location) => location.active) && (
               <Link
-                className="button-secondary flex-1 whitespace-nowrap px-4! sm:flex-none"
+                className="button-secondary w-full whitespace-nowrap px-4! sm:w-auto sm:flex-none"
                 href={"/locations/labels" + scope}
               >
                 QR-etiketter
               </Link>
+            )}
+            {locations.length > 0 && (
+              <DownloadLocationReport warehouseId={warehouseId} />
             )}
           </div>
         }

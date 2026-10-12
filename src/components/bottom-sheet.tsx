@@ -16,7 +16,12 @@ export function BottomSheet({
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const titleId = useId();
-  const pointer = useRef<{ id: number; x: number; y: number } | null>(null);
+  const pointer = useRef<{
+    id: number;
+    x: number;
+    y: number;
+    startedAt: number;
+  } | null>(null);
   const moved = useRef(false);
   const closingRef = useRef(false);
   const exitAnimation = useRef<Animation | null>(null);
@@ -27,15 +32,21 @@ export function BottomSheet({
     const element = dialog.current;
     if (!element) return;
     const previousOverflow = document.body.style.overflow;
+    const previousOverscroll = document.body.style.overscrollBehavior;
+    const previousRootOverflow = document.documentElement.style.overflow;
     element.showModal();
     // WebKit otherwise focuses the full-width drag handle when the dialog
     // opens, which paints a large focus ring across the top of the sheet.
     element.focus({ preventScroll: true });
     document.body.style.overflow = "hidden";
+    document.body.style.overscrollBehavior = "none";
+    document.documentElement.style.overflow = "hidden";
     return () => {
       exitAnimation.current?.cancel();
       element.close();
       document.body.style.overflow = previousOverflow;
+      document.body.style.overscrollBehavior = previousOverscroll;
+      document.documentElement.style.overflow = previousRootOverflow;
     };
   }, []);
 
@@ -125,6 +136,7 @@ export function BottomSheet({
               id: event.pointerId,
               x: event.clientX,
               y: event.clientY,
+              startedAt: performance.now(),
             };
             moved.current = false;
             event.currentTarget.setPointerCapture(event.pointerId);
@@ -146,9 +158,12 @@ export function BottomSheet({
           onPointerUp={(event) => {
             const start = pointer.current;
             if (!start || start.id !== event.pointerId) return;
+            const distance = Math.max(0, event.clientY - start.y);
+            const elapsed = Math.max(1, performance.now() - start.startedAt);
             pointer.current = null;
             setDrag({ distance: 0, active: false });
-            if (event.clientY - start.y >= 80) requestClose();
+            if (distance >= 72 || (distance >= 24 && distance / elapsed > 0.6))
+              requestClose();
           }}
           onPointerCancel={() => {
             pointer.current = null;
@@ -168,11 +183,13 @@ export function BottomSheet({
           {title}
         </h2>
       </div>
-      <div className="bottom-sheet-content min-h-0 overflow-y-auto overscroll-contain px-5 pt-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-7 sm:pt-6">
+      <div
+        className={`bottom-sheet-content min-h-0 overflow-y-auto overscroll-contain px-5 pt-5 sm:px-7 sm:pt-6 ${footer ? "pb-6" : "pb-[max(1.5rem,env(safe-area-inset-bottom))]"}`}
+      >
         {children}
       </div>
       {footer && (
-        <div className="shrink-0 border-t border-line/60 bg-surface px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-7">
+        <div className="bottom-sheet-footer shrink-0 border-t border-line/60 bg-surface px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-7">
           {footer}
         </div>
       )}

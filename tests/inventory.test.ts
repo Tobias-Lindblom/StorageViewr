@@ -16,7 +16,7 @@ import { InventoryMovement } from "../src/models/inventory-movement";
 import { createProduct, updateProduct, getProduct } from "../src/features/products/service";
 import { createWarehouse, updateWarehouse } from "../src/features/warehouses/service";
 import { createLocation, updateLocation, getLocation } from "../src/features/locations/service";
-import { adjustStock, getStockPair, listStock, listMovements, registerStockMovement } from "../src/features/inventory/service";
+import { adjustStock, getStockPair, listStock, listMovements, placeProduct, registerStockMovement } from "../src/features/inventory/service";
 import { stockAdjustmentSchema, stockMovementSchema } from "../src/validation/inventory";
 
 let replica: MongoMemoryReplSet;
@@ -57,6 +57,58 @@ test("one product can occupy several places with independent balances and accura
   assert.equal((await listStock(f.context, { locationId: second.id })).items[0].quantity, 48);
   await assert.rejects(InventoryLevel.create({ organizationId: f.context.organizationId, warehouseId: f.warehouse.id,
     productId: f.product.id, locationId: f.location.id, quantity: 1, version: 1 }));
+});
+
+test("products can be placed with zero balance before the first receipt", async () => {
+  const f = await fixture();
+  const worker: TenantContext = { ...f.context, role: "warehouse" };
+  const pair = { productId: f.product.id, locationId: f.location.id };
+  assert.deepEqual(await placeProduct(worker, pair), {
+    ...pair,
+    quantity: 0,
+    version: 1,
+  });
+  assert.deepEqual(await getStockPair(worker, pair), {
+    ...pair,
+    quantity: 0,
+    version: 1,
+  });
+  const placed = await listStock(worker, { locationId: f.location.id });
+  assert.equal(placed.items.length, 1);
+  assert.equal(placed.items[0].quantity, 0);
+  assert.equal(placed.total, "0");
+  assert.equal(
+    (await listMovements(f.context, { productId: f.product.id })).total,
+    0,
+  );
+  await assert.rejects(placeProduct(worker, pair), status(409));
+
+  await registerStockMovement(worker, {
+    type: "RECEIPT",
+    ...pair,
+    quantity: 7,
+    expectedVersion: 1,
+    reason: "Första inleveransen",
+  });
+  assert.deepEqual(await getStockPair(worker, pair), {
+    ...pair,
+    quantity: 7,
+    version: 2,
+  });
+  const history = await listMovements(f.context, {
+    productId: f.product.id,
+  });
+  assert.equal(history.total, 1);
+  assert.equal(history.items[0].type, "RECEIPT");
+
+  const foreign = await fixture();
+  await assert.rejects(
+    placeProduct(worker, {
+      productId: f.product.id,
+      locationId: foreign.location.id,
+    }),
+    status(404),
+  );
 });
 
 test("balances and movements isolate all product, location and warehouse references by tenant", async () => {
@@ -296,7 +348,8 @@ test("transfers update both places atomically and retain one linked audit pair",
   const emptySource = await listStock(worker, {
     locationId: f.location.id,
   });
-  assert.equal(emptySource.items.length, 0);
+  assert.equal(emptySource.items.length, 1);
+  assert.equal(emptySource.items[0].quantity, 0);
   assert.equal(emptySource.total, "0");
   assert.deepEqual(
     await getStockPair(worker, {

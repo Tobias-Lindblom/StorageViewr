@@ -7,8 +7,18 @@ import type { getWarehouse } from "./service";
 
 export function WarehouseForm({
   initial,
+  embedded = false,
+  id,
+  hideSubmit = false,
+  onPendingChange,
+  onSaved,
 }: {
   initial?: Awaited<ReturnType<typeof getWarehouse>>;
+  embedded?: boolean;
+  id?: string;
+  hideSubmit?: boolean;
+  onPendingChange?: (pending: boolean) => void;
+  onSaved?: (id: string) => void;
 }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
@@ -16,6 +26,7 @@ export function WarehouseForm({
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setPending(true);
+    onPendingChange?.(true);
     setError("");
     const form = new FormData(event.currentTarget);
     try {
@@ -29,24 +40,43 @@ export function WarehouseForm({
           ...(initial ? { active: form.get("active") === "on" } : {}),
         },
       );
-      router.push("/warehouses/" + result.id);
-      router.refresh();
+      if (onSaved) onSaved(result.id);
+      else {
+        router.push("/warehouses/" + result.id);
+        router.refresh();
+      }
     } catch (error) {
       setError(
         error instanceof Error ? error.message : "Kunde inte spara lagret.",
       );
     } finally {
       setPending(false);
+      onPendingChange?.(false);
     }
   }
   return (
-    <form onSubmit={submit} className="max-w-2xl space-y-8">
+    <form
+      id={id}
+      onSubmit={submit}
+      className={embedded ? "space-y-6" : "max-w-2xl space-y-8"}
+    >
       <fieldset disabled={pending}>
-        <section aria-labelledby="warehouse-information-heading">
-          <h2 id="warehouse-information-heading" className="mb-4! text-xl!">
-            Lageruppgifter
-          </h2>
-          <div className="rounded-2xl border border-line bg-surface p-5 sm:p-6">
+        <section
+          aria-labelledby={embedded ? undefined : "warehouse-information-heading"}
+          aria-label={embedded ? "Lageruppgifter" : undefined}
+        >
+          {!embedded && (
+            <h2 id="warehouse-information-heading" className="mb-4! text-xl!">
+              Lageruppgifter
+            </h2>
+          )}
+          <div
+            className={
+              embedded
+                ? ""
+                : "rounded-2xl border border-line bg-surface p-5 sm:p-6"
+            }
+          >
             <div className="grid gap-5 sm:grid-cols-2">
               <label>
                 Lagernamn
@@ -112,17 +142,19 @@ export function WarehouseForm({
           {error}
         </p>
       )}
-      <div className="flex flex-col-reverse gap-3 border-t border-line/60 pt-6 sm:flex-row sm:justify-end">
-        <Link
-          className="button-secondary w-full sm:w-auto"
-          href={initial ? "/warehouses/" + initial.id : "/warehouses"}
-        >
-          Avbryt
-        </Link>
-        <button className="button w-full sm:w-auto" disabled={pending}>
-          {pending ? "Sparar…" : initial ? "Spara lager" : "Skapa lager"}
-        </button>
-      </div>
+      {!hideSubmit && (
+        <div className="flex flex-col-reverse gap-3 border-t border-line/60 pt-6 sm:flex-row sm:justify-end">
+          <Link
+            className="button-secondary w-full sm:w-auto"
+            href={initial ? "/warehouses/" + initial.id : "/warehouses"}
+          >
+            Avbryt
+          </Link>
+          <button className="button w-full sm:w-auto" disabled={pending}>
+            {pending ? "Sparar…" : initial ? "Spara lager" : "Skapa lager"}
+          </button>
+        </div>
+      )}
     </form>
   );
 }

@@ -5,6 +5,9 @@ import { Types, type ClientSession } from "mongoose";
 import { Location, type LocationRecord } from "@/models/location";
 import { Warehouse } from "@/models/warehouse";
 import { InventoryLevel } from "@/models/inventory-level";
+import { InventoryMovement } from "@/models/inventory-movement";
+import { InventorySessionLocation } from "@/models/inventory-session-location";
+import { InventoryCount } from "@/models/inventory-count";
 import { AppError } from "@/lib/server/errors";
 import { connectDb } from "@/lib/server/db";
 import { requireAdmin, type TenantContext } from "@/lib/server/tenant";
@@ -41,31 +44,50 @@ export async function listLocations(
     .sort({ active: -1, code: 1, _id: 1 })
     .lean();
   // Explicit tenant constraint also on referenced warehouses.
-  const [warehouses, occupiedLocationIds] = await Promise.all([
+  const [warehouses, levels] = await Promise.all([
     Warehouse.find({
       organizationId: context.organizationId,
       _id: { $in: records.map((record) => record.warehouseId) },
       ...(context.role !== "admin" ? { active: true } : {}),
     }).lean(),
     records.length
-      ? InventoryLevel.distinct("locationId", {
+      ? InventoryLevel.find({
           organizationId: context.organizationId,
           locationId: { $in: records.map((record) => record._id) },
-          quantity: { $gt: 0 },
         })
+          .select("locationId quantity")
+          .lean()
       : Promise.resolve([]),
   ]);
   const names = new Map(
     warehouses.map((warehouse) => [warehouse._id.toString(), warehouse.name]),
   );
-  const occupied = new Set(occupiedLocationIds.map(String));
+  const placementSummary = new Map<
+    string,
+    { productCount: number; totalQuantity: bigint }
+  >();
+  for (const level of levels) {
+    const locationId = level.locationId.toString();
+    const summary = placementSummary.get(locationId) ?? {
+      productCount: 0,
+      totalQuantity: BigInt(0),
+    };
+    summary.productCount += 1;
+    summary.totalQuantity += BigInt(level.quantity);
+    placementSummary.set(locationId, summary);
+  }
   return records
     .filter((record) => names.has(record.warehouseId.toString()))
-    .map((record) => ({
-      ...serialize(record),
-      warehouseName: names.get(record.warehouseId.toString())!,
-      occupied: occupied.has(record._id.toString()),
-    }));
+    .map((record) => {
+      const summary = placementSummary.get(record._id.toString());
+      return {
+        ...serialize(record),
+        warehouseName: names.get(record.warehouseId.toString())!,
+        occupied: Boolean(summary),
+        productCount: summary?.productCount ?? 0,
+        totalQuantity: (summary?.totalQuantity ?? BigInt(0)).toString(),
+      };
+    });
 }
 export async function getLocation(context: TenantContext, id: string) {
   const record = await Location.findOne({
@@ -222,5 +244,75 @@ export async function updateLocation(
     }
     if (!data.active) await assertNoOpenInventory(context, { locationId: record._id }, session);
     return serialize(record);
+  });
+}
+
+export async function deleteLocation(context: TenantContext, id: string) {
+  requireAdmin(context);
+  const locationId = objectIdSchema.parse(id);
+  const db = await connectDb();
+  return db.connection.transaction(async (session) => {
+    const location = await Location.findOne({
+      _id: locationId,
+      organizationId: context.organizationId,
+    }).session(session);
+    if (!location)
+      throw new AppError(
+        404,
+        "LOCATION_NOT_FOUND",
+        "Lagerplatsen kunde inte hittas.",
+      );
+
+    // Serialize deletion with stock and inventory operations for this warehouse.
+    await lockWarehouse(context, location.warehouseId, session);
+
+    const hasStock = await InventoryLevel.exists({
+      organizationId: context.organizationId,
+      locationId,
+      quantity: { $gt: 0 },
+    }).session(session);
+    if (hasStock)
+      throw new AppError(
+        409,
+        "LOCATION_HAS_STOCK",
+        "Lagerplatsen har kvarvarande saldo. Nollställ saldot innan du tar bort platsen.",
+      );
+
+    const hasMovementHistory = await InventoryMovement.exists({
+      organizationId: context.organizationId,
+      locationId,
+    }).session(session);
+    const hasInventoryHistory =
+      (await InventorySessionLocation.exists({
+        organizationId: context.organizationId,
+        locationId,
+      }).session(session)) ||
+      (await InventoryCount.exists({
+        organizationId: context.organizationId,
+        locationId,
+      }).session(session));
+    if (hasMovementHistory || hasInventoryHistory)
+      throw new AppError(
+        409,
+        "LOCATION_HAS_HISTORY",
+        "Lagerplatsen har historik och kan inte tas bort. Inaktivera platsen i stället.",
+      );
+
+    // Empty level rows carry no history and must not be left orphaned.
+    await InventoryLevel.deleteMany(
+      { organizationId: context.organizationId, locationId },
+      { session },
+    );
+    const result = await Location.deleteOne(
+      { _id: locationId, organizationId: context.organizationId },
+      { session },
+    );
+    if (!result.deletedCount)
+      throw new AppError(
+        404,
+        "LOCATION_NOT_FOUND",
+        "Lagerplatsen kunde inte hittas.",
+      );
+    return { id: location._id.toString(), code: location.code };
   });
 }

@@ -25,6 +25,8 @@ import { startInventory, saveLocationCount, finishInventory } from "../src/featu
 import { getInventory } from "../src/features/inventory/session-queries";
 import { getInventoryReport, type InventoryReport } from "../src/features/inventory/report-data";
 import { renderInventoryReport, inventoryReportFilename } from "../src/features/inventory/report-pdf";
+import { getLocationStockReport, type LocationStockReport } from "../src/features/locations/report-data";
+import { locationStockReportFilename, renderLocationStockReport } from "../src/features/locations/report-pdf";
 import type { TenantContext } from "../src/lib/server/tenant";
 
 let replica: MongoMemoryReplSet;
@@ -81,6 +83,84 @@ test("reports require completion and tenant ownership and use immutable counting
   await assert.rejects(getInventoryReport({ ...f.context, organizationId: new Types.ObjectId() }, f.inventory.id), status(404));
   await writeFile(path.join(folder, "short.pdf"), await renderInventoryReport(original));
   await writeFile(path.join(folder, "short.json"), JSON.stringify(original));
+});
+
+test("location stock reports include zero-balance placements, empty places and current product balances", async () => {
+  const f = await fixture();
+  const vacant = await createLocation(f.context, {
+    warehouseId: f.warehouse.id,
+    zone: "A",
+    shelf: "01",
+    position: "03",
+  });
+  const zeroProduct = await createProduct(f.context, {
+    name: "Skyddsglasögon",
+    sku: "GLAS-01",
+  });
+  await InventoryLevel.create({
+    organizationId: f.context.organizationId,
+    warehouseId: f.warehouse.id,
+    productId: zeroProduct.id,
+    locationId: f.empty.id,
+    quantity: 0,
+    version: 1,
+  });
+
+  const report = await getLocationStockReport(f.context, f.warehouse.id);
+  assert.equal(report.companyName, "Åström Lager AB");
+  assert.equal(report.scopeName, "Huvudlager Borås");
+  assert.deepEqual(report.summary, {
+    warehouses: 1,
+    locations: 3,
+    emptyLocations: 1,
+    uniqueProducts: 2,
+    placements: 2,
+  });
+  assert.equal(report.warehouses[0].locations[0].rows[0].quantity, 10);
+  assert.equal(report.warehouses[0].locations[1].rows[0].quantity, 0);
+  assert.equal(report.warehouses[0].locations[2].id, vacant.id);
+  assert.equal(report.warehouses[0].locations[2].rows.length, 0);
+
+  const foreignContext: TenantContext = {
+    organizationId: new Types.ObjectId(),
+    userId: new Types.ObjectId(),
+    role: "admin",
+  };
+  await Organization.create({
+    _id: foreignContext.organizationId,
+    name: "Annat företag",
+    slug: String(foreignContext.organizationId),
+  });
+  await assert.rejects(
+    getLocationStockReport(foreignContext, f.warehouse.id),
+    status(404),
+  );
+
+  const locations = Array.from({ length: 36 }, (_, index) => ({
+    ...report.warehouses[0].locations[index % 2],
+    id: String(new Types.ObjectId()),
+    code: "A-" + String(index + 1).padStart(3, "0"),
+  }));
+  const multiPage: LocationStockReport = {
+    ...report,
+    warehouses: [{ ...report.warehouses[0], locations }],
+    summary: { ...report.summary, locations: locations.length },
+  };
+  const bytes = await renderLocationStockReport(multiPage);
+  assert.equal(bytes.subarray(0, 5).toString(), "%PDF-");
+  const pageCount = (bytes.toString("latin1").match(/\/Type \/Page\b/g) ?? [])
+    .length;
+  assert.ok(pageCount > 1);
+  assert.ok(pageCount <= 2);
+  assert.match(
+    locationStockReportFilename({ ...report, scopeName: 'Å-lager / "test"\r\nHeader' }),
+    /^lagerplatsrapport-[a-z0-9-]+\.pdf$/,
+  );
+  await writeFile(path.join(folder, "location-stock.pdf"), bytes);
+  await writeFile(
+    path.join(folder, "location-stock.json"),
+    JSON.stringify(report),
+  );
 });
 
 test("reports retain unchanged rows, empty places and exact totals beyond safe integer sums", async () => {

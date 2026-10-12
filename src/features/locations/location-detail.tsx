@@ -5,6 +5,8 @@ import { locationQr } from "./labels";
 import type { getLocation } from "./service";
 import type { TenantContext } from "@/lib/server/tenant";
 import { StockPanel } from "@/features/inventory/stock-panel";
+import { LocationEditorSheet } from "./location-editor-sheet";
+import { DeleteLocation } from "./delete-location";
 
 export async function LocationDetail({
   location,
@@ -64,12 +66,12 @@ export async function LocationDetail({
 
         {admin && location.warehouseActive && (
           <div className="mt-5">
-            <Link
+            <LocationEditorSheet
+              warehouses={[]}
+              initial={location}
+              label="Redigera plats"
               className="button-secondary w-full sm:w-auto"
-              href={"/locations/" + location.id + "/edit"}
-            >
-              Redigera plats
-            </Link>
+            />
           </div>
         )}
       </header>
@@ -120,6 +122,9 @@ export async function LocationDetail({
         label={location.warehouseName + " · " + location.code}
         active={location.active && location.warehouseActive}
       />
+      {admin && (
+        <DeleteLocation locationId={location.id} code={location.code} />
+      )}
     </>
   );
 }

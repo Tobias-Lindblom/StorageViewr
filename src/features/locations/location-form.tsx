@@ -6,16 +6,29 @@ import { useRouter } from "next/navigation";
 import { clientApi } from "@/lib/client-api";
 import { locationBatchSchema, locationCode } from "@/validation/location";
 import type { getLocation } from "./service";
+import { DeleteLocation } from "./delete-location";
 
 type WarehouseOption = { id: string; name: string };
 export function LocationForm({
   warehouses,
   warehouseId,
   initial,
+  embedded = false,
+  id,
+  hideSubmit = false,
+  showDelete = true,
+  onPendingChange,
+  onSaved,
 }: {
   warehouses: WarehouseOption[];
   warehouseId?: string;
   initial?: Awaited<ReturnType<typeof getLocation>>;
+  embedded?: boolean;
+  id?: string;
+  hideSubmit?: boolean;
+  showDelete?: boolean;
+  onPendingChange?: (pending: boolean) => void;
+  onSaved?: (target: string) => void;
 }) {
   const router = useRouter();
   const [zone, setZone] = useState(initial?.zone ?? "A");
@@ -48,9 +61,11 @@ export function LocationForm({
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setPending(true);
+    onPendingChange?.(true);
     setError("");
     const form = new FormData(event.currentTarget);
     try {
+      let target: string;
       if (initial) {
         await clientApi("/api/locations/" + initial.id, "PATCH", {
           zone,
@@ -58,7 +73,7 @@ export function LocationForm({
           position,
           active: form.get("active") === "on",
         });
-        router.push("/locations/" + initial.id);
+        target = "/locations/" + initial.id;
       } else {
         const result = await clientApi<{ id: string }[]>(
           "/api/locations/batch",
@@ -71,13 +86,16 @@ export function LocationForm({
             count: Number(count),
           },
         );
-        router.push(
+        target =
           result.length === 1
             ? "/locations/" + result[0].id
-            : "/locations?warehouseId=" + form.get("warehouseId"),
-        );
+            : "/locations?warehouseId=" + form.get("warehouseId");
       }
-      router.refresh();
+      if (onSaved) onSaved(target);
+      else {
+        router.push(target);
+        router.refresh();
+      }
     } catch (error) {
       setError(
         error instanceof Error
@@ -86,16 +104,33 @@ export function LocationForm({
       );
     } finally {
       setPending(false);
+      onPendingChange?.(false);
     }
   }
   return (
-    <form onSubmit={submit} className="max-w-2xl space-y-8">
+    <>
+    <form
+      id={id}
+      onSubmit={submit}
+      className={embedded ? "space-y-6" : "max-w-2xl space-y-8"}
+    >
       <fieldset disabled={pending}>
-        <section aria-labelledby="location-information-heading">
-          <h2 id="location-information-heading" className="mb-4! text-xl!">
-            Platsuppgifter
-          </h2>
-          <div className="rounded-2xl border border-line bg-surface p-5 sm:p-6">
+        <section
+          aria-labelledby={embedded ? undefined : "location-information-heading"}
+          aria-label={embedded ? "Platsuppgifter" : undefined}
+        >
+          {!embedded && (
+            <h2 id="location-information-heading" className="mb-4! text-xl!">
+              Platsuppgifter
+            </h2>
+          )}
+          <div
+            className={
+              embedded
+                ? ""
+                : "rounded-2xl border border-line bg-surface p-5 sm:p-6"
+            }
+          >
             {initial ? (
               <div>
                 <p className="text-xs text-muted">Lager</p>
@@ -218,21 +253,27 @@ export function LocationForm({
           {error}
         </p>
       )}
-      <div className="flex flex-col-reverse gap-3 border-t border-line/60 pt-6 sm:flex-row sm:justify-end">
-        <Link
-          className="button-secondary w-full sm:w-auto"
-          href={initial ? "/locations/" + initial.id : "/locations"}
-        >
-          Avbryt
-        </Link>
-        <button className="button w-full sm:w-auto" disabled={pending}>
-          {pending
-            ? "Sparar…"
-            : initial
-              ? "Spara lagerplats"
-              : "Skapa lagerplatser"}
-        </button>
-      </div>
+      {!hideSubmit && (
+        <div className="flex flex-col-reverse gap-3 border-t border-line/60 pt-6 sm:flex-row sm:justify-end">
+          <Link
+            className="button-secondary w-full sm:w-auto"
+            href={initial ? "/locations/" + initial.id : "/locations"}
+          >
+            Avbryt
+          </Link>
+          <button className="button w-full sm:w-auto" disabled={pending}>
+            {pending
+              ? "Sparar…"
+              : initial
+                ? "Spara lagerplats"
+                : "Skapa lagerplatser"}
+          </button>
+        </div>
+      )}
     </form>
+    {initial && showDelete && (
+      <DeleteLocation locationId={initial.id} code={initial.code} />
+    )}
+    </>
   );
 }

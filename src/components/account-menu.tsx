@@ -11,9 +11,11 @@ import { OrganizationSettingsSheet } from "@/features/organizations/organization
 export function AccountMenu({
   account,
   organization,
+  dock = false,
 }: {
   account: { name: string; email: string };
   organization?: { name: string; slug: string; role: "admin" | "warehouse" };
+  dock?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [activeSheet, setActiveSheet] = useState<
@@ -61,7 +63,7 @@ export function AccountMenu({
     <>
       <div
         ref={container}
-        className="relative shrink-0"
+        className={"relative shrink-0 " + (dock ? "flex w-full" : "")}
         onBlur={(event) => {
           if (!event.currentTarget.contains(event.relatedTarget))
             setOpen(false);
@@ -73,31 +75,58 @@ export function AccountMenu({
           aria-label="Företag och konto"
           aria-expanded={open}
           aria-controls={menuId}
-          className="group inline-flex h-12 w-12 items-center justify-center rounded-xl text-accent"
+          className={
+            dock
+              ? `group relative flex min-h-16 w-full min-w-0 touch-manipulation flex-col items-center justify-center gap-0.5 overflow-hidden rounded-2xl px-0.5 py-2 text-[10px] font-medium leading-none transition active:scale-[0.97] ${open ? "text-accent" : "text-muted/75 hover:bg-white/[0.025] hover:text-foreground"}`
+              : "group inline-flex h-12 w-12 items-center justify-center rounded-xl text-accent"
+          }
           onClick={() => setOpen((value) => !value)}
         >
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-violet-400/35 bg-violet-500/12 transition group-hover:border-violet-300/60 group-hover:bg-violet-500/20 group-aria-expanded:border-violet-300/60 group-aria-expanded:bg-violet-500/25">
-            <svg
+          {dock ? (
+            <span
               aria-hidden="true"
-              width="19"
-              height="19"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.6"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+              className={`flex h-8 w-8 items-center justify-center rounded-full text-[10px] font-semibold tracking-wide transition ${open ? "bg-violet-500/25 text-accent" : "bg-white/[0.045] text-muted group-hover:bg-violet-500/15 group-hover:text-accent"}`}
             >
-              <path
-                d={open ? "m6 6 12 12M6 18 18 6" : "M5 7h14M5 12h14M5 17h14"}
-              />
-            </svg>
-          </span>
+              {initials}
+            </span>
+          ) : (
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-violet-400/35 bg-violet-500/12 transition group-hover:border-violet-300/60 group-hover:bg-violet-500/20 group-aria-expanded:border-violet-300/60 group-aria-expanded:bg-violet-500/25">
+              <svg
+                aria-hidden="true"
+                width="19"
+                height="19"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path
+                  d={
+                    open ? "m6 6 12 12M6 18 18 6" : "M5 7h14M5 12h14M5 17h14"
+                  }
+                />
+              </svg>
+            </span>
+          )}
+          {dock && <span>Konto</span>}
+          {dock && open && (
+            <span
+              aria-hidden="true"
+              className="absolute bottom-0 left-1/2 h-0.5 w-7 -translate-x-1/2 rounded-t-full bg-accent shadow-[0_-2px_10px_rgba(189,165,255,0.4)]"
+            />
+          )}
         </button>
         <div
           id={menuId}
           hidden={!open}
-          className="absolute right-0 top-full z-50 mt-2 max-h-[calc(100dvh-6rem)] w-76 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-2xl border border-line/55 bg-surface/95 p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.025),0_18px_48px_rgba(0,0,0,0.5)] backdrop-blur-xl"
+          className={
+            "absolute right-0 z-50 w-76 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-2xl border border-line/55 bg-surface/95 p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.025),0_18px_48px_rgba(0,0,0,0.5)] backdrop-blur-xl " +
+            (dock
+              ? "bottom-full mb-2 max-h-[calc(100dvh-8rem)]"
+              : "top-full mt-2 max-h-[calc(100dvh-6rem)]")
+          }
         >
           <section aria-label="Ditt konto">
             <div className="flex min-w-0 items-center gap-3 px-2 py-3">
