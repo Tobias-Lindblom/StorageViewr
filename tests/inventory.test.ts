@@ -13,10 +13,11 @@ import { Location } from "../src/models/location";
 import { User } from "../src/models/user";
 import { InventoryLevel } from "../src/models/inventory-level";
 import { InventoryMovement } from "../src/models/inventory-movement";
-import { createProduct, updateProduct, getProduct } from "../src/features/products/service";
+import { createProduct, updateProduct, getProduct, listProducts, getProductStockCounts } from "../src/features/products/service";
 import { createWarehouse, updateWarehouse } from "../src/features/warehouses/service";
 import { createLocation, updateLocation, getLocation } from "../src/features/locations/service";
 import { adjustStock, getStockPair, listStock, listMovements, placeProduct, registerStockMovement } from "../src/features/inventory/service";
+import { movementPreview } from "../src/features/inventory/movement-preview";
 import { stockAdjustmentSchema, stockMovementSchema } from "../src/validation/inventory";
 
 let replica: MongoMemoryReplSet;
@@ -253,6 +254,17 @@ test("transfers update both places atomically and retain one linked audit pair",
     transferId: new Types.ObjectId(transfer.transferId),
   }).lean();
   assert.equal(transferRows.length, 2);
+  const history = await listMovements(f.context, { productId: f.product.id });
+  const preview = movementPreview(history.items);
+  assert.equal(preview.length, 2);
+  const moved = preview.find(row => row.type === "TRANSFER")!;
+  assert.equal(moved.difference, 4);
+  assert.equal(moved.locationCode, "Huvudlager · A-01-01 → Reservlager · A-01-01");
+  assert.deepEqual(movementPreview([...history.items].reverse()).find(row => row.type === "TRANSFER")?.locationCode,
+    moved.locationCode);
+  const sourceHistory = await listMovements(f.context, { locationId: f.location.id });
+  assert.deepEqual(movementPreview(sourceHistory.items), sourceHistory.items);
+  assert.equal(sourceHistory.items[0].difference, -4);
   assert.deepEqual(
     new Set(transferRows.map((row) => row.type)),
     new Set(["TRANSFER_OUT", "TRANSFER_IN"]),
@@ -498,4 +510,55 @@ test("totals remain exact above a safe JS integer and history pagination has no 
   const first = await listMovements(f.context, { productId: f.product.id }), last = await listMovements(f.context, { productId: f.product.id, page: 2 });
   assert.equal(first.total, 22); assert.equal(first.items.length, 20); assert.equal(last.items.length, 2);
   assert.equal(new Set([...first.items, ...last.items].map(row => row.id)).size, 22);
+});
+
+test("product overview sums all places exactly and stock filters precede pagination within the tenant", async () => {
+  const f = await fixture();
+  const second = await createLocation(f.context, { ...parts, position: "02", warehouseId: f.warehouse.id });
+  await adjustStock(f.context, f.change(Number.MAX_SAFE_INTEGER));
+  await adjustStock(f.context, { ...f.change(Number.MAX_SAFE_INTEGER), locationId: second.id });
+  await createProduct(f.context, { name: "Ej placerad", sku: "UNPLACED" });
+  const zero = await createProduct(f.context, { name: "Tom placering", sku: "ZERO" });
+  await placeProduct(f.context, { productId: zero.id, locationId: second.id });
+  const foreign = await fixture();
+  await adjustStock(foreign.context, foreign.change(999));
+  const result = await listProducts(f.context, { stock: "in-stock" });
+  assert.equal(result.total, 1);
+  assert.equal(result.items[0].id, f.product.id);
+  assert.equal(result.items[0].locationCount, 2);
+  assert.equal(result.items[0].totalQuantity, (BigInt(Number.MAX_SAFE_INTEGER) * BigInt(2)).toString());
+  assert.equal((await listProducts(f.context, { stock: "empty" })).total, 2);
+  assert.equal((await listProducts(f.context, { stock: "unplaced" })).total, 1);
+  assert.equal((await listProducts({ ...f.context, role: "warehouse" }, { status: "all", stock: "in-stock" })).total, 1);
+  await InventoryLevel.create({ organizationId: foreign.context.organizationId,
+    warehouseId: foreign.warehouse.id, productId: zero.id, locationId: foreign.location.id,
+    quantity: 500, version: 1 });
+  assert.deepEqual(await getProductStockCounts(f.context), { all: 3, inStock: 1, empty: 2 });
+  assert.deepEqual(await getProductStockCounts(f.context, { stock: "empty" }), { all: 3, inStock: 1, empty: 2 });
+  assert.deepEqual(await getProductStockCounts(f.context, { q: productInput.sku }), { all: 1, inStock: 1, empty: 0 });
+  assert.deepEqual(await getProductStockCounts(f.context, { q: ".*" }), { all: 0, inStock: 0, empty: 0 });
+  await assert.rejects(getProductStockCounts(f.context, { q: { $ne: null } }));
+  const inactive = await createProduct(f.context, { name: "Inaktiv produkt", sku: "INACTIVE" });
+  await updateProduct(f.context, inactive.id, { name: "Inaktiv produkt", sku: "INACTIVE", active: false });
+  assert.deepEqual(await getProductStockCounts(f.context, { status: "all" }), { all: 4, inStock: 1, empty: 3 });
+  assert.deepEqual(await getProductStockCounts(f.context, { status: "inactive" }), { all: 1, inStock: 0, empty: 1 });
+  assert.deepEqual(await getProductStockCounts({ ...f.context, role: "warehouse" }, { status: "all" }),
+    { all: 3, inStock: 1, empty: 2 });
+  await Product.insertMany(Array.from({ length: 25 }, (_, n) => ({
+    organizationId: f.context.organizationId, name: "Sidindelad produkt " + n, sku: "PAGE-" + n,
+  })));
+  assert.equal((await listProducts(f.context, { page: 2 })).items.length, 4);
+  assert.deepEqual(await getProductStockCounts(f.context, { page: 2 }), { all: 28, inStock: 1, empty: 27 });
+});
+
+test("organization history keeps administrator authorization and tenant isolation without a resource filter", async () => {
+  const f = await fixture();
+  const foreign = await fixture();
+  await adjustStock(f.context, f.change(12));
+  await adjustStock(foreign.context, foreign.change(99));
+  const history = await listMovements(f.context, {});
+  assert.equal(history.total, 1);
+  assert.equal(history.items[0].newQuantity, 12);
+  await assert.rejects(listMovements({ ...f.context, role: "warehouse" }, {}), status(403));
+  await assert.rejects(listMovements(f.context, { productId: f.product.id, locationId: f.location.id }));
 });

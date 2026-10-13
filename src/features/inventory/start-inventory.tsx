@@ -7,14 +7,24 @@ import { clientApi } from "@/lib/client-api";
 export function StartInventory({
   warehouses,
   locations,
+  initialLocationIds = [],
+  label = "+ Starta inventering",
+  defaultName,
+  initialWarehouseId,
+  className,
 }: {
+  initialWarehouseId?: string;
+  className?: string;
+  initialLocationIds?: string[];
+  label?: string;
+  defaultName?: string;
   warehouses: { id: string; name: string }[];
   locations: { id: string; warehouseId: string; code: string }[];
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [warehouseId, setWarehouseId] = useState(warehouses[0]?.id ?? "");
-  const [selected, setSelected] = useState<string[]>([]);
+  const [warehouseId, setWarehouseId] = useState(initialWarehouseId ?? warehouses[0]?.id ?? "");
+  const [selected, setSelected] = useState<string[]>(initialLocationIds);
   const [search, setSearch] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -51,7 +61,7 @@ export function StartInventory({
           locationIds: selected,
         },
       );
-      router.push("/inventories/" + result.id);
+      router.push("/inventories/" + result.id + (selected.length === 1 ? "?location=" + selected[0] : ""));
     } catch (error) {
       setError(
         error instanceof Error
@@ -64,16 +74,16 @@ export function StartInventory({
   return (
     <>
       <button
-        className="button w-full px-4! sm:w-auto sm:px-6!"
+        className={className ?? "button w-full px-4! sm:w-auto sm:px-6!"}
         onClick={() => {
           setError("");
           setSearch("");
-          setSelected([]);
-          setWarehouseId(warehouses[0]?.id ?? "");
+          setSelected(initialLocationIds);
+          setWarehouseId(initialWarehouseId ?? warehouses[0]?.id ?? "");
           setOpen(true);
         }}
       >
-        + Starta inventering
+        {label}
       </button>
       {open && (
         <BottomSheet
@@ -109,6 +119,7 @@ export function StartInventory({
                 Namn
                 <input
                   name="name"
+                  defaultValue={defaultName}
                   required
                   minLength={2}
                   maxLength={120}

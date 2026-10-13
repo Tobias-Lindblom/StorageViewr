@@ -221,6 +221,7 @@ export async function listStock(context: TenantContext, input: unknown) {
           productId: String(row.productId),
           locationId: String(row.locationId),
           productName: product.name,
+          photoUrl: product.hasPhoto ? "/api/products/" + product._id + "/photo?v=" + product.updatedAt.getTime() : product.imageUrl,
           sku: product.sku,
           locationCode: location.code,
           warehouseName: warehouse.name,
@@ -766,7 +767,7 @@ export async function registerStockMovement(
 export async function listMovements(context: TenantContext, input: unknown) {
   requireAdmin(context);
   const { page: requestedPage, ...scope } = historyQuerySchema.parse(input);
-  await checkScope(context, scope);
+  if (scope.productId || scope.locationId) await checkScope(context, scope);
   const filter = { organizationId: context.organizationId, ...scope };
   const total = await InventoryMovement.countDocuments(filter);
   const pages = Math.max(1, Math.ceil(total / 20)),

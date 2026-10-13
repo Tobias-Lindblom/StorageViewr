@@ -41,6 +41,7 @@ const schema = new Schema({
   reason: { type: String, required: true, maxlength: 500, immutable: true },
   createdAt: { type: Date, default: Date.now, immutable: true },
 }, { collection: "inventoryMovements", versionKey: false });
+schema.index({ organizationId: 1, createdAt: -1, _id: -1 });
 schema.index({ organizationId: 1, productId: 1, createdAt: -1, _id: -1 });
 schema.index({ organizationId: 1, locationId: 1, createdAt: -1, _id: -1 });
 schema.index({ organizationId: 1, transferId: 1 });

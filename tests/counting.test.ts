@@ -18,8 +18,10 @@ import { InventoryCount } from "../src/models/inventory-count";
 import { createProduct, updateProduct, getProduct } from "../src/features/products/service";
 import { createWarehouse } from "../src/features/warehouses/service";
 import { createLocation, updateLocation, getLocation } from "../src/features/locations/service";
-import { adjustStock, getStockPair } from "../src/features/inventory/service";
+import { listStock, adjustStock, getStockPair } from "../src/features/inventory/service";
 import { startInventory, saveLocationCount, finishInventory } from "../src/features/inventory/sessions";
+import { getDashboard } from "../src/features/dashboard/service";
+import { getVerification } from "../src/features/inventory/verification";
 import { getInventory, listInventories } from "../src/features/inventory/session-queries";
 import { startInventorySchema, saveCountSchema } from "../src/validation/inventory-session";
 
@@ -355,4 +357,113 @@ test("inventory pagination filters before counting and sorts completed sessions 
     }
   }
   assert.equal((await listInventories(context)).pages, 3);
+});
+
+test("verification derives completed physical counts, corrected versions, empty places and later changes", async () => {
+  const f = await fixture(10);
+  const verify = async (scope: { productId: string } | { locationId: string }) =>
+    getVerification(f.context, scope, await listStock(f.context, scope));
+  await saveLocationCount(f.context, f.inventory.id, f.location.id, f.count(7));
+  await saveLocationCount(f.context, f.inventory.id, f.empty.id, f.blank);
+  assert.equal((await verify({ productId: f.product.id })).state, "never");
+  await finish(f);
+  const product = await verify({ productId: f.product.id });
+  assert.equal(product.state, "verified");
+  assert.equal(product.checked, 1);
+  assert.equal(product.corrections, 1);
+  assert.equal((await verify({ locationId: f.empty.id })).state, "verified");
+  assert.equal((await verify({ locationId: f.location.id })).state, "verified");
+  await adjustStock(f.context, { ...f.pair, quantity: 8, expectedVersion: 2, reason: "Efter kontroll" });
+  assert.equal((await verify({ productId: f.product.id })).state, "changed");
+  assert.equal((await verify({ locationId: f.location.id })).state, "changed");
+  const foreign = tenant();
+  await assert.rejects(listStock(foreign, { productId: f.product.id }), status(404));
+  assert.equal((await getVerification(foreign, { productId: f.product.id }, { items: [], total: "0" })).state, "never");
+});
+
+test("product verification requires every current placement and marks old unchanged counts for recounting", async () => {
+  const f = await fixture(10);
+  await saveLocationCount(f.context, f.inventory.id, f.location.id, f.count(10));
+  await saveLocationCount(f.context, f.inventory.id, f.empty.id, f.blank);
+  await finish(f);
+  const oldDate = new Date(Date.now() - 49 * 86400000);
+  await InventoryCount.collection.updateMany({ organizationId: f.context.organizationId }, { $set: { countedAt: oldDate } });
+  const scope = { productId: f.product.id };
+  assert.equal((await getVerification(f.context, scope, await listStock(f.context, scope))).state, "old");
+  await adjustStock(f.context, { productId: f.product.id, locationId: f.empty.id,
+    quantity: 3, expectedVersion: null, reason: "Ny placering" });
+  const partial = await getVerification(f.context, scope, await listStock(f.context, scope));
+  assert.equal(partial.state, "partial");
+  assert.equal(partial.checked, 1);
+  assert.equal(partial.total, 2);
+});
+
+test("general scanner resolves tenant-owned QR labels and disambiguates codes across active warehouses", async () => {
+  process.env.APP_URL = "https://storageviewr.example";
+  const { resolveLocation } = await import("../src/features/scanner/service");
+  const f = await fixture();
+  const secondWarehouse = await createWarehouse(f.context, { name: "Andra lagret", code: "SECOND" });
+  const second = await createLocation(f.context, { ...parts, warehouseId: secondWarehouse.id });
+  const worker: TenantContext = { ...f.context, role: "warehouse" };
+  const matches = await resolveLocation(worker, { code: " a-01-01 " });
+  assert.equal(matches.length, 2);
+  assert.deepEqual(new Set(matches.map(row => row.id)), new Set([f.location.id, second.id]));
+  assert.equal((await resolveLocation(worker, { qr: process.env.APP_URL + "/location/" + f.location.qrToken }))[0].id, f.location.id);
+  await assert.rejects(resolveLocation(tenant(), { qr: process.env.APP_URL + "/location/" + f.location.qrToken }), status(404));
+  await assert.rejects(resolveLocation(worker, { qr: "https://evil.example/location/" + f.location.qrToken }), status(400));
+});
+
+test("dashboard highlights actual stock gaps, old and empty counts and only active discrepancies in its tenant", async () => {
+  const f = await fixture(10);
+  await saveLocationCount(f.context, f.inventory.id, f.location.id, f.count(10));
+  await saveLocationCount(f.context, f.inventory.id, f.empty.id, f.blank);
+  await finish(f);
+  const oldDate = new Date(Date.now() - 49 * 86400000);
+  await InventorySessionLocation.collection.updateOne({ organizationId: f.context.organizationId, locationId: new Types.ObjectId(f.empty.id),
+    inventorySessionId: new Types.ObjectId(f.inventory.id) }, { $set: { completedAt: oldDate } });
+  const uncounted = await createLocation(f.context, { ...parts, position: "03", warehouseId: f.warehouse.id });
+  await createProduct(f.context, { name: "Ingen placering", sku: "MISSING" });
+  await fixture(99);
+  const pending = await startInventory(f.context, { name: "Ny kontroll", warehouseId: f.warehouse.id, locationIds: [f.location.id] });
+  await saveLocationCount(f.context, pending.id, f.location.id, f.count(12));
+  const result = await getDashboard(f.context);
+  assert.equal(result.insights.emptyProducts, 1);
+  assert.equal(result.insights.unplacedProducts, 1);
+  assert.equal(result.insights.recentLocations, 1);
+  assert.equal(result.insights.staleLocations, 1);
+  assert.equal(result.insights.neverCountedLocations, 1);
+  assert.equal(result.insights.pendingDiscrepancies, 1);
+  assert.equal(result.insights.lastInventory?.id, f.inventory.id);
+  assert.deepEqual(new Set(result.insights.suggestedLocations.map(row => row.id)), new Set([f.empty.id, uncounted.id]));
+});
+
+test("dashboard health verifies every placement, ignores active counts and separates old or changed stock", async () => {
+  const f = await fixture(10);
+  await saveLocationCount(f.context, f.inventory.id, f.location.id, f.count(10));
+  await saveLocationCount(f.context, f.inventory.id, f.empty.id, f.blank);
+  await finish(f);
+  await createProduct(f.context, { name: "Inte räknad", sku: "UNCOUNTED" });
+  await fixture(99);
+  let dashboard = await getDashboard(f.context);
+  assert.deepEqual(dashboard.insights.health, { verifiedProducts: 1, needsCountingProducts: 1, oldProducts: 0 });
+  assert.ok(dashboard.activity.some(row => row.amount === "INV"));
+  const worker = await getDashboard({ ...f.context, role: "warehouse" });
+  assert.deepEqual(worker.insights.health, dashboard.insights.health);
+  assert.ok(worker.activity.every(row => row.amount === "INV"));
+
+  await adjustStock(f.context, { ...f.pair, quantity: 11, expectedVersion: 1, reason: "Senare ändring" });
+  dashboard = await getDashboard(f.context);
+  assert.deepEqual(dashboard.insights.health, { verifiedProducts: 0, needsCountingProducts: 2, oldProducts: 0 });
+  const recount = await startInventory(f.context, { name: "Ny kontroll", warehouseId: f.warehouse.id, locationIds: [f.location.id] });
+  await saveLocationCount(f.context, recount.id, f.location.id, {
+    expectedRevision: 0, confirmComplete: true, rows: [{ productId: f.product.id, expectedVersion: 2, countedQuantity: 11 }],
+  });
+  await finishInventory(f.context, recount.id, { confirmed: true, expectedRevision: (await getInventory(f.context, recount.id)).revision });
+  await InventoryCount.collection.updateMany({ organizationId: f.context.organizationId, inventorySessionId: new Types.ObjectId(recount.id) },
+    { $set: { countedAt: new Date(Date.now() - 91 * 86400000) } });
+  dashboard = await getDashboard(f.context);
+  assert.deepEqual(dashboard.insights.health, { verifiedProducts: 0, needsCountingProducts: 1, oldProducts: 1 });
+  await adjustStock(f.context, { productId: f.product.id, locationId: f.empty.id, quantity: 3, expectedVersion: null, reason: "Ny placering" });
+  dashboard = await getDashboard(f.context);
+  assert.deepEqual(dashboard.insights.health, { verifiedProducts: 0, needsCountingProducts: 2, oldProducts: 0 });
 });

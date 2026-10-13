@@ -1,3 +1,4 @@
+import { movementLabel } from "@/components/movement-list";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
@@ -7,27 +8,6 @@ import { pageTenant } from "@/lib/server/page-auth";
 import { pageResource } from "@/lib/server/page-resource";
 import { listMovements } from "@/features/inventory/service";
 import { historyQuerySchema } from "@/validation/inventory";
-
-function movementLabel(type: string) {
-  switch (type) {
-    case "INITIAL":
-      return "Första placering";
-    case "RECEIPT":
-      return "Inleverans";
-    case "ISSUE":
-      return "Uttag";
-    case "TRANSFER_OUT":
-      return "Flytt från plats";
-    case "TRANSFER_IN":
-      return "Flytt till plats";
-    case "CORRECTION":
-      return "Korrigering";
-    case "INVENTORY":
-      return "Inventering";
-    default:
-      return "Saldoändring";
-  }
-}
 
 export default async function StockHistoryPage({
   searchParams,
@@ -42,13 +22,13 @@ export default async function StockHistoryPage({
   const result = await pageResource(() => listMovements(context, query));
   const back = query.productId
     ? "/products/" + query.productId
-    : "/locations/" + query.locationId;
+    : query.locationId ? "/locations/" + query.locationId : "/dashboard";
   const pageLink = (page: number) =>
     "/inventory/history?" +
     new URLSearchParams({
       ...(query.productId
         ? { productId: query.productId }
-        : { locationId: query.locationId! }),
+        : query.locationId ? { locationId: query.locationId } : {}),
       page: String(page),
     });
   return (
@@ -58,7 +38,7 @@ export default async function StockHistoryPage({
         className="mb-4 inline-flex min-h-13 items-center gap-2 text-sm text-accent"
       >
         <MaterialArrow name="back" />
-        {query.productId ? "Till produkten" : "Till lagerplatsen"}
+        {query.productId ? "Till produkten" : query.locationId ? "Till lagerplatsen" : "Till översikten"}
       </Link>
       <PageHeading
         title="Saldohistorik"

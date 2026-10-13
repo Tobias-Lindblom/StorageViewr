@@ -7,11 +7,13 @@ export function OrganizationForm({
   id,
   hideSubmit = false,
   onPendingChange,
+  compact = false,
 }: {
   name?: string;
   id?: string;
   hideSubmit?: boolean;
   onPendingChange?: (pending: boolean) => void;
+  compact?: boolean;
 }) {
   const router = useRouter();
   const [error, setError] = useState("");
@@ -49,7 +51,7 @@ export function OrganizationForm({
     }
   }
   return (
-    <form id={id} onSubmit={submit} className="space-y-6">
+    <form id={id} onSubmit={submit} className={compact ? "organization-create-form" : "space-y-6"}>
       <label>
         Företagsnamn
         <input
@@ -96,7 +98,7 @@ export function OrganizationForm({
         </p>
       )}
       {!hideSubmit && (
-        <button className="button w-full sm:w-auto" disabled={pending}>
+        <button className={compact ? "organization-primary-action organization-create-submit" : "button w-full sm:w-auto"} disabled={pending}>
           {pending
             ? "Sparar…"
             : editing

@@ -3,7 +3,7 @@
 Lager- och inventeringssystem för mindre företag. Next.js App Router, TypeScript,
 MongoDB, Mongoose, Tailwind CSS och Zod.
 
-## Status: etapp 1–5, inklusive inventering
+## Status: lagerarbete och inventering
 Implementerat:
 - Registrering, inloggning, sessioner, företag och medlemskap (admin/warehouse).
 - Företagsöversikt med faktiska antal aktiva lager och lagerplatser.
@@ -20,7 +20,8 @@ Implementerat:
 - Produktplacering, saldo per plats och totalsaldo per produkt.
 - Saldohistorik, versionskontroll och skydd mot inaktivering när saldo finns kvar.
 
-Nästa steg är inventeringssessioner och avvikelser.
+Mobilvyerna har saldosammanfattning, inventeringsstatus, direkta lageråtgärder,
+skanner och uppföljning på dashboarden. Se [audit och implementation](docs/mobile-workspace.md).
 Full modell och ordning: [Arkitektur](docs/architecture.md).
 Ursprungliga krav: [Kravspecifikation](docs/requirements.md).
 
@@ -79,13 +80,14 @@ Request bodies begränsas till 16 KiB, utom platsräkning (100 000 byte), produk
 - GET/POST /api/locations (valfritt warehouseId-filter på GET)
 - GET/PATCH /api/locations/[id]
 - POST /api/locations/batch
+- POST /api/locations/scan (QR-adress eller platskod)
 - GET/POST /api/products (q, status och page på GET)
 - GET/PATCH /api/products/[id]
 - GET /api/products/[id]/photo (kräver företagsbehörighet)
 - POST /api/products/import (mode: preview eller commit)
 - GET/POST /api/inventory
 - GET /api/inventory/level (productId och locationId)
-- GET /api/inventory/history (admin; productId eller locationId, page)
+- GET /api/inventory/history (admin; valfritt productId eller locationId, page)
 - GET/POST /api/inventory/sessions
 - GET /api/inventory/sessions/[id]
 - PUT /api/inventory/sessions/[id]/count/[locationId]

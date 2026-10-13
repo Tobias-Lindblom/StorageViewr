@@ -10,6 +10,10 @@ const manualCode = z.string().trim().max(16).transform((value, context) => {
   }
   return locationCode(parsed.data);
 });
+export const locationScanSchema = z.union([
+  z.object({ qr: z.string().trim().min(1).max(2048) }).strict(),
+  z.object({ code: manualCode }).strict(),
+]);
 export const scanLocationSchema = z.union([
   z.object({ qr: z.string().trim().min(1).max(2048), locationId: objectIdSchema.optional() }).strict(),
   z.object({ code: manualCode, locationId: objectIdSchema.optional() }).strict(),

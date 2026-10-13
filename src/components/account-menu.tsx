@@ -12,10 +12,12 @@ export function AccountMenu({
   account,
   organization,
   dock = false,
+  avatar = false,
 }: {
   account: { name: string; email: string };
   organization?: { name: string; slug: string; role: "admin" | "warehouse" };
   dock?: boolean;
+  avatar?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [activeSheet, setActiveSheet] = useState<
@@ -72,22 +74,24 @@ export function AccountMenu({
         <button
           ref={trigger}
           type="button"
-          aria-label="Företag och konto"
+          aria-label={dock ? "Mer" : "Företag och konto"}
           aria-expanded={open}
           aria-controls={menuId}
           className={
             dock
-              ? `group relative flex min-h-16 w-full min-w-0 touch-manipulation flex-col items-center justify-center gap-0.5 overflow-hidden rounded-2xl px-0.5 py-2 text-[10px] font-medium leading-none transition active:scale-[0.97] ${open ? "text-accent" : "text-muted/75 hover:bg-white/[0.025] hover:text-foreground"}`
+              ? `mobile-nav-item mobile-menu w-full ${open ? "is-active" : ""}`
               : "group inline-flex h-12 w-12 items-center justify-center rounded-xl text-accent"
           }
           onClick={() => setOpen((value) => !value)}
         >
-          {dock ? (
+          {avatar ? (
+            <span className="header-avatar" aria-hidden="true">{initials}</span>
+          ) : dock ? (
             <span
               aria-hidden="true"
-              className={`flex h-8 w-8 items-center justify-center rounded-full text-[10px] font-semibold tracking-wide transition ${open ? "bg-violet-500/25 text-accent" : "bg-white/[0.045] text-muted group-hover:bg-violet-500/15 group-hover:text-accent"}`}
+              className="nav-icon"
             >
-              {initials}
+              <AppIcon name="more" width={20} height={20} strokeWidth={3} />
             </span>
           ) : (
             <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-violet-400/35 bg-violet-500/12 transition group-hover:border-violet-300/60 group-hover:bg-violet-500/20 group-aria-expanded:border-violet-300/60 group-aria-expanded:bg-violet-500/25">
@@ -110,7 +114,7 @@ export function AccountMenu({
               </svg>
             </span>
           )}
-          {dock && <span>Konto</span>}
+          {dock && <span>Mer</span>}
           {dock && open && (
             <span
               aria-hidden="true"
@@ -128,100 +132,112 @@ export function AccountMenu({
               : "top-full mt-2 max-h-[calc(100dvh-6rem)]")
           }
         >
-          <section aria-label="Ditt konto">
-            <div className="flex min-w-0 items-center gap-3 px-2 py-3">
-              <span
-                aria-hidden="true"
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-violet-400/25 bg-violet-500/12 text-sm font-semibold text-accent"
-              >
-                {initials}
-              </span>
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold">{account.name}</p>
-                <p className="mt-1 truncate text-xs text-muted">
-                  {account.email}
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              aria-haspopup="dialog"
-              onClick={() => {
-                setOpen(false);
-                setActiveSheet("account");
-              }}
-              className={menuLink + " w-full text-left"}
-            >
-              <span className={menuIcon}>
-                <AppIcon name="user" />
-              </span>
-              <span>Kontoinställningar</span>
-              <MaterialArrow
-                name="forward"
-                size={17}
-                className="ml-auto text-muted/70"
-              />
-            </button>
-          </section>
-          {organization && (
-            <section
-              aria-label="Aktuellt företag"
-              className="mt-2 border-t border-line/50 pt-2"
-            >
-              <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">
-                Aktuellt företag
-              </p>
-              <div className="flex items-center gap-3 px-3 py-2.5">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-accent">
-                  <AppIcon name="warehouse" />
-                </span>
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold">
-                    {organization.name}
-                  </p>
-                  <p className="mt-1 text-xs text-muted">
-                    {organization.role === "admin"
-                      ? "Administratör"
-                      : "Lagerpersonal"}
-                  </p>
+          {dock && <nav aria-label="Fler lagerfunktioner">
+            {[{ href: "/dashboard", label: "Översikt", icon: "dashboard" as const },
+              { href: "/warehouses", label: "Lager", icon: "warehouse" as const },
+              { href: "/inventories", label: "Inventering", icon: "inventory" as const }].map(item =>
+              <Link key={item.href} href={item.href} className={menuLink} onClick={() => setOpen(false)}>
+                <span className={menuIcon}><AppIcon name={item.icon} /></span>{item.label}
+              </Link>)}
+          </nav>}
+          {!dock && (
+            <>
+              <section aria-label="Ditt konto">
+                <div className="flex min-w-0 items-center gap-3 px-2 py-3">
+                  <span
+                    aria-hidden="true"
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-violet-400/25 bg-violet-500/12 text-sm font-semibold text-accent"
+                  >
+                    {initials}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold">{account.name}</p>
+                    <p className="mt-1 truncate text-xs text-muted">
+                      {account.email}
+                    </p>
+                  </div>
                 </div>
-              </div>
-              {organization.role === "admin" && (
                 <button
                   type="button"
                   aria-haspopup="dialog"
                   onClick={() => {
                     setOpen(false);
-                    setActiveSheet("organization");
+                    setActiveSheet("account");
                   }}
                   className={menuLink + " w-full text-left"}
                 >
                   <span className={menuIcon}>
-                    <AppIcon name="settings" />
+                    <AppIcon name="user" />
                   </span>
-                  <span>Företagsinställningar</span>
+                  <span>Kontoinställningar</span>
                   <MaterialArrow
                     name="forward"
                     size={17}
                     className="ml-auto text-muted/70"
                   />
                 </button>
+              </section>
+              {organization && (
+                <section
+                  aria-label="Aktuellt företag"
+                  className="mt-2 border-t border-line/50 pt-2"
+                >
+                  <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">
+                    Aktuellt företag
+                  </p>
+                  <div className="flex items-center gap-3 px-3 py-2.5">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-accent">
+                      <AppIcon name="warehouse" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold">
+                        {organization.name}
+                      </p>
+                      <p className="mt-1 text-xs text-muted">
+                        {organization.role === "admin"
+                          ? "Administratör"
+                          : "Lagerpersonal"}
+                      </p>
+                    </div>
+                  </div>
+                  {organization.role === "admin" && (
+                    <button
+                      type="button"
+                      aria-haspopup="dialog"
+                      onClick={() => {
+                        setOpen(false);
+                        setActiveSheet("organization");
+                      }}
+                      className={menuLink + " w-full text-left"}
+                    >
+                      <span className={menuIcon}>
+                        <AppIcon name="settings" />
+                      </span>
+                      <span>Företagsinställningar</span>
+                      <MaterialArrow
+                        name="forward"
+                        size={17}
+                        className="ml-auto text-muted/70"
+                      />
+                    </button>
+                  )}
+                  <Link
+                    href="/organizations"
+                    onClick={() => setOpen(false)}
+                    className={menuLink}
+                  >
+                    <span className={menuIcon}>
+                      <MaterialArrow name="swap" size={19} />
+                    </span>
+                    <span>Byt företag</span>
+                  </Link>
+                </section>
               )}
-              <Link
-                href="/organizations"
-                onClick={() => setOpen(false)}
-                className={menuLink}
-              >
-                <span className={menuIcon}>
-                  <MaterialArrow name="swap" size={19} />
-                </span>
-                <span>Byt företag</span>
-              </Link>
-            </section>
+              <div className="mt-2 border-t border-line/50 pt-2">
+                <LogoutButton className="flex min-h-12 w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-medium text-muted transition hover:bg-rose-400/10 hover:text-rose-200 disabled:opacity-60" />
+              </div>
+            </>
           )}
-          <div className="mt-2 border-t border-line/50 pt-2">
-            <LogoutButton className="flex min-h-12 w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-medium text-muted transition hover:bg-rose-400/10 hover:text-rose-200 disabled:opacity-60" />
-          </div>
         </div>
       </div>
       {activeSheet === "organization" &&

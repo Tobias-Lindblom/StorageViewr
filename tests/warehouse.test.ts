@@ -393,6 +393,10 @@ test("dashboard numbers reflect only real active data belonging to the current t
   const a = tenant(),
     b = tenant();
   assert.deepEqual(await getDashboard(a), {
+    activity: [],
+    insights: { health: { verifiedProducts: 0, needsCountingProducts: 0, oldProducts: 0 }, emptyProducts: 0, unplacedProducts: 0, recentLocations: 0,
+      staleLocations: 0, neverCountedLocations: 0, pendingDiscrepancies: 0,
+      lastInventory: null, suggestedLocations: [] },
     warehouseCount: 0,
     locationCount: 0,
     productCount: 0,

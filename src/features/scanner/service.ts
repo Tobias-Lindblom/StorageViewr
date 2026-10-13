@@ -7,7 +7,8 @@ import { InventorySessionLocation } from "@/models/inventory-session-location";
 import { getLocation, getLocationByToken } from "@/features/locations/service";
 import { qrOrigin } from "@/features/locations/labels";
 import { getInventory } from "@/features/inventory/session-queries";
-import { scanLocationSchema } from "@/validation/scan";
+import { Warehouse } from "@/models/warehouse";
+import { scanLocationSchema, locationScanSchema } from "@/validation/scan";
 import { qrTokenSchema } from "@/validation/location";
 
 export function readLocationToken(input: string) {
@@ -51,4 +52,20 @@ export async function inventoriesForLocation(context: TenantContext, locationId:
   const inventories = await InventorySession.find({ ...filter, _id: { $in: scopes.map(scope => scope.inventorySessionId) },
     warehouseId: location.warehouseId, status: "active" }).sort({ startedAt: -1, _id: -1 }).lean();
   return inventories.map(row => ({ id: String(row._id), name: row.name }));
+}
+
+export async function resolveLocation(context: TenantContext, input: unknown) {
+  const data = locationScanSchema.parse(input);
+  if ("qr" in data) {
+    const location = await getLocationByToken(context, readLocationToken(data.qr));
+    return [{ id: location.id, code: location.code, warehouseName: location.warehouseName, qrToken: location.qrToken }];
+  }
+  const records = await Location.find({ organizationId: context.organizationId, active: true, code: data.code })
+    .select("code warehouseId qrToken").sort({ warehouseId: 1, _id: 1 }).lean();
+  const warehouses = await Warehouse.find({ organizationId: context.organizationId, active: true,
+    _id: { $in: records.map(row => row.warehouseId) } }).select("name").lean();
+  const names = new Map(warehouses.map(row => [String(row._id), row.name]));
+  const matches = records.filter(row => names.has(String(row.warehouseId)));
+  if (!matches.length) throw new AppError(404, "LOCATION_NOT_FOUND", "Ingen aktiv lagerplats matchar platskoden.");
+  return matches.map(row => ({ id: String(row._id), code: row.code, warehouseName: names.get(String(row.warehouseId))!, qrToken: row.qrToken }));
 }

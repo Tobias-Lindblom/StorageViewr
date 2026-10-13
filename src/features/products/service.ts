@@ -1,6 +1,7 @@
 import "server-only";
 import { assertNoOpenInventory } from "@/features/inventory/open-references";
-import { Types } from "mongoose";
+import { Types, type PipelineStage } from "mongoose";
+import { productStockStages } from "./product-stock";
 import { connectDb } from "@/lib/server/db";
 import { prepareProductPhoto, saveProductPhoto } from "./photos";
 import { InventoryLevel } from "@/models/inventory-level";
@@ -26,35 +27,76 @@ function serialize(record: ProductRecord & { _id: Types.ObjectId }) {
     active: record.active,
   };
 }
-export async function listProducts(
-  context: TenantContext,
-  input: unknown = {},
-) {
-  const query = productQuerySchema.parse(input);
+function productFilter(context: TenantContext, query: { q: string; status: "active" | "inactive" | "all" }) {
   const status = context.role === "admin" ? query.status : "active";
   const escaped = query.q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const filter = {
     organizationId: context.organizationId,
     ...(status === "all" ? {} : { active: status === "active" }),
-    ...(query.q
-      ? {
-          $or: ["name", "sku", "barcode"].map((key) => ({
-            [key]: { $regex: escaped, $options: "i" },
-          })),
-        }
-      : {}),
+    ...(query.q ? { $or: ["name", "sku", "barcode"].map(key => ({
+      [key]: { $regex: escaped, $options: "i" },
+    })) } : {}),
   };
-  const pageSize = 24;
-  const total = await Product.countDocuments(filter);
-  const pages = Math.max(1, Math.ceil(total / pageSize));
-  const page = Math.min(query.page, pages);
-  const records = await Product.find(filter)
-    .sort({ name: 1, _id: 1 })
-    .skip((page - 1) * pageSize)
-    .limit(pageSize)
-    .lean();
-  return { items: records.map(serialize), total, page, pages };
+  return filter;
 }
+
+export async function listProducts(context: TenantContext, input: unknown = {}) {
+  const query = productQuerySchema.parse(input);
+  const filter = productFilter(context, query);
+  const pageSize = 24;
+  type Row = ProductRecord & { _id: Types.ObjectId; totalQuantity: string; locationCount: number };
+  const project: PipelineStage[] = [
+    { $set: { totalQuantity: { $toString: "$stockTotal" } } },
+    { $unset: ["stockSummary", "stockTotal"] },
+  ];
+  let total: number;
+  let page: number;
+  let records: Row[];
+  if (query.stock === "all") {
+    total = await Product.countDocuments(filter);
+    page = Math.min(query.page, Math.max(1, Math.ceil(total / pageSize)));
+    // For the normal list, only sum the products on the current page.
+    records = await Product.aggregate<Row>([
+      { $match: filter }, { $sort: { name: 1, _id: 1 } },
+      { $skip: (page - 1) * pageSize }, { $limit: pageSize },
+      ...productStockStages(context), ...project,
+    ]);
+  } else {
+    const stockFilter = query.stock === "in-stock" ? { stockTotal: { $gt: 0 } } :
+      query.stock === "empty" ? { stockTotal: 0 } : { locationCount: 0 };
+    const pipeline: PipelineStage[] = [
+      { $match: filter }, ...productStockStages(context), { $match: stockFilter },
+    ];
+    const window = (requested: number): PipelineStage.FacetPipelineStage[] => [
+      { $sort: { name: 1, _id: 1 } }, { $skip: (requested - 1) * pageSize },
+      { $limit: pageSize },
+      { $set: { totalQuantity: { $toString: "$stockTotal" } } },
+      { $unset: ["stockSummary", "stockTotal"] },
+    ];
+    const [result] = await Product.aggregate<{ count: { total: number }[]; items: Row[] }>([
+      ...pipeline, { $facet: { count: [{ $count: "total" }], items: window(query.page) } },
+    ]);
+    total = result.count[0]?.total ?? 0;
+    page = Math.min(query.page, Math.max(1, Math.ceil(total / pageSize)));
+    records = page === query.page ? result.items : await Product.aggregate<Row>([...pipeline, ...window(page)]);
+  }
+  return { items: records.map(row => ({
+    ...serialize(row), totalQuantity: row.totalQuantity, locationCount: row.locationCount,
+  })), total, page, pages: Math.max(1, Math.ceil(total / pageSize)) };
+}
+export async function getProductStockCounts(context: TenantContext, input: unknown = {}) {
+  const query = productQuerySchema.parse(input);
+  const [counts] = await Product.aggregate<{ all: number; inStock: number; empty: number }>([
+    { $match: productFilter(context, query) }, ...productStockStages(context),
+    { $group: { _id: null, all: { $sum: 1 },
+      inStock: { $sum: { $cond: [{ $gt: ["$stockTotal", 0] }, 1, 0] } },
+      empty: { $sum: { $cond: [{ $eq: ["$stockTotal", 0] }, 1, 0] } },
+    } },
+    { $project: { _id: 0, all: 1, inStock: 1, empty: 1 } },
+  ]);
+  return counts ?? { all: 0, inStock: 0, empty: 0 };
+}
+
 export async function getProduct(context: TenantContext, id: string) {
   const record = await Product.findOne({
     _id: objectIdSchema.parse(id),

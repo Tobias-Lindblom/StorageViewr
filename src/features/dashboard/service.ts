@@ -1,4 +1,6 @@
 import "server-only";
+import { getDashboardInsights } from "./insights";
+import { getDashboardActivity } from "./activity";
 import { Warehouse } from "@/models/warehouse";
 import { Location } from "@/models/location";
 import { Product } from "@/models/product";
@@ -18,6 +20,8 @@ export async function getDashboard(context: TenantContext) {
     productCount,
     activeInventoryCount,
     inventoryRecords,
+    insights,
+    activity,
   ] = await Promise.all([
     Warehouse.countDocuments(filter),
     Location.countDocuments(filter),
@@ -27,6 +31,8 @@ export async function getDashboard(context: TenantContext) {
       .sort({ startedAt: -1, _id: -1 })
       .limit(3)
       .lean(),
+    getDashboardInsights(context),
+    getDashboardActivity(context),
   ]);
   const scopes = inventoryRecords.length
     ? await InventorySessionLocation.find({
@@ -35,6 +41,8 @@ export async function getDashboard(context: TenantContext) {
       }).lean()
     : [];
   return {
+    insights,
+    activity,
     warehouseCount,
     locationCount,
     productCount,

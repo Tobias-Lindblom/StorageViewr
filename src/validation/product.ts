@@ -40,6 +40,7 @@ export const productQuerySchema = z
   .object({
     q: z.string().trim().max(100).default(""),
     status: z.enum(["active", "inactive", "all"]).default("active"),
+    stock: z.enum(["all", "in-stock", "empty", "unplaced"]).default("all"),
     page: z.coerce.number().int().min(1).max(100000).default(1),
   })
   .strict();

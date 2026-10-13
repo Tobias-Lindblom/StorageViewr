@@ -2,64 +2,40 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AppIcon } from "./app-icon";
+import { BrandCube } from "./brand-logo";
 
-export function AppNav() {
+export function AppNav({ admin, mobile = false }: { admin: boolean; mobile?: boolean }) {
   const pathname = usePathname();
-  const items = [
-    { href: "/dashboard", label: "Översikt", icon: "dashboard" as const },
-    { href: "/warehouses", label: "Lager", icon: "warehouse" as const },
-    {
-      href: "/locations",
-      label: "Lagerplatser",
-      mobileLabel: "Platser",
-      icon: "location" as const,
-    },
+  const history = admin ? "/inventory/history" : "/inventories/completed";
+  const items = mobile ? [
     { href: "/products", label: "Produkter", icon: "product" as const },
-    {
-      href: "/inventories",
-      label: "Inventering",
-      mobileLabel: "Inventera",
-      icon: "inventory" as const,
-    },
+    { href: "/locations", label: "Lagerplatser", icon: "location" as const },
+    { href: "/scanner", label: "Skanna", icon: "scan" as const },
+    { href: history, label: "Historik", icon: "history" as const },
+  ] : [
+    { href: "/dashboard", label: "Översikt", icon: "dashboard" as const },
+    { href: "/products", label: "Produkter", icon: "product" as const },
+    { href: "/locations", label: "Lagerplatser", icon: "location" as const },
+    { href: "/warehouses", label: "Lager", icon: "warehouse" as const },
+    { href: "/scanner", label: "Skanna", icon: "scan" as const },
+    { href: "/inventories", label: "Inventering", icon: "inventory" as const },
+    ...(admin ? [{ href: history, label: "Historik", icon: "history" as const }] : []),
   ];
   return (
-    <nav
-      aria-label="Huvudnavigation"
-      className="grid h-full grid-cols-5 gap-0 lg:sticky lg:top-6 lg:h-auto lg:grid-cols-1 lg:gap-2 lg:rounded-[1.25rem] lg:border lg:border-line/55 lg:bg-surface/90 lg:p-3 lg:shadow-[inset_0_1px_0_rgba(255,255,255,0.025),0_10px_28px_rgba(0,0,0,0.16)] lg:backdrop-blur-xl"
-    >
-      {items.map((item) => {
-        const active =
-          pathname === item.href ||
-          pathname.startsWith(item.href + "/") ||
-          (item.icon === "location" && pathname.startsWith("/location/")) ||
-          (item.icon === "inventory" && pathname.startsWith("/inventory/"));
+    <nav aria-label="Huvudnavigation" className={mobile ? "mobile-nav grid h-full grid-cols-4" : "grid gap-2 rounded-2xl border border-line/55 bg-surface/90 p-3"}>
+      {items.map(item => {
+        const active = pathname === item.href || pathname.startsWith(item.href + "/") ||
+          (item.icon === "location" && pathname.startsWith("/location/"));
         return (
-          <Link
-            key={item.href}
-            href={item.href}
-            aria-current={active ? "page" : undefined}
-            className={`group relative flex min-h-16 min-w-0 touch-manipulation flex-col items-center justify-center gap-0.5 overflow-hidden rounded-2xl px-0.5 py-2 text-[10px] font-medium leading-none transition active:scale-[0.97] min-[440px]:text-xs lg:min-h-13 lg:flex-row lg:justify-start lg:gap-3 lg:rounded-xl lg:px-3 lg:text-sm lg:active:scale-[0.99] ${active ? "text-accent lg:bg-violet-500/15 lg:ring-1 lg:ring-inset lg:ring-violet-400/25" : "text-muted/75 hover:bg-white/[0.025] hover:text-foreground lg:text-muted lg:hover:bg-surface-raised/70"}`}
-          >
-            <span
-              className={`relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition ${active ? "bg-violet-500/15 lg:bg-transparent" : "group-hover:bg-white/[0.035] lg:group-hover:bg-transparent"}`}
-            >
-              <AppIcon
-                name={item.icon}
-                strokeWidth={active ? 1.8 : 1.5}
-              />
+          <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined}
+            aria-label={mobile && item.icon === "scan" ? "Skanna lagerplats" : undefined}
+            className={mobile ? "mobile-nav-item " + (active ? "is-active" : "") :
+              "flex min-h-13 min-w-0 items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition " +
+              (active ? "bg-accent/10 text-accent" : "text-muted hover:bg-surface-raised hover:text-foreground")}>
+            <span className={mobile && item.icon === "scan" ? "nav-scanner" : "nav-icon"}>
+              {mobile && item.icon === "product" ? <BrandCube size={17} /> : <AppIcon name={item.icon} width={mobile && item.icon === "scan" ? 26 : 20} height={mobile && item.icon === "scan" ? 26 : 20} />}
             </span>
-            <span className="relative z-10 truncate lg:hidden">
-              {"mobileLabel" in item ? item.mobileLabel : item.label}
-            </span>
-            <span className="relative z-10 hidden truncate lg:inline">
-              {item.label}
-            </span>
-            {active && (
-              <span
-                aria-hidden="true"
-                className="absolute bottom-0 left-1/2 z-20 h-0.5 w-7 -translate-x-1/2 rounded-t-full bg-accent shadow-[0_-2px_10px_rgba(189,165,255,0.4)] lg:hidden"
-              />
-            )}
+            <span className={mobile && item.icon === "scan" ? "sr-only" : "truncate"}>{item.label}</span>
           </Link>
         );
       })}
