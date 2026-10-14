@@ -1,17 +1,14 @@
 "use client";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { BottomSheet } from "@/components/bottom-sheet";
-import { MaterialArrow } from "@/components/material-arrow";
 import type { StockData } from "./service";
 import { PlacementEditor } from "./placement-editor";
 import { StockEditor } from "./stock-editor";
 import type { Scope, Choice, EditorActionState } from "./stock-types";
 import { QuickActions, type MovementType } from "@/components/quick-actions";
-import { ProductPhoto } from "@/components/product-photo";
-import { AppIcon } from "@/components/app-icon";
 import { ProductPlacementList } from "@/features/products/product-placement-list";
+import { LocationProductList } from "@/features/locations/location-product-list";
 
 export function StockSection({
   data,
@@ -20,6 +17,7 @@ export function StockSection({
   transferLocations,
   operable,
   admin,
+  inventoryAction,
 }: {
   data: StockData;
   scope: Scope;
@@ -27,6 +25,7 @@ export function StockSection({
   transferLocations: Choice[];
   operable: boolean;
   admin: boolean;
+  inventoryAction?: ReactNode;
 }) {
   const [selection, setSelection] = useState<string | null>(null);
   const [placing, setPlacing] = useState(false);
@@ -78,33 +77,22 @@ export function StockSection({
   const compact = scope.kind === "product";
   return (
     <section
-      className={compact ? "product-stock-section" : "mt-6"}
+      className={compact ? "product-stock-section" : "location-stock-section"}
       aria-labelledby={"stock-" + scope.kind}
     >
-      <div className={compact ? "product-stock-heading" : "mb-3 flex flex-wrap items-center justify-between gap-3"}>
+      <div className={compact ? "product-stock-heading" : "location-stock-heading"}>
         <div>
-          <h2 id={"stock-" + scope.kind} className={compact ? "" : "mb-1!"}>
+          <h2 id={"stock-" + scope.kind}>
             {scope.kind === "product"
               ? "Lagerplatser (" + data.items.length + ")"
-              : "Produkter på platsen"}
+              : "Produkter på platsen (" + data.items.length + ")"}
           </h2>
-          {!compact && <p className="text-sm text-muted">
-            {scope.kind === "product"
-              ? "Totalt " +
-                BigInt(data.total).toLocaleString("sv-SE") +
-                " st · " +
-                (data.items.length === 1
-                  ? "1 lagerplats"
-                  : data.items.length + " lagerplatser")
-              : data.items.length === 1
-                ? "1 produkt"
-                : data.items.length + " produkter"}
-          </p>}
+
         </div>
         {operable && (
           <div className="shrink-0">
             <button
-              className={compact ? "product-place-button" : "button-secondary min-h-11! px-3! py-2! text-xs!"}
+              className={compact ? "product-place-button" : "location-place-button"}
               onClick={openPlacement}
             >
               + Placera
@@ -118,57 +106,17 @@ export function StockSection({
           {notice}
         </p>
       )}
-      {data.items.length ? compact ? <ProductPlacementList items={data.items} /> : (
-        <ul className="divide-y divide-line/60 overflow-hidden rounded-2xl border border-line bg-surface">
-          {data.items.map((row) => (
-            <li key={row.id} className="p-3 sm:p-5">
-              <div className="flex items-start justify-between gap-3">
-                {scope.kind === "location" && row.photoUrl ?
-                  <ProductPhoto src={row.photoUrl} alt="" className="h-10 w-10 shrink-0 rounded-xl border border-line bg-canvas object-contain" /> :
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-raised text-accent"><AppIcon name={scope.kind === "product" ? "location" : "product"} /></span>}
-                <Link
-                  className="min-w-0 flex-1"
-                  href={
-                    scope.kind === "product"
-                      ? "/locations/" + row.locationId
-                      : "/products/" + row.productId
-                  }
-                >
-                  <p className="wrap-break-word text-sm font-medium">
-                    {scope.kind === "product"
-                      ? row.locationCode
-                      : row.productName}
-                  </p>
-                  <p className="mt-1 wrap-break-word text-xs leading-5 text-muted">
-                    {scope.kind === "product" ? row.warehouseName : "SKU " + row.sku}
-                  </p>
-                </Link>
-                <div className="flex shrink-0 items-center gap-3">
-                  <p className="text-sm font-semibold tabular-nums sm:text-xl">
-                    {row.quantity.toLocaleString("sv-SE")}{" "}
-                    <span className="text-xs font-normal text-muted">st</span>
-                  </p>
-                  <MaterialArrow size={18} className="text-muted" />
-                </div>
-              </div>
-              {!row.active && (
-                <p className="mt-2 text-xs text-muted">
-                  Inaktiv produkt eller plats
-                </p>
-              )}
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className={compact ? "product-list-empty text-sm text-muted" : "rounded-2xl border border-line bg-surface p-5 text-sm leading-7 text-muted"}>
+      {data.items.length ? (compact ? <ProductPlacementList items={data.items} /> : <LocationProductList items={data.items} />) : (
+        <p className={compact ? "product-list-empty text-sm text-muted" : "location-list-empty text-sm text-muted"}>
           {scope.kind === "product"
             ? "Produkten är inte placerad på någon lagerplats."
             : "Inga produkter är placerade på den här lagerplatsen."}
         </p>
       )}
-      {operable && <div className={compact ? "product-quick-actions" : "mb-5"}>
-        <h3 className={compact ? "" : "mb-3 text-sm font-semibold"}>Snabbåtgärder</h3>
-        <QuickActions admin={admin} onAction={type => open("", type)} />
+      {operable && <div className={compact ? "product-quick-actions" : "location-quick-actions"}>
+        <h3>Snabbåtgärder</h3>
+        {inventoryAction}
+        <QuickActions admin={compact && admin} onAction={type => open("", type)} />
       </div>}
       {selection !== null && (
         <BottomSheet

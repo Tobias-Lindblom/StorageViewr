@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-export const emailSchema = z.string().trim().toLowerCase().email().max(254);
-export const passwordSchema = z
+const emailSchema = z.string().trim().toLowerCase().email().max(254);
+const passwordSchema = z
   .string()
   .min(12, "Lösenordet måste ha minst 12 tecken.")
   .max(128);

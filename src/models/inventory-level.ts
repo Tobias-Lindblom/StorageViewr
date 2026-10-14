@@ -11,6 +11,6 @@ const schema = new Schema({
 schema.index({ organizationId: 1, productId: 1, locationId: 1 }, { unique: true });
 schema.index({ organizationId: 1, locationId: 1 });
 schema.index({ organizationId: 1, warehouseId: 1 });
-export type InventoryLevelRecord = InferSchemaType<typeof schema>;
+type InventoryLevelRecord = InferSchemaType<typeof schema>;
 export const InventoryLevel: Model<InventoryLevelRecord> =
   (models.InventoryLevel as Model<InventoryLevelRecord> | undefined) ?? model<InventoryLevelRecord>("InventoryLevel", schema);

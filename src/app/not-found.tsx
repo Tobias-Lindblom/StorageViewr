@@ -2,7 +2,7 @@ import Link from "next/link";
 import { BrandLogo } from "@/components/brand-logo";
 export default function NotFound() {
   return (
-    <main className="mx-auto max-w-xl px-5 py-12">
+    <main className="viewport-page mx-auto max-w-xl px-5 py-12">
       <BrandLogo />
       <div className="panel mt-10">
         <p className="eyebrow">Sidan saknas</p>

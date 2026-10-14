@@ -3,9 +3,11 @@ import type { VerificationData } from "@/features/inventory/verification";
 import { AppIcon } from "./app-icon";
 import { StatusBadge } from "./status-badge";
 
-export function InventoryVerification({ data }: { data: VerificationData }) {
-  const labels = { never: "Ej inventerad", partial: "Behöver räknas", changed: "Saldo ändrat",
+export const verificationLabels = { never: "Ej inventerad", partial: "Behöver räknas", changed: "Saldo ändrat",
     old: "Behöver verifieras", verified: "Verifierad" };
+
+export function InventoryVerification({ data }: { data: VerificationData }) {
+  const labels = verificationLabels;
   return <section aria-label="Inventeringsstatus" className="stock-card mt-3 gap-1! p-3! sm:p-5!">
     <div className="flex flex-wrap items-center justify-between gap-2">
       <span className="inline-flex items-center gap-2 text-sm"><AppIcon name="inventory" width={17} height={17} className="text-accent" />Senast inventerad</span>

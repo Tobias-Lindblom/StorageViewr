@@ -46,7 +46,7 @@ schema.index({ organizationId: 1, productId: 1, createdAt: -1, _id: -1 });
 schema.index({ organizationId: 1, locationId: 1, createdAt: -1, _id: -1 });
 schema.index({ organizationId: 1, transferId: 1 });
 schema.index({ organizationId: 1, inventorySessionId: 1, productId: 1, locationId: 1 }, { unique: true, partialFilterExpression: { type: "INVENTORY" } });
-export type InventoryMovementRecord = InferSchemaType<typeof schema>;
+type InventoryMovementRecord = InferSchemaType<typeof schema>;
 let cached = models.InventoryMovement as
   | Model<InventoryMovementRecord>
   | undefined;

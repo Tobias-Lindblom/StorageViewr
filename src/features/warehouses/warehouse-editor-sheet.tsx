@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { BottomSheet } from "@/components/bottom-sheet";
 import { WarehouseForm } from "./warehouse-form";
@@ -12,10 +12,14 @@ export function WarehouseEditorSheet({
   initial,
   label,
   className,
+  onOpen,
+  onClose,
 }: {
   initial?: Warehouse;
-  label?: string;
+  label?: ReactNode;
   className?: string;
+  onOpen?: () => void;
+  onClose?: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
@@ -25,7 +29,7 @@ export function WarehouseEditorSheet({
 
   function close() {
     setOpen(false);
-    requestAnimationFrame(() => trigger.current?.focus());
+    requestAnimationFrame(() => { if (onClose) onClose(); else trigger.current?.focus(); });
   }
 
   return (
@@ -35,7 +39,7 @@ export function WarehouseEditorSheet({
         type="button"
         className={className ?? (editing ? "button-secondary" : "button")}
         aria-haspopup="dialog"
-        onClick={() => setOpen(true)}
+        onClick={() => { onOpen?.(); setOpen(true); }}
       >
         {label ?? (editing ? "Redigera lager" : "+ Lägg till lager")}
       </button>
@@ -70,8 +74,8 @@ export function WarehouseEditorSheet({
             hideSubmit
             onPendingChange={setPending}
             onSaved={(id) => {
-              setOpen(false);
-              if (!editing) router.push("/warehouses/" + id);
+              close();
+              if (!editing) router.push("/locations?" + new URLSearchParams({ warehouseId: id }));
               router.refresh();
             }}
           />

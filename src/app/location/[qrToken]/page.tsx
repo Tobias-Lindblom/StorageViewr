@@ -18,7 +18,7 @@ export default async function ScannedLocationPage({ params }: { params: Promise<
   const inventories = await inventoriesForLocation(context, location.id);
   const destination = (id: string) => "/inventories/" + id + "?location=" + location.id + "&qr=" + qrToken;
   if (inventories.length === 1) redirect(destination(inventories[0].id));
-  return <AppShell context={context}>
+  return <AppShell context={context} mobileDetail={inventories.length === 0}>
     {inventories.length ? <>
       <PageHeading title={"Inventera " + location.code} description="Platsen ingår i flera pågående inventeringar. Välj vilken du arbetar med." />
       <div className="space-y-3">{inventories.map(inventory => <Link key={inventory.id} href={destination(inventory.id)} className="panel flex items-center justify-between gap-4">

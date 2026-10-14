@@ -33,7 +33,7 @@ export default function Home() {
   const registrationAvailable = registrationEnabled();
 
   return (
-    <main id="toppen" className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-12">
+    <main id="toppen" className="viewport-page mx-auto max-w-7xl px-5 sm:px-8 lg:px-12">
       <header className="flex min-h-20 items-center justify-between gap-4 sm:min-h-22">
         <BrandLogo />
         <nav aria-label="Huvudmeny" className="flex items-center gap-8">

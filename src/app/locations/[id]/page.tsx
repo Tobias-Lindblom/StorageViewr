@@ -13,7 +13,7 @@ export default async function LocationPage({
   const { id } = await params;
   const location = await pageResource(() => getLocation(context, id));
   return (
-    <AppShell context={context}>
+    <AppShell context={context} mobileDetail>
       <LocationDetail location={location} admin={context.role === "admin"} context={context} />
     </AppShell>
   );

@@ -1,5 +1,5 @@
 "use client";
-import Link from "next/link";
+import { ScannerButton } from "@/features/scanner/scanner-button";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { AppIcon } from "@/components/app-icon";
@@ -36,7 +36,7 @@ export function DashboardActions({ locations, admin }: { locations: Choice[]; ad
             <AppIcon name={item.icon} width={22} height={22} /><span>{item.label}</span>
           </button>
         ))}
-        <Link href="/scanner" className="dashboard-action action-neutral"><AppIcon name="scan" width={22} height={22} /><span>Skanna</span></Link>
+        <ScannerButton className="dashboard-action action-neutral"><AppIcon name="scan" width={22} height={22} /><span>Skanna</span></ScannerButton>
       </div>
       {notice && <p role="status" className="mt-2 text-xs text-success">{notice}</p>}
       {type && (

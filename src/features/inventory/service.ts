@@ -1,4 +1,5 @@
 import "server-only";
+import { historyMovementTypes, historySearch } from "./history-query";
 import { InventoryLevel } from "@/models/inventory-level";
 import { InventoryMovement } from "@/models/inventory-movement";
 import { Product } from "@/models/product";
@@ -17,7 +18,7 @@ import {
   historyQuerySchema,
 } from "@/validation/inventory";
 
-async function checkScope(
+export async function checkScope(
   context: TenantContext,
   scope: { productId?: string; locationId?: string },
 ) {
@@ -766,9 +767,11 @@ export async function registerStockMovement(
 }
 export async function listMovements(context: TenantContext, input: unknown) {
   requireAdmin(context);
-  const { page: requestedPage, ...scope } = historyQuerySchema.parse(input);
+  const { page: requestedPage, q, kind, ...scope } = historyQuerySchema.parse(input);
   if (scope.productId || scope.locationId) await checkScope(context, scope);
-  const filter = { organizationId: context.organizationId, ...scope };
+  const filter = { organizationId: context.organizationId, ...scope,
+    ...(kind !== "all" ? { type: { $in: historyMovementTypes[kind] } } : {}),
+    ...(q ? { $or: historySearch(q) } : {}) };
   const total = await InventoryMovement.countDocuments(filter);
   const pages = Math.max(1, Math.ceil(total / 20)),
     page = Math.min(requestedPage, pages);

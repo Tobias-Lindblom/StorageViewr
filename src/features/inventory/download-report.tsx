@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { AppIcon } from "@/components/app-icon";
 
-export function DownloadInventoryReport({ inventoryId }: { inventoryId: string }) {
+export function DownloadInventoryReport({ inventoryId, className }: { inventoryId: string; className?: string }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   async function download() {
@@ -26,7 +26,7 @@ export function DownloadInventoryReport({ inventoryId }: { inventoryId: string }
     finally { setBusy(false); }
   }
   return <div className="min-w-0">
-    <button className="button w-full gap-2! px-4! sm:w-auto" onClick={download} disabled={busy} aria-busy={busy}>
+    <button type="button" className={className ?? "button w-full gap-2! px-4! sm:w-auto"} onClick={download} disabled={busy} aria-busy={busy}>
       <AppIcon name="download" />{busy ? "Skapar PDF…" : "Ladda ner PDF"}
     </button>
     {error && <p role="alert" className="mt-3 max-w-sm text-sm leading-6 text-rose-200">{error}</p>}

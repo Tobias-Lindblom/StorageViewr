@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { AppViewport } from "@/components/app-viewport";
 import { ScrollbarActivity } from "@/components/scrollbar-activity";
 import { PwaRegistration } from "@/components/pwa-registration";
 import "./globals.css";
@@ -35,6 +36,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  viewportFit: "cover",
   themeColor: "#090810",
 };
 
@@ -44,6 +46,7 @@ export default function RootLayout({
   return (
     <html lang="sv">
       <body>
+        <AppViewport />
         <ScrollbarActivity />
         <PwaRegistration />
         {children}

@@ -20,11 +20,11 @@ export default async function EditWarehousePage({
   return (
     <AppShell context={context}>
       <Link
-        href={"/warehouses/" + id}
+        href="/warehouses"
         className="mb-4 inline-flex min-h-13 items-center gap-2 text-sm text-accent"
       >
         <MaterialArrow name="back" />
-        Till lagret
+        Alla lager
       </Link>
       <PageHeading
         title="Redigera lager"

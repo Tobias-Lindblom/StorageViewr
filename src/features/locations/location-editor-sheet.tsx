@@ -15,12 +15,14 @@ export function LocationEditorSheet({
   initial,
   label,
   className,
+  initialCount,
 }: {
   warehouses: WarehouseOption[];
   warehouseId?: string;
   initial?: Location;
   label?: string;
   className?: string;
+  initialCount?: number;
 }) {
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
@@ -73,6 +75,7 @@ export function LocationEditorSheet({
             warehouses={warehouses}
             warehouseId={warehouseId}
             initial={initial}
+            initialCount={initialCount}
             embedded
             hideSubmit
             showDelete={false}

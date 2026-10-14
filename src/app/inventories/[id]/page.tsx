@@ -1,7 +1,5 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
-import { MaterialArrow } from "@/components/material-arrow";
 import { pageTenant } from "@/lib/server/page-auth";
 import { pageResource } from "@/lib/server/page-resource";
 import { getLocationByToken } from "@/features/locations/service";
@@ -39,14 +37,7 @@ export default async function InventoryPage({
     initialLocationVerified = true;
   }
   return (
-    <AppShell context={context}>
-      <Link
-        href={inventory.status === "completed" ? "/inventories/completed" : "/inventories"}
-        className="mb-4 inline-flex min-h-13 items-center gap-2 text-sm text-accent"
-      >
-        <MaterialArrow name="back" />
-        {inventory.status === "completed" ? "Genomförda inventeringar" : "Pågående inventeringar"}
-      </Link>
+    <AppShell context={context} mobileDetail>
       <InventoryWorkspace
         initial={inventory}
         admin={context.role === "admin"}

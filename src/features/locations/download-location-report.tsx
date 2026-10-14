@@ -4,8 +4,10 @@ import { AppIcon } from "@/components/app-icon";
 
 export function DownloadLocationReport({
   warehouseId,
+  className,
 }: {
   warehouseId?: string;
+  className?: string;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -56,7 +58,7 @@ export function DownloadLocationReport({
     <div className="min-w-0 flex-1 sm:flex-none">
       <button
         type="button"
-        className="button-secondary w-full gap-2! whitespace-nowrap px-4! sm:w-auto"
+        className={className ?? "button-secondary w-full gap-2! whitespace-nowrap px-4! sm:w-auto"}
         onClick={download}
         disabled={busy}
         aria-busy={busy}

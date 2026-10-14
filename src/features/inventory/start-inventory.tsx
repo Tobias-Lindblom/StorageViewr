@@ -1,5 +1,5 @@
 "use client";
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { BottomSheet } from "@/components/bottom-sheet";
 import { clientApi } from "@/lib/client-api";
@@ -16,12 +16,13 @@ export function StartInventory({
   initialWarehouseId?: string;
   className?: string;
   initialLocationIds?: string[];
-  label?: string;
+  label?: ReactNode;
   defaultName?: string;
   warehouses: { id: string; name: string }[];
   locations: { id: string; warehouseId: string; code: string }[];
 }) {
   const router = useRouter();
+  const trigger = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
   const [warehouseId, setWarehouseId] = useState(initialWarehouseId ?? warehouses[0]?.id ?? "");
   const [selected, setSelected] = useState<string[]>(initialLocationIds);
@@ -74,6 +75,8 @@ export function StartInventory({
   return (
     <>
       <button
+        type="button"
+        ref={trigger}
         className={className ?? "button w-full px-4! sm:w-auto sm:px-6!"}
         onClick={() => {
           setError("");
@@ -89,7 +92,10 @@ export function StartInventory({
         <BottomSheet
           title="Starta inventering"
           onClose={() => {
-            if (!busy) setOpen(false);
+            if (!busy) {
+              setOpen(false);
+              requestAnimationFrame(() => trigger.current?.focus());
+            }
           }}
           footer={
             <>

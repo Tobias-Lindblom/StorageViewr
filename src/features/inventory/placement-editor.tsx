@@ -91,7 +91,7 @@ export function PlacementEditor({
               <p className="mb-2 text-sm font-medium">
                 Välj {scope.kind === "product" ? "lagerplats" : "produkt"}
               </p>
-              <div className="max-h-56 overflow-y-auto rounded-xl border border-line bg-canvas">
+              <div className="max-h-56 overflow-y-auto overscroll-y-contain rounded-xl border border-line bg-canvas">
                 {visibleChoices.map((item) => (
                   <button
                     key={item.id}

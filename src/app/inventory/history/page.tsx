@@ -1,12 +1,13 @@
-import { movementLabel } from "@/components/movement-list";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
-import { PageHeading } from "@/components/page-heading";
+import { AppIcon } from "@/components/app-icon";
 import { MaterialArrow } from "@/components/material-arrow";
 import { pageTenant } from "@/lib/server/page-auth";
 import { pageResource } from "@/lib/server/page-resource";
-import { listMovements } from "@/features/inventory/service";
+import { listHistory } from "@/features/inventory/history-service";
+import { HistoryList } from "@/features/inventory/history-list";
+import { HistoryFilters } from "@/features/inventory/history-filters";
 import { historyQuerySchema } from "@/validation/inventory";
 
 export default async function StockHistoryPage({
@@ -19,126 +20,58 @@ export default async function StockHistoryPage({
   const parsed = historyQuerySchema.safeParse(await searchParams);
   if (!parsed.success) notFound();
   const query = parsed.data;
-  const result = await pageResource(() => listMovements(context, query));
-  const back = query.productId
-    ? "/products/" + query.productId
-    : query.locationId ? "/locations/" + query.locationId : "/dashboard";
-  const pageLink = (page: number) =>
-    "/inventory/history?" +
-    new URLSearchParams({
-      ...(query.productId
-        ? { productId: query.productId }
-        : query.locationId ? { locationId: query.locationId } : {}),
-      page: String(page),
-    });
+  const result = await pageResource(() => listHistory(context, query));
+  const scope: Record<string, string> = query.productId ? { productId: query.productId } :
+    query.locationId ? { locationId: query.locationId } : {};
+  const link = (kind = query.kind, page = 1, q = query.q) =>
+    "/inventory/history?" + new URLSearchParams({ ...scope, q, kind, page: String(page) });
+  const back = query.productId ? "/products/" + query.productId :
+    query.locationId ? "/locations/" + query.locationId : null;
+  const filtered = query.q !== "" || query.kind !== "all";
   return (
     <AppShell context={context}>
-      <Link
-        href={back}
-        className="mb-4 inline-flex min-h-13 items-center gap-2 text-sm text-accent"
-      >
-        <MaterialArrow name="back" />
-        {query.productId ? "Till produkten" : query.locationId ? "Till lagerplatsen" : "Till översikten"}
-      </Link>
-      <PageHeading
-        title="Saldohistorik"
-        description="Alla lagerhändelser med saldo, orsak och utförare."
-      />
-      {result.items.length ? (
-        <ol className="overflow-hidden rounded-2xl border border-line bg-surface">
-          {result.items.map((item) => (
-            <li
-              key={item.id}
-              className="border-b border-line/60 p-5 last:border-0 sm:p-6"
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0">
-                  <p className="wrap-break-word font-semibold">
-                    {item.productName}
-                  </p>
-                  <p className="mt-1 wrap-break-word text-xs leading-6 text-muted">
-                    {item.sku} · {item.warehouseName} · {item.locationCode}
-                  </p>
-                </div>
-                <span
-                  className={
-                    "shrink-0 rounded-full px-2.5 py-1 text-sm font-semibold tabular-nums " +
-                    (item.difference < 0
-                      ? "bg-rose-400/10 text-rose-200"
-                      : "bg-cyan/10 text-cyan")
-                  }
-                >
-                  {item.difference > 0 ? "+" : ""}
-                  {item.difference.toLocaleString("sv-SE")} st
-                </span>
-              </div>
-              <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
-                <span className="font-medium text-accent">
-                  {movementLabel(item.type)}
-                </span>
-                <span className="inline-flex items-center gap-2 tabular-nums">
-                  {item.previousQuantity.toLocaleString("sv-SE")}
-                  <MaterialArrow size={17} className="text-muted" />
-                  {item.newQuantity.toLocaleString("sv-SE")} st
-                </span>
-              </div>
-              <p className="mt-3 wrap-break-word text-sm leading-6">
-                {item.reason}
-              </p>
-              <div className="mt-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-xs leading-6 text-muted">
-                <p>
-                  {item.performedByName}
-                  <span aria-hidden="true"> · </span>
-                  <time dateTime={item.createdAt}>
-                    {new Date(item.createdAt).toLocaleString("sv-SE", {
-                      timeZone: "Europe/Stockholm",
-                      dateStyle: "medium",
-                      timeStyle: "short",
-                    })}
-                  </time>
-                </p>
-                {item.inventorySessionId && (
-                  <Link
-                    className="inline-flex min-h-9 items-center gap-2 text-sm text-cyan"
-                    href={"/inventories/" + item.inventorySessionId}
-                  >
-                    Visa inventering
-                    <MaterialArrow size={18} />
-                  </Link>
-                )}
-              </div>
-            </li>
-          ))}
-        </ol>
-      ) : (
-        <p className="panel text-sm text-muted">
-          Inga saldoändringar har registrerats ännu.
-        </p>
-      )}
-      {result.pages > 1 && (
-        <nav
-          aria-label="Historiksidor"
-          className="mt-6 flex flex-wrap items-center justify-between gap-3"
-        >
-          {result.page > 1 ? (
-            <Link className="button-secondary" href={pageLink(result.page - 1)}>
-              Föregående
-            </Link>
-          ) : (
-            <span />
-          )}
-          <span className="text-xs text-muted">
-            Sida {result.page} av {result.pages}
-          </span>
-          {result.page < result.pages ? (
-            <Link className="button-secondary" href={pageLink(result.page + 1)}>
-              Nästa
-            </Link>
-          ) : (
-            <span />
-          )}
+      <section className="product-overview history-overview" aria-labelledby="history-heading">
+        {back && <Link href={back} className="history-scope-back">
+          <MaterialArrow name="back" size={17} />{query.productId ? "Till produkten" : "Till lagerplatsen"}
+        </Link>}
+        <h1 id="history-heading">Historik</h1>
+        <form action="/inventory/history" role="search" aria-label="Sök historik" className="product-search">
+          <input type="hidden" name="kind" value={query.kind} />
+          {query.productId && <input type="hidden" name="productId" value={query.productId} />}
+          {query.locationId && <input type="hidden" name="locationId" value={query.locationId} />}
+          <div className="product-search-field">
+            <button type="submit" aria-label="Sök historik"><AppIcon name="search" width={18} height={18} /></button>
+            <label className="sr-only" htmlFor="history-search">Sök produkt, SKU, lagerplats eller händelse</label>
+            <input id="history-search" name="q" type="search" defaultValue={query.q} maxLength={100} placeholder="Sök..." />
+          </div>
+          <HistoryFilters {...query} />
+        </form>
+        <nav className="history-chips" aria-label="Filtrera historik efter händelse">
+          {([
+            ["all", "Alla"], ["receipt", "Inleverans"], ["issue", "Uttag"],
+            ["transfer", "Flytt"], ["inventory", "Inventering"],
+          ] as const).map(([kind, title]) => <Link key={kind} href={link(kind)}
+            aria-current={query.kind === kind ? "page" : undefined}
+            className={"product-stock-chip" + (query.kind === kind ? " is-active" : "")}>{title}</Link>)}
         </nav>
-      )}
+        <p className="sr-only" role="status">{result.total} {result.total === 1 ? "händelse" : "händelser"}</p>
+        {query.kind === "correction" && <p className="history-active-filter">Korrigeringar
+          <Link href={link("all")}>Visa alla</Link></p>}
+        {result.items.length ? <HistoryList items={result.items} /> : <div className="product-list-empty">
+          <h2>{filtered ? "Inga händelser matchar" : "Ingen historik ännu"}</h2>
+          <p>{filtered ? "Prova en annan sökning eller ändra filtren." : "Inleveranser, uttag, flyttar och slutförda inventeringar visas här."}</p>
+          {filtered && <Link href={link("all", 1, "")} className="product-clear-filter">Rensa filter</Link>}
+        </div>}
+        {result.pages > 1 && <nav aria-label="Historiksidor" className="product-pagination">
+          {result.page > 1 ? <Link href={link(query.kind, result.page - 1)} className="product-page-control product-page-prev">
+            <AppIcon name="chevron" width={15} height={15} /> Föregående
+          </Link> : <span />}
+          <span className="product-page-position">Sida {result.page} av {result.pages}</span>
+          {result.page < result.pages ? <Link href={link(query.kind, result.page + 1)} className="product-page-control product-page-next">
+            Nästa <AppIcon name="chevron" width={15} height={15} />
+          </Link> : <span />}
+        </nav>}
+      </section>
     </AppShell>
   );
 }

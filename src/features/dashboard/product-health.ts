@@ -22,7 +22,6 @@ export function productHealthStages(context: TenantContext): PipelineStage[] {
         } },
         { $set: { count: { $arrayElemAt: ["$counts", 0] } } },
         { $project: {
-          quantity: { $toDecimal: { $toLong: "$quantity" } },
           countedAt: { $ifNull: ["$count.countedAt", null] },
           unchanged: { $and: [
             { $eq: ["$quantity", "$count.countedQuantity"] },
@@ -35,8 +34,6 @@ export function productHealthStages(context: TenantContext): PipelineStage[] {
       ], as: "levels",
     } },
     { $set: {
-      stockTotal: { $sum: "$levels.quantity" },
-      locationCount: { $size: "$levels" },
       fullyCounted: { $and: [
         { $gt: [{ $size: "$levels" }, 0] },
         { $allElementsTrue: { $map: { input: "$levels", as: "level", in: { $ne: ["$$level.countedAt", null] } } } },

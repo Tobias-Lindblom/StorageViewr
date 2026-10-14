@@ -20,8 +20,8 @@ serverbehörighet, Zod-validering och organisationens scope.
 
 ## Genomförda steg
 
-1. Gemensamma komponenter: `StockSummary`, `StatusBadge`, `QuickActions`,
-   `InventoryVerification` och `MovementList`. Befintliga färger används, med
+1. Saldosammanfattningar per produkt och lagerplats, `StatusBadge`, `QuickActions`,
+   `InventoryVerification` och delade namn för lagerhändelser. Befintliga färger används, med
    semantiska tokens för success, warning och destructive.
 2. Produktlistan visar SKU, exakt summerat saldo och antal placeringar.
    Lagerfilter tillämpas före sidindelning. Namn, SKU och streckkod är fortsatt sökbara.
@@ -82,7 +82,7 @@ endast inventeringsaktivitet; saldohistoriken behåller administratörsbehörigh
 - Lagerpersonal kan fortsatt registrera inleverans, uttag och flytt samt räkna platser.
 
 Den gemensamma kamerakomponenten `QrScanner` används av både inventering och
-den nya skannsidan. QR-adresser kontrolleras mot konfigurerad APP_URL och
+skannerpanelen. QR-adresser kontrolleras mot konfigurerad APP_URL och
 platsen kontrolleras på servern. Manuell platskod kan ge ett lagerval när samma
 kod förekommer i flera lager.
 
@@ -210,3 +210,280 @@ lagersidornas gemensamma header verifierades också. Auth-, medlemskaps- och
 QR-logiken är oförändrad. Skärmbilder och resultat finns i
 `storageviewr-mobile-h7f8K5` i den lokala temporära katalogen och använder
 isolerade testkonton och en temporär databas.
+
+Lagerplatslistan följer nu mobilreferensen med samma kompakta sökfält,
+filterchips och primärknapp som produktlistan. En rak kortlista visar platskod,
+lager, antal produkter, exakt enhetssumma och Upptagen/Tom. Upptagen bygger på
+befintliga placeringar, även när en placerad produkt har saldo noll. Inaktiva
+platser kan väljas i administratörens filterpanel. Chipantal följer sökning,
+valt lager och platsstatus och påverkas inte av valt beläggningschip.
+
+Lagerfilter, QR-etiketter och PDF-rapport nås via filterknappen. Exportverktygen
+behåller den tidigare avgränsningen till valt lager eller alla lager. Ny lagerplats
+öppnar det befintliga formuläret med antal 1; batchskapande finns kvar. Vyn för
+ett enskilt lager behåller sin grupperade lista och tidigare batchförval 10.
+En organisation utan lager kan fortfarande skapa sitt första lager.
+
+Lint, typkontroll, alla 73 tester, produktionsbygge och diff-kontroll godkändes.
+Chrome verifierade 320, 390, 768, 1024 och 1440 px samt 17 flöden: beläggningschips,
+sökning, nollsaldo på upptagen plats, tomt sökresultat, filter/fokus, lagerfilter,
+inaktiva platser, QR-etiketter, PDF, skapande av en plats, platslänk, befintligt
+batchskapande, långa namn/stora exakta saldon, lagerpersonalens behörigheter,
+främmande lager och första lagret i tom organisation. Skärmbilder och resultat
+finns i `storageviewr-mobile-5ttcTk` i den lokala temporära katalogen. Kontrollen
+använde isolerade testkonton och en temporär databas.
+
+Lagerplatsens detaljsida följer nu referensen med Tillbaka/trepunktsmeny i
+mobilvyn, platskod/lager och Redigera plats i headern, små platsdelstaggar,
+ett gemensamt produkt-/enhetskort, klickbart inventeringskort och kompakta
+produktrader. Inventera plats ligger under Snabbåtgärder, ovanför Inleverans,
+Uttag och Flytta. Administratörens korrigering är fortsatt tillgänglig via
+åtgärdsvalet i befintlig StockEditor. Placera med nollsaldo finns kvar.
+QR-kod och platsuppgifter samt befintlig borttagningsbekräftelse nås via menyn.
+Den direkta QR-vyn använder samma detaljlayout när ingen inventering pågår.
+
+Senaste aktivitet är platsavgränsad och återanvänder dashboardens uppföljning:
+saldohändelser och avslutade fysiska kontroller utan saldoändring visas som
+händelser respektive INV. Inventeringskorrigeringar dubbelvisas inte för samma
+avslutade platskontroll. Lagerpersonal får bara inventeringsaktivitet och
+behåller serverns begränsning av saldohistoriken. Redan hämtade saldohändelser
+återanvänds i uppföljningen; inga duplicerade inventeringsfält sparas.
+
+Lint, typkontroll, 74 tester, produktionsbygge och diff-kontroll godkändes.
+Det nya integrationstestet kontrollerar plats-/företagsavgränsning,
+deduplicering, återanvända händelser, pågående kontroller och worker-behörighet.
+Chrome verifierade fem skärmbredder och 18 flöden: inventeringsdetaljer/fokus,
+QR/fokus, borttagningsbekräftelse/avbryt/fokus, redigering med stabil QR-token,
+QR-ruttens layout, de tre snabba lageråtgärderna och befintlig korrigering,
+ändrat saldo, produktlänk, nollplacering och ofullständig kontroll,
+förvald/startad inventering, fortsatt pågående inventering, långa namn/exakta
+stora saldon, ej inventerad plats, återgång till listan och lagerpersonalens
+behörigheter. Skärmbilder och resultat finns i `storageviewr-mobile-v3V5a6`
+i den lokala temporära katalogen. Kontrollen använde en isolerad testdatabas.
+
+Historiken följer nu referensen med rubriken Historik, kompakt sökfält och
+filterknapp, chips för Alla/Inleverans/Uttag/Flytt/Inventering och täta
+händelserader med färgade cirklar, plats och tid. Korrigeringar kan filtreras
+i panelen. Header och markerad historikflik återanvänder den gemensamma
+designen med profilcirkel och Mer/trepunktsikon. Sidindelningen använder
+produktlistans kompakta kontroller.
+
+Varje rad öppnar en detaljpanel med produkt/SKU, lager/plats, tid, utförare,
+orsak och saldo före/efter. Flyttar grupperas före sökning och sidindelning,
+så båda riktningarna hör ihop på en sida; platsavgränsad historik behåller
+den enskilda platsens riktning och tecken. Avslutade platskontroller visas
+även utan saldoändring, och deras korrigeringar samlas i samma händelse.
+Befintliga revisionsposter och API:ets två flyttposter bevaras. Sökning och
+filter utförs på servern inom valt företag; produkt/plats följer med mellan
+filter och sidor. Lagerpersonalens tidigare behörigheter behålls.
+
+Lint, typkontroll, 76 tester, produktionsbygge och diff-kontroll godkändes.
+Två nya integrationstester verifierar gruppering före sidindelning,
+bokstavlig sökning, tenant-/rollavgränsning och avslutade inventeringar.
+Chrome verifierade fem skärmbredder och 15 flöden, inklusive detaljpaneler,
+fokusåterställning, inventeringslänk, sökning/chips, sidindelning,
+produkt-/platsavgränsning, korrigeringsfilter, långa namn/stora exakta tal
+och lagerpersonalens behörigheter. Inga ohanterade webbläsarfel upptäcktes.
+Skärmbilder och resultat finns i `storageviewr-mobile-LDW0kr` i den lokala
+temporära katalogen. Kontrollen använde en isolerad testdatabas.
+
+Inventeringsöversikten använder nu samma kompakta rubrik, statuschips,
+mindre lila startknapp och kortstil som produkt- och lagerplatslistorna.
+Pågående inventeringar visar lager, datum, räknade platser och en tunn
+förloppslinje. Genomförda inventeringar använder samma kort med grön
+status och sparat avslutsdatum. Tomlägen och sidindelning följer samma stil.
+Båda statusvyerna delar InventoryOverview; startknappen återfår fokus när
+startpanelen stängs. Befintliga start-/räkningsflöden och behörigheter bevaras.
+
+Lint, typkontroll, alla 76 tester, produktionsbygge och diff-kontroll godkändes.
+Chrome verifierade tom, pågående och genomförd lista på fem skärmbredder
+(15 vyer), plus 13 flöden: avslutad inventering/PDF, startpanel och valkrav,
+fokusåterställning, start med förvald räkningsplats, fortsatt inventering,
+delvis/fullständigt framsteg, statusnavigation, långa namn, sidindelning
+och lagerpersonalens startförbud/fortsatta räkning/genomförda inventeringar.
+Inga ohanterade webbläsarfel upptäcktes. Skärmbilder och resultat finns i
+`storageviewr-mobile-3FGkQa` i den lokala temporära katalogen.
+Kontrollen använde en isolerad testdatabas.
+
+Lageröversikten följer nu den gemensamma kompakta liststilen med mindre
+rubrik, lagerantal och mindre lila knapp. Varje lagerkort visar lagerikon,
+namn, kod, antal aktiva platser och en synlig statusetikett. Aktiva och
+inaktiva lager behåller sin tidigare sortering och synlighet per roll.
+Tomläget använder samma lilla kortformat och en enda knapp för första lagret.
+Befintlig lagerdetalj, skapande/redigering och backendavgränsning återanvänds.
+
+Lint, typkontroll, alla 76 tester, produktionsbygge och diff-kontroll godkändes.
+Chrome verifierade lista, långa namn och tom organisation på fem
+skärmbredder (15 vyer), plus 13 flöden: kompakta kort, aktiva platsantal
+inklusive en/noll platser, status, tenantavgränsning, detaljlänk,
+skapandepanel/fokusåterställning, skapa med normaliserad kod, redigering,
+dubbelkodsfel, långa namn, lagerpersonalens synlighet/behörigheter och
+första lagret i tom organisation. Inga ohanterade webbläsarfel upptäcktes.
+Skärmbilder och resultat finns i `storageviewr-mobile-bGz1IC` i den lokala
+temporära katalogen. Kontrollen använde en isolerad testdatabas.
+
+Den separata lagerdetaljsidan är nu ersatt av en 307-omdirigering till
+lagerplatslistan filtrerad på lagret. Ägarskap och rollkontroll utförs före
+omdirigeringen; ogiltiga/främmande lager och inaktiva lager för lagerpersonal
+ger fortsatt 404. Lagerkort länkar direkt till den filtrerade listan.
+Administratörens trepunktsmeny ligger bredvid kortlänken och öppnar befintlig
+lagerredigering i en panel. Escape, klick utanför och fokusåterställning
+stöds. Redigering uppdaterar lageröversikten; skapande av lager leder direkt
+till dess lagerplatser, även via det fristående formuläret.
+
+Den valda lagerplatslistan visar lagerkontext och länk tillbaka till Lager.
+Platsformuläret begränsas till det valda aktiva lagret och behåller möjligheten
+att skapa upp till 100 platser. Inaktiva lager saknar skapandeknapp och visar
+sina inaktiva platser i administratörens direktöppnade vy. Tomma valda lager
+får ett relevant tomläge. QR-etiketter och PDF finns kvar i filterpanelen
+med lageravgränsningen bevarad. Den oanvända grupperade LocationList har
+tagits bort. Äldre redigeringslänkar fungerar fortsatt och återgår till Lager.
+
+Lint, typkontroll, alla 76 tester, produktionsbygge och diff-kontroll godkändes.
+Chrome verifierade lagerkort och filtrerad lagerplatslista på fem bredder
+(10 vyer), plus 17 flöden: direktlänk, separata meny-/länkmål, Escape/klick
+utanför, tangentbordsöppnad redigering, återställt fokus, sparad redigering,
+dubbelkodsfel, synligt valt lager, gamla länkar/307, tenantvalidering,
+lageravgränsad PDF/QR, skapande av flera platser, inaktivt lager,
+tomt lager, skapande via panel och fristående formulär samt lagerpersonalens
+synlighet/redirectbehörigheter. Inga ohanterade webbläsarfel upptäcktes.
+Skärmbilder och resultat finns i `storageviewr-mobile-iZGAz8` i den lokala
+temporära katalogen. Kontrollen använde en isolerad testdatabas.
+
+Inventeringens detaljsida följer nu produkt-/lagerplatsdetaljernas kompakta
+layout. Mobilvyn använder Tillbaka och inventeringskontext i stället för
+den gemensamma headern och bottennavigationen; desktop behåller dem.
+Headern visar namn/lager, sparade datum och status. Framstegskortet visar
+räknade platser, procent, återstående platser och avvikelser. Lagerplatser
+visas i separata små kort med status Ej räknad/Räknad/Räkna om.
+
+Genomförda inventeringar använder samma layout med grön framstegslinje,
+expanderbara platskort och kompakta produktresultat (förväntat/räknat/avvikelse).
+PDF-knappen följer den gemensamma lila åtgärdsstilen. Granskningen använder
+mindre sammanfattnings- och avvikelsekort. CountPlace, QR-verifiering,
+bekräftelser, revisioner och serverns behörigheter återanvänds.
+Tillbaka-länken uppdateras vid slutförande, och fokus går till rubriken när
+den tidigare åtgärdsknappen har ersatts av PDF-knappen. Omräkning och
+slutförande behåller sina befintliga bekräftelsekrav.
+
+Lint, typkontroll, alla 76 tester, produktionsbygge och diff-kontroll godkändes.
+Chrome verifierade ej räknad, delvis räknad, genomförd och ändrat saldo på
+fem bredder, plus långa namn/stora exakta antal (25 vyer), och 18 flöden:
+mobil-/desktopnavigation, platsdialog/fokus, QR-förvald verifierad plats,
+sparad räkning utan saldoändring, blockerad ofullständig granskning,
+omräkningsbekräftelse, fullständig granskning/bekräftelse, genomförande och
+korrekt saldouppdatering, dynamisk Tillbaka/fokus, expanderade produktresultat,
+PDF, blockerad avslutning vid ändrat saldo, tom genomförd plats, långa namn
+och exakta antal, lagerpersonalens tomräkning/granskning och avslutsförbud
+samt ogiltig platsavgränsning. Inga ohanterade webbläsarfel upptäcktes.
+Skärmbilder och resultat finns i `storageviewr-mobile-BU6B5k` i den lokala
+temporära katalogen. Kontrollen använde en isolerad testdatabas.
+
+## Skanning som bottomsheet
+
+Skanningsknappen i navigationen och dashboardens snabbknapp öppnar samma
+panel ovanpå den aktuella sidan. Kameravy, lila QR-ram, manuell platskod och
+lagerval vid dubbla koder finns i samma panel. Den äldre /scanner-adressen
+omdirigerar till dashboarden med skanningspanelen öppen.
+
+Kameran stoppas när stängningsanimationen börjar, vid avläsning och när
+sidan hamnar i bakgrunden. Pågående uppslag avbryts vid stängning. Sena
+kameratillstånd och API-svar får inte återstarta kameran eller navigera.
+Escape, dragning nedåt, fokusåterställning och tangentbordsnavigation stöds.
+Inventeringens befintliga skanningsläge återanvänder fortfarande QrScanner.
+
+Lint, typkontroll, alla 76 tester, produktionsbygge och diff-kontroll godkändes.
+Chrome kontrollerade panelen på fem skärmbredder och 22 flöden, inklusive
+faktisk jsQR-avkodning från simulerad kamerabild, nekad kamera, manuellt
+uppslag, dubbla platskoder, inventeringsrouting, sena svar och lagerpersonal.
+Inga ohanterade webbläsarfel upptäcktes. Resultat och skärmbilder finns i
+`storageviewr-mobile-Xj48kU` i den lokala temporära katalogen.
+
+
+## Städning efter designändringarna
+
+Genomgången omfattade importkedjor i src, tester och databasskript,
+exporterade symboler, CSS-klasser, ikonvarianter, publika filer, typsnitt,
+konfiguration och beroenden. Next.js-sidor och Route Handlers behandlades
+som egna ingångar, och dynamiska importer och CSS-klasser kontrollerades separat.
+
+- Oanvända StockSummary och MovementList har tagits bort.
+- Händelsernas gemensamma svenska namn finns nu i
+  features/inventory/movement-label.ts och används av produktvyn och historiken.
+- Ikonerna bell, menu och sparkle samt den oanvända publika SVG-filen har tagits bort.
+- Interna konstanter, scheman och modelltyper exporteras bara när andra moduler behöver dem.
+- LocationScanner har en enda aktuell layout; den överflödiga kompakt-parametern har tagits bort.
+- Dashboardens tidigare plats-/produktnyckeltal, senaste-inventering-uppslag
+  och separata antal pågående inventeringar har tagits bort. Lagerhälsa,
+  inventeringsförslag, aktiva inventeringar och senaste aktivitet används fortsatt.
+  Tester för dashboarden kontrollerar den nuvarande datan och tenantavgränsningen.
+
+Efter städningen hittade importgenomgången inga kvarvarande oåtkomliga
+TypeScript-moduler. Alla produktionsberoenden har användning i projektet.
+De granskade CSS-klasserna behövs i aktuella vyer, inklusive klasser som
+byggs dynamiskt för färg och status. Äldre länkar behåller sina omdirigeringar;
+PWA-resurser, CSV-mall, PDF-typsnitt och licenser används fortfarande.
+
+Verifiering efter städningen: lint, typkontroll, alla 76 integrationstester
+och produktionsbygge godkändes. Chrome kontrollerade tio sidor på fem
+skärmbredder (50 sidvyer), skannerpanelen på samma fem bredder och
+skanningsflödena ovan. Lagerhälsans faktiska procent, produktens saldo och
+händelsernas svenska namn verifierades särskilt. Inget horisontellt
+överflöde eller ohanterat JavaScript-fel upptäcktes. Resultat och skärmbilder
+finns i `storageviewr-mobile-f7RaPD` i den lokala temporära katalogen.
+Kontrollen använde en isolerad testdatabas.
+
+## Mer, profilmeny och fast PWA-layout
+
+Mer har en egen kompakt bottomsheet med Översikt, Lager och Inventering,
+korta beskrivningar och markering av aktuell sida. Profilmenyn är en separat
+kompakt dropdown med konto, aktuellt företag, roll, inställningar, företagsbyte
+och utloggning. Headern använder den runda profilcirkeln med initialer.
+Kryssen i Mer och skanningspanelen är borttagna. Handtaget, dragning nedåt,
+klick utanför och Escape stänger panelerna och återställer fokus.
+
+Vid layoutgranskningen hade WorkspaceFrame redan 100dvh och separat main-scroll,
+men html/body saknade ett permanent scrollås. Nu har html/body full viewport,
+overflow: hidden och overscroll-behavior: none; body ligger fixed med inset: 0.
+App-shell använder 100dvh med min-height: 0 och overflow: hidden. Main äger
+content-scrollen och navigationen ligger utanför den. Scrollbara innerområden,
+inklusive paneler och val-listor, har overscroll-behavior-y: contain.
+Safe-area-avstånd och viewport-fit=cover används för iPhone.
+
+AppViewport hanterar höjd och offset från VisualViewport när ett redigerbart
+fält fokuseras och tangentbordet minskar den synliga ytan. Den scrollar det
+fokuserade fältets innehållsyta, och återställer viewport-värden när tangentbordet
+stängs eller fältet lämnas. Pinch-zoom behålls. En begränsad touch-kontroll stoppar
+vertikala drag som inget scrollbart innerområde kan ta emot; textfält, markering,
+horisontella gester och panelernas draghandtag behåller sina vanliga beteenden.
+Ingen global touch-action: none används. Fokuserade fält använder minst 16px
+på touch-enheter. Bakgrunden är låst medan en modal panel är öppen.
+
+Även startsidan, inloggning, registrering, felsidor och offlinevyn har en egen
+scrollbar innehållsyta. Utskriftsläget återställer normal dokumentlayout så att
+alla QR-etiketter kan skrivas ut.
+
+Bakgrund: [WebKits safe-area-dokumentation](https://webkit.org/blog/7929/designing-websites-for-iphone-x/)
+och [visuell viewport vid tangentbord](https://developer.chrome.com/blog/viewport-resize-behavior/).
+
+Verifierat med lint, läsande TypeScript-kontroll, alla 76 integrationstester
+och det godkända produktionsbygget. Chrome verifierade tio app-sidor på fem
+bredder, Mer och profilmenyn, runda avatarer, lång innehållsscroll med stabil
+navigation, touch-gränser, interna panelscrollytor, simulerade tangentbordshöjder
+och offsets, återställning efter blur/resize, formulärsparning, företagsbyte,
+roller, långa namn, utloggning, publika formulär, offlinevy och QR-utskrift.
+Skanningsflödena verifierades även inklusive faktisk jsQR-avkodning och kamerastopp.
+Inga ohanterade webbläsarfel upptäcktes. Resultat och skärmbilder finns i
+`storageviewr-mobile-vDJKJ8` i den lokala temporära katalogen.
+Testerna använde en isolerad databas.
+
+Installerad iPhone-PWA har inte verifierats på fysisk enhet i denna Windows-miljö.
+Kontrollera där efter omladdning:
+
+1. Kort dashboard: dra upp/ned över innehåll och navigation; hela appen ska ligga stilla.
+2. Lång produktlista: scrolla till båda ändarna; endast innehållet ska röra sig.
+3. Navigation: den ska ligga kvar även vid innehållsscroll och safe-area-avståndet ska synas.
+4. Bottomsheet: scrolla en lång inventeringspanel; bakgrunden ska behålla sin position.
+5. Tangentbord: skriv i produktsökning, profilinställningar och manuell skanning,
+   stäng tangentbordet, upprepa och rotera telefonen; inga fält ska blockeras
+   och ingen permanent tom yta ska bli kvar.

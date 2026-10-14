@@ -18,7 +18,6 @@ export async function getDashboard(context: TenantContext) {
     warehouseCount,
     locationCount,
     productCount,
-    activeInventoryCount,
     inventoryRecords,
     insights,
     activity,
@@ -26,7 +25,6 @@ export async function getDashboard(context: TenantContext) {
     Warehouse.countDocuments(filter),
     Location.countDocuments(filter),
     Product.countDocuments(filter),
-    InventorySession.countDocuments(inventoryFilter),
     InventorySession.find(inventoryFilter)
       .sort({ startedAt: -1, _id: -1 })
       .limit(3)
@@ -46,7 +44,6 @@ export async function getDashboard(context: TenantContext) {
     warehouseCount,
     locationCount,
     productCount,
-    activeInventoryCount,
     activeInventories: inventoryRecords.map((inventory) => {
       const places = scopes.filter((scope) =>
         scope.inventorySessionId.equals(inventory._id),

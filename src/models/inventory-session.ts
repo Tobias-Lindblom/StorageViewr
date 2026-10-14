@@ -37,7 +37,7 @@ const schema = new Schema(
   { collection: "inventorySessions", timestamps: true },
 );
 schema.index({ organizationId: 1, warehouseId: 1, status: 1 });
-export type InventorySessionRecord = InferSchemaType<typeof schema>;
+type InventorySessionRecord = InferSchemaType<typeof schema>;
 export const InventorySession: Model<InventorySessionRecord> =
   (models.InventorySession as Model<InventorySessionRecord> | undefined) ??
   model<InventorySessionRecord>("InventorySession", schema);

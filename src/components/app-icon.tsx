@@ -1,13 +1,12 @@
 import type { SVGProps } from "react";
 const paths = {
-  bell: "M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4",
-  menu: "M5 6h14M5 12h14M5 18h14",
+  info: "M12 11v6m0-10v.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0",
+  keyboard: "M3 5h18v14H3zM6 9h.01M10 9h.01M14 9h.01M18 9h.01M6 12h.01M10 12h.01M14 12h.01M18 12h.01M7 16h10",
   more: "M4 12h.01M12 12h.01M20 12h.01",
   scan: "M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5M8 9h8M8 15h8",
   layers: "m12 3 9 5-9 5-9-5 9-5ZM3 12l9 5 9-5M3 17l9 5 9-5",
   verified: "M8 12l3 3 5-6M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0",
   alert: "M12 8v5m0 3v.1M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0",
-  sparkle: "M12 3v5m0 8v5M3 12h5m8 0h5M9 9l3 3 3-3m-6 6 3-3 3 3",
   plus: "M12 8v8M8 12h8M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0",
   minus: "M8 12h8M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0",
   transfer: "M4 7h16m-4-4 4 4-4 4M20 17H4m4-4-4 4 4 4",

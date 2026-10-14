@@ -14,7 +14,7 @@ const schema = new Schema(
   { timestamps: true, collection: "organizations" },
 );
 schema.index({ slug: 1 }, { unique: true });
-export type OrganizationRecord = InferSchemaType<typeof schema>;
+type OrganizationRecord = InferSchemaType<typeof schema>;
 export const Organization: Model<OrganizationRecord> =
   (models.Organization as Model<OrganizationRecord> | undefined) ??
   model<OrganizationRecord>("Organization", schema);

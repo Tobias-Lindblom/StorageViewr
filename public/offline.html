@@ -2,18 +2,19 @@
 <html lang="sv">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#090810" />
     <title>Ingen anslutning – StorageViewr</title>
     <style>
       :root { color-scheme: dark; font-family: Arial, Helvetica, sans-serif; }
       * { box-sizing: border-box; }
-      body { margin: 0; min-height: 100vh; min-height: 100svh; background: #090810; color: #f6f3ff; }
-      main { width: min(100%, 560px); min-height: 100vh; min-height: 100svh; margin: 0 auto; padding: 40px 20px; display: flex; flex-direction: column; }
+      html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; overscroll-behavior: none; }
+      body { position: fixed; inset: 0; background: #090810; color: #f6f3ff; }
+      main { width: min(100%, 560px); height: 100dvh; min-height: 0; margin: 0 auto; padding: max(40px,env(safe-area-inset-top)) max(20px,env(safe-area-inset-right)) max(40px,env(safe-area-inset-bottom)) max(20px,env(safe-area-inset-left)); display: flex; flex-direction: column; overflow-y: auto; overscroll-behavior-y: contain; -webkit-overflow-scrolling: touch; }
       .brand { display: flex; align-items: center; gap: 10px; font-size: 20px; font-weight: 700; }
       .mark { width: 36px; height: 36px; display: grid; place-items: center; border: 1px solid rgba(167, 120, 255, 0.45); border-radius: 12px; background: rgba(124, 58, 237, 0.12); color: #bda5ff; }
       .dot { color: #bda5ff; }
-      section { margin: auto 0; padding: 28px; border: 1px solid #393047; border-radius: 18px; background: #13111f; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03); }
+      section { flex-shrink: 0; margin: auto 0; padding: 28px; border: 1px solid #393047; border-radius: 18px; background: #13111f; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03); }
       .eyebrow { margin: 0 0 14px; color: #bda5ff; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
       h1 { margin: 0 0 14px; font-size: 30px; letter-spacing: -0.03em; }
       p { margin: 0 0 26px; color: #b8b1ca; font-size: 14px; line-height: 1.75; }

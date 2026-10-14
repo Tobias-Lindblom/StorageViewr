@@ -33,7 +33,7 @@ export const productSchema = z
       .default(""),
   })
   .strict();
-export const productUpdateSchema = productSchema
+const productUpdateSchema = productSchema
   .extend({ active: z.boolean() })
   .strict();
 export const productQuerySchema = z

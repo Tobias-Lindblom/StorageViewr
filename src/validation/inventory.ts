@@ -74,5 +74,7 @@ export const stockMovementSchema = z
   );
 export const historyQuerySchema = z.object({
   productId: objectIdSchema.optional(), locationId: objectIdSchema.optional(),
+  q: z.string().trim().max(100).default(""),
+  kind: z.enum(["all", "receipt", "issue", "transfer", "inventory", "correction"]).default("all"),
   page: z.coerce.number().int().min(1).max(100000).default(1),
 }).strict().refine(value => !(value.productId && value.locationId), "Välj högst en produkt eller lagerplats.");

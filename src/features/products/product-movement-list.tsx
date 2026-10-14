@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { MovementData } from "@/features/inventory/service";
 import { movementPreview } from "@/features/inventory/movement-preview";
-import { movementLabel } from "@/components/movement-list";
+import { movementLabel } from "@/features/inventory/movement-label";
 
 export function ProductMovementList({ items, href }: { items: MovementData["items"]; href: string }) {
   const rows = movementPreview(items).slice(0, 4);

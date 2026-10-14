@@ -21,7 +21,7 @@ const schema = new Schema(
 );
 schema.index({ tokenHash: 1 }, { unique: true });
 schema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
-export type SessionRecord = InferSchemaType<typeof schema>;
+type SessionRecord = InferSchemaType<typeof schema>;
 export const Session: Model<SessionRecord> =
   (models.Session as Model<SessionRecord> | undefined) ??
   model<SessionRecord>("Session", schema);

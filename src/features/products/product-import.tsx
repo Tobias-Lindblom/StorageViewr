@@ -232,7 +232,7 @@ export function ProductImport() {
                 </p>
               </div>
             )}
-            <ul className="max-h-96 overflow-y-auto border-t border-line/60">
+            <ul className="max-h-96 overflow-y-auto overscroll-y-contain border-t border-line/60">
               {preview.rows.map((row) => (
                 <li key={row.line} className="border-b border-line/60 px-5 py-4 last:border-0 sm:px-6">
                   <div className="flex items-start justify-between gap-4">

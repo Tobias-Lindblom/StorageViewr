@@ -394,13 +394,11 @@ test("dashboard numbers reflect only real active data belonging to the current t
     b = tenant();
   assert.deepEqual(await getDashboard(a), {
     activity: [],
-    insights: { health: { verifiedProducts: 0, needsCountingProducts: 0, oldProducts: 0 }, emptyProducts: 0, unplacedProducts: 0, recentLocations: 0,
-      staleLocations: 0, neverCountedLocations: 0, pendingDiscrepancies: 0,
-      lastInventory: null, suggestedLocations: [] },
+    insights: { health: { verifiedProducts: 0, needsCountingProducts: 0, oldProducts: 0 },
+      pendingDiscrepancies: 0, suggestedLocations: [] },
     warehouseCount: 0,
     locationCount: 0,
     productCount: 0,
-    activeInventoryCount: 0,
     activeInventories: [],
   });
   const warehouse = await createWarehouse(a, warehouseInput);
@@ -479,7 +477,6 @@ test("dashboard numbers reflect only real active data belonging to the current t
   assert.equal((await getDashboard({ ...a, role: "warehouse" })).productCount, 1);
   assert.equal(dashboard.warehouseCount, 1);
   assert.equal(dashboard.locationCount, 10);
-  assert.equal(dashboard.activeInventoryCount, 1);
   assert.deepEqual(dashboard.activeInventories, [
     {
       id: String(activeInventory._id),

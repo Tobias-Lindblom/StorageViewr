@@ -18,9 +18,10 @@ import { InventoryCount } from "../src/models/inventory-count";
 import { createProduct, updateProduct, getProduct } from "../src/features/products/service";
 import { createWarehouse } from "../src/features/warehouses/service";
 import { createLocation, updateLocation, getLocation } from "../src/features/locations/service";
-import { listStock, adjustStock, getStockPair } from "../src/features/inventory/service";
+import { listStock, adjustStock, getStockPair, listMovements } from "../src/features/inventory/service";
 import { startInventory, saveLocationCount, finishInventory } from "../src/features/inventory/sessions";
 import { getDashboard } from "../src/features/dashboard/service";
+import { getDashboardActivity } from "../src/features/dashboard/activity";
 import { getVerification } from "../src/features/inventory/verification";
 import { getInventory, listInventories } from "../src/features/inventory/session-queries";
 import { startInventorySchema, saveCountSchema } from "../src/validation/inventory-session";
@@ -413,7 +414,7 @@ test("general scanner resolves tenant-owned QR labels and disambiguates codes ac
   await assert.rejects(resolveLocation(worker, { qr: "https://evil.example/location/" + f.location.qrToken }), status(400));
 });
 
-test("dashboard highlights actual stock gaps, old and empty counts and only active discrepancies in its tenant", async () => {
+test("dashboard suggests stale and never-counted places and only active discrepancies in its tenant", async () => {
   const f = await fixture(10);
   await saveLocationCount(f.context, f.inventory.id, f.location.id, f.count(10));
   await saveLocationCount(f.context, f.inventory.id, f.empty.id, f.blank);
@@ -427,13 +428,8 @@ test("dashboard highlights actual stock gaps, old and empty counts and only acti
   const pending = await startInventory(f.context, { name: "Ny kontroll", warehouseId: f.warehouse.id, locationIds: [f.location.id] });
   await saveLocationCount(f.context, pending.id, f.location.id, f.count(12));
   const result = await getDashboard(f.context);
-  assert.equal(result.insights.emptyProducts, 1);
-  assert.equal(result.insights.unplacedProducts, 1);
-  assert.equal(result.insights.recentLocations, 1);
-  assert.equal(result.insights.staleLocations, 1);
-  assert.equal(result.insights.neverCountedLocations, 1);
+  assert.deepEqual(result.insights.health, { verifiedProducts: 1, needsCountingProducts: 1, oldProducts: 0 });
   assert.equal(result.insights.pendingDiscrepancies, 1);
-  assert.equal(result.insights.lastInventory?.id, f.inventory.id);
   assert.deepEqual(new Set(result.insights.suggestedLocations.map(row => row.id)), new Set([f.empty.id, uncounted.id]));
 });
 
@@ -466,4 +462,29 @@ test("dashboard health verifies every placement, ignores active counts and separ
   await adjustStock(f.context, { productId: f.product.id, locationId: f.empty.id, quantity: 3, expectedVersion: null, reason: "Ny placering" });
   dashboard = await getDashboard(f.context);
   assert.deepEqual(dashboard.insights.health, { verifiedProducts: 0, needsCountingProducts: 2, oldProducts: 0 });
+});
+
+test("location activity scopes physical counts and stock history without duplicates or worker history access", async () => {
+  const f = await fixture(10), foreign = await fixture(99);
+  await saveLocationCount(f.context, f.inventory.id, f.location.id, f.count(12));
+  await saveLocationCount(f.context, f.inventory.id, f.empty.id, f.blank);
+  await finish(f);
+  const worker: TenantContext = { ...f.context, role: "warehouse" };
+  const history = await listMovements(f.context, { locationId: f.location.id });
+  const activity = await getDashboardActivity(f.context, { locationId: f.location.id });
+  assert.equal(activity.filter(row => row.amount === "INV").length, 1);
+  assert.ok(activity.every(row => row.locationCode === f.location.code));
+  assert.ok(activity.find(row => row.amount === "INV")?.href.includes("location=" + f.location.id));
+  assert.deepEqual(await getDashboardActivity(f.context, { locationId: f.location.id, movements: history.items }), activity);
+  const counted = await getDashboardActivity(worker, { locationId: f.location.id, movements: history.items });
+  assert.equal(counted.length, 1);
+  assert.equal(counted[0].amount, "INV");
+  assert.ok(counted[0].href.includes(f.inventory.id));
+  assert.equal((await getDashboardActivity(worker, { locationId: f.empty.id })).length, 1);
+  assert.deepEqual(await getDashboardActivity({ ...foreign.context, role: "warehouse" }, { locationId: f.location.id }), []);
+  await assert.rejects(getDashboardActivity(foreign.context, { locationId: f.location.id }), status(404));
+  await assert.rejects(getDashboardActivity(worker, { locationId: "invalid" }));
+  const pending = await startInventory(f.context, { name: "Pågående kontroll", warehouseId: f.warehouse.id, locationIds: [f.location.id] });
+  await saveLocationCount(f.context, pending.id, f.location.id, f.count(13, 2));
+  assert.deepEqual(await getDashboardActivity(worker, { locationId: f.location.id }), counted);
 });

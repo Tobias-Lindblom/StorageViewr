@@ -4,12 +4,13 @@ import { listLocations } from "@/features/locations/service";
 import type { TenantContext } from "@/lib/server/tenant";
 import { listStock, listMovements } from "./service";
 import { getVerification } from "./verification";
-import { StockSummary } from "@/components/stock-summary";
-import { InventoryVerification } from "@/components/inventory-verification";
-import { MovementList } from "@/components/movement-list";
 import { StockSection } from "./stock-section";
 import { ProductStockSummary } from "@/features/products/product-stock-summary";
 import { ProductMovementList } from "@/features/products/product-movement-list";
+import { LocationStockSummary } from "@/features/locations/location-stock-summary";
+import { LocationVerification } from "@/features/locations/location-verification";
+import { RecentActivity } from "@/features/dashboard/recent-activity";
+import { getDashboardActivity } from "@/features/dashboard/activity";
 
 export async function StockPanel({
   context,
@@ -38,9 +39,10 @@ export async function StockPanel({
     context.role === "admin" ? listMovements(context, scope) : Promise.resolve(null),
   ]);
   const operable = active;
-  const locations = operable
-    ? await listLocations({ ...context, role: "warehouse" })
-    : [];
+  const [locations, activity] = await Promise.all([
+    operable ? listLocations({ ...context, role: "warehouse" }) : Promise.resolve([]),
+    kind === "location" ? getDashboardActivity(context, { locationId: id, movements: movements?.items ?? [] }) : Promise.resolve(null),
+  ]);
   const transferLocations = locations.map((row) => ({
     id: row.id,
     label: row.warehouseName + " · " + row.code,
@@ -66,10 +68,9 @@ export async function StockPanel({
     <>
     {productHeader?.(data.items.length)}
     {kind === "product" ? <ProductStockSummary total={data.total} verification={verification} /> : <>
-      <StockSummary total={data.total} count={data.items.length} kind={kind} />
-      <InventoryVerification data={verification} />
+      <LocationStockSummary total={data.total} count={data.items.length} />
+      <LocationVerification data={verification} />
     </>}
-    {inventoryAction}
     <div className={"grid items-start gap-x-7 " + (movements ? "xl:grid-cols-[minmax(0,1fr)_minmax(0,0.8fr)]" : "")}>
     <StockSection
       data={data}
@@ -78,9 +79,11 @@ export async function StockPanel({
       transferLocations={transferLocations}
       operable={operable}
       admin={context.role === "admin"}
+      inventoryAction={inventoryAction}
     />
-    {movements && (kind === "product" ? <ProductMovementList items={movements.items} href={"/inventory/history?productId=" + id} /> :
-      <MovementList items={movements.items.slice(0, 5)} href={"/inventory/history?locationId=" + id} title="Senaste aktivitet" />)}
+    {kind === "product" && movements && <ProductMovementList items={movements.items} href={"/inventory/history?productId=" + id} />}
+    {activity && <RecentActivity items={activity} admin={context.role === "admin"} compactLocation
+      href={context.role === "admin" ? "/inventory/history?locationId=" + id : "/inventories/completed"} />}
     </div>
     </>
   );

@@ -20,7 +20,7 @@ const schema = new Schema(
 );
 schema.index({ organizationId: 1, userId: 1 }, { unique: true });
 schema.index({ userId: 1 });
-export type MembershipRecord = InferSchemaType<typeof schema>;
+type MembershipRecord = InferSchemaType<typeof schema>;
 export const Membership: Model<MembershipRecord> =
   (models.Membership as Model<MembershipRecord> | undefined) ??
   model<MembershipRecord>("Membership", schema);

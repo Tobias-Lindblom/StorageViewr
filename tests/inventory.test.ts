@@ -17,6 +17,9 @@ import { createProduct, updateProduct, getProduct, listProducts, getProductStock
 import { createWarehouse, updateWarehouse } from "../src/features/warehouses/service";
 import { createLocation, updateLocation, getLocation } from "../src/features/locations/service";
 import { adjustStock, getStockPair, listStock, listMovements, placeProduct, registerStockMovement } from "../src/features/inventory/service";
+import { listHistory } from "../src/features/inventory/history-service";
+import { InventorySession } from "../src/models/inventory-session";
+import { InventorySessionLocation } from "../src/models/inventory-session-location";
 import { movementPreview } from "../src/features/inventory/movement-preview";
 import { stockAdjustmentSchema, stockMovementSchema } from "../src/validation/inventory";
 
@@ -26,7 +29,7 @@ before(async () => {
   process.env.MONGODB_URI = replica.getUri();
   process.env.MONGODB_DB = "storageviewr_inventory_tests";
   await connectDb();
-  for (const model of [Product, ProductPhoto, Warehouse, Location, User, InventoryLevel, InventoryMovement]) {
+  for (const model of [Product, ProductPhoto, Warehouse, Location, User, InventoryLevel, InventoryMovement, InventorySession, InventorySessionLocation]) {
     await model.createCollection(); await model.createIndexes();
   }
 });
@@ -561,4 +564,92 @@ test("organization history keeps administrator authorization and tenant isolatio
   assert.equal(history.items[0].newQuantity, 12);
   await assert.rejects(listMovements({ ...f.context, role: "warehouse" }, {}), status(403));
   await assert.rejects(listMovements(f.context, { productId: f.product.id, locationId: f.location.id }));
+});
+
+test("history groups transfers before pagination and searches complete events within the tenant", async () => {
+  const f = await fixture();
+  const destination = await createLocation(f.context, { ...parts, position: "02", warehouseId: f.warehouse.id });
+  await adjustStock(f.context, f.change(12));
+  await registerStockMovement(f.context, {
+    type: "TRANSFER", productId: f.product.id, sourceLocationId: f.location.id,
+    destinationLocationId: destination.id, quantity: 4, expectedSourceVersion: 1,
+    expectedDestinationVersion: null, reason: "Till nästa plats",
+  });
+  const template = await InventoryMovement.findOne({ organizationId: f.context.organizationId }).lean();
+  assert.ok(template);
+  await InventoryMovement.insertMany(Array.from({ length: 21 }, (_, n) => ({
+    ...template, _id: new Types.ObjectId(), type: "RECEIPT", previousQuantity: 0,
+    newQuantity: 1, difference: 1, reason: "Sidprov", createdAt: new Date(Date.now() + 1000 + n),
+  })));
+  const foreign = await fixture();
+  await adjustStock(foreign.context, foreign.change(999));
+  const first = await listHistory(f.context, {}), second = await listHistory(f.context, { page: 2 });
+  assert.equal(first.total, 23);
+  assert.equal(first.items.length, 20);
+  assert.equal(second.items.length, 3);
+  assert.equal(new Set([...first.items, ...second.items].map(row => row.id)).size, 23);
+  const transfers = await listHistory(f.context, { kind: "transfer", q: destination.code });
+  assert.equal(transfers.total, 1);
+  assert.equal(transfers.items[0].type, "TRANSFER");
+  assert.equal(transfers.items[0].difference, 4);
+  assert.equal(transfers.items[0].balances.length, 2);
+  assert.equal(transfers.items[0].locationCode, f.location.code + " → " + destination.code);
+  const source = await listHistory(f.context, { kind: "transfer", locationId: f.location.id });
+  assert.equal(source.items[0].type, "TRANSFER_OUT");
+  assert.equal(source.items[0].difference, -4);
+  assert.equal((await listHistory(f.context, { kind: "receipt", q: "sidprov", page: 2 })).items.length, 1);
+  assert.equal((await listHistory(f.context, { kind: "issue" })).total, 0);
+  assert.equal((await listHistory(f.context, { q: ".*" })).total, 0);
+  assert.equal((await listMovements(f.context, { kind: "transfer" })).total, 2);
+  assert.equal((await listMovements(f.context, { q: ".*" })).total, 0);
+  assert.equal((await listHistory(f.context, { page: 999 })).page, 2);
+  await assert.rejects(listHistory({ ...f.context, role: "warehouse" }, {}), status(403));
+  await assert.rejects(listHistory(f.context, { locationId: foreign.location.id }), status(404));
+  await assert.rejects(listHistory(f.context, { q: { $ne: null } }));
+  await assert.rejects(listHistory(f.context, { kind: "UNKNOWN" }));
+});
+
+test("history includes finished unchanged counts and combines inventory corrections without duplicate events", async () => {
+  const f = await fixture();
+  const second = await createLocation(f.context, { ...parts, position: "02", warehouseId: f.warehouse.id });
+  await adjustStock(f.context, f.change(12));
+  const completedAt = new Date();
+  const inventory = await InventorySession.create({
+    organizationId: f.context.organizationId, warehouseId: f.warehouse.id, name: "Sluträkning",
+    warehouseName: "Huvudlager", status: "completed", startedBy: f.context.userId, completedAt,
+  });
+  for (const place of [f.location, second]) await InventorySessionLocation.create({
+    organizationId: f.context.organizationId, inventorySessionId: inventory._id,
+    locationId: place.id, locationCode: place.code, status: "counted", completedAt, completedByName: "Räknare",
+  });
+  const template = await InventoryMovement.findOne({ organizationId: f.context.organizationId }).lean();
+  assert.ok(template);
+  await InventoryMovement.create({
+    ...template, _id: new Types.ObjectId(), type: "INVENTORY", inventorySessionId: inventory._id,
+    previousQuantity: 12, newQuantity: 9, difference: -3, reason: "Räknat antal",
+  });
+  const active = await InventorySession.create({
+    organizationId: f.context.organizationId, warehouseId: f.warehouse.id, name: "Pågående",
+    warehouseName: "Huvudlager", status: "active", startedBy: f.context.userId,
+  });
+  await InventorySessionLocation.create({
+    organizationId: f.context.organizationId, inventorySessionId: active._id,
+    locationId: f.location.id, locationCode: f.location.code, status: "counted", completedAt,
+  });
+  const history = await listHistory(f.context, { kind: "inventory" });
+  assert.equal(history.total, 2);
+  assert.equal(history.items.filter(row => row.balances.length === 1).length, 1);
+  assert.equal(history.items.filter(row => row.balances.length === 0).length, 1);
+  assert.ok(history.items.every(row => row.inventorySessionId === String(inventory._id)));
+  assert.ok(history.items.every(row => row.difference === null));
+  const searched = await listHistory(f.context, { kind: "inventory", q: productInput.sku });
+  assert.equal(searched.total, 1);
+  assert.equal(searched.items[0].balances[0].newQuantity, 9);
+  const location = await listHistory(f.context, { kind: "inventory", locationId: second.id });
+  assert.equal(location.total, 1);
+  assert.equal(location.items[0].reason, "Sluträkning");
+  const product = await listHistory(f.context, { kind: "inventory", productId: f.product.id });
+  assert.equal(product.total, 1);
+  assert.equal(product.items[0].difference, -3);
+  assert.equal((await listMovements(f.context, {})).total, 2);
 });

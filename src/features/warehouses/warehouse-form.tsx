@@ -42,7 +42,7 @@ export function WarehouseForm({
       );
       if (onSaved) onSaved(result.id);
       else {
-        router.push("/warehouses/" + result.id);
+        router.push(initial ? "/warehouses" : "/locations?" + new URLSearchParams({ warehouseId: result.id }));
         router.refresh();
       }
     } catch (error) {
@@ -146,7 +146,7 @@ export function WarehouseForm({
         <div className="flex flex-col-reverse gap-3 border-t border-line/60 pt-6 sm:flex-row sm:justify-end">
           <Link
             className="button-secondary w-full sm:w-auto"
-            href={initial ? "/warehouses/" + initial.id : "/warehouses"}
+            href="/warehouses"
           >
             Avbryt
           </Link>

@@ -6,7 +6,7 @@ MongoDB, Mongoose, Tailwind CSS och Zod.
 ## Status: lagerarbete och inventering
 Implementerat:
 - Registrering, inloggning, sessioner, företag och medlemskap (admin/warehouse).
-- Företagsöversikt med faktiska antal aktiva lager och lagerplatser.
+- Dashboard med faktisk lagerhälsa, inventeringsförslag och senaste aktivitet.
 - Gemensam navigation och separata företagsinställningar.
 - Skapa, visa, redigera och inaktivera lager och lagerplatser.
 - Skapa upp till 100 platser i följd, atomärt med automatiska platskoder.
@@ -21,7 +21,7 @@ Implementerat:
 - Saldohistorik, versionskontroll och skydd mot inaktivering när saldo finns kvar.
 
 Mobilvyerna har saldosammanfattning, inventeringsstatus, direkta lageråtgärder,
-skanner och uppföljning på dashboarden. Se [audit och implementation](docs/mobile-workspace.md).
+skanning i en bottomsheet och uppföljning på dashboarden. Se [audit och implementation](docs/mobile-workspace.md).
 Full modell och ordning: [Arkitektur](docs/architecture.md).
 Ursprungliga krav: [Kravspecifikation](docs/requirements.md).
 
@@ -44,9 +44,9 @@ registreringen öppen i utveckling och stängd i produktion.
 ## Prova det nya flödet
 1. Välj företag → Översikt.
 2. Skapa lager med namn och unik kod.
-3. Välj Skapa lagerplatser: zon A, sektion 01, första position 1, antal 10.
+3. Öppna lagret och välj Ny lagerplats: zon A, sektion 01, första position 1, antal 10.
 4. Öppna en plats och följ QR-länken.
-5. Välj QR-etiketter och skriv ut eller spara som PDF.
+5. Öppna lagerplatslistans filterpanel, välj QR-etiketter och skriv ut eller spara som PDF.
 6. Redigera platskod; länken är densamma, men etiketten behöver skrivas ut igen.
 
 För att skanna från en fysisk telefon måste APP_URL vara nåbar från telefonen.
@@ -111,11 +111,11 @@ Konto- och globala databasgränser bör kompletteras med IP-begränsning vid bet
 - [QR-generering](https://github.com/soldair/node-qrcode)
 
 ## Prova lagersaldo
-1. Öppna en produkt och välj Lägg på plats.
-2. Välj lagerplats, ange totalt antal och en orsak.
+1. Öppna en produkt och välj Inleverans bland snabbåtgärderna.
+2. Välj lagerplats, ange mottaget antal och en orsak.
 3. Öppna lagerplatsen för att se produkterna som finns där.
-4. Välj Ändra antal för att registrera ett nytt saldo.
-5. Visa saldohistorik för tidigare antal, ändring, orsak och utförare.
+4. Använd Uttag eller Flytta för nästa lagerhändelse. Admin kan också korrigera saldot.
+5. Öppna Historik för tidigare antal, ändring, orsak och utförare.
 
 Vid en samtidig ändring: välj Läs in aktuellt saldo, kontrollera antalet och spara igen.
 Starta om utvecklingsservern efter ändrade Mongoose-modeller så att de nya fälten laddas.

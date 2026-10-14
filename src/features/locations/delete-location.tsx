@@ -8,9 +8,15 @@ import { clientApi } from "@/lib/client-api";
 export function DeleteLocation({
   locationId,
   code,
+  compact = false,
+  onOpen,
+  onClose,
 }: {
   locationId: string;
   code: string;
+  compact?: boolean;
+  onOpen?: () => void;
+  onClose?: () => void;
 }) {
   const router = useRouter();
   const [confirming, setConfirming] = useState(false);
@@ -21,7 +27,7 @@ export function DeleteLocation({
   function close() {
     setConfirming(false);
     setError("");
-    requestAnimationFrame(() => trigger.current?.focus());
+    requestAnimationFrame(() => { if (onClose) onClose(); else trigger.current?.focus(); });
   }
 
   async function remove() {
@@ -43,24 +49,26 @@ export function DeleteLocation({
 
   return (
     <section
-      aria-labelledby="delete-location-heading"
-      className="mt-10 max-w-2xl border-t border-rose-400/20 pt-7"
+      aria-labelledby={compact ? undefined : "delete-location-heading"}
+      aria-label={compact ? "Ta bort lagerplats" : undefined}
+      className={compact ? "location-delete-menu" : "mt-10 max-w-2xl border-t border-rose-400/20 pt-7"}
     >
-      <h2 id="delete-location-heading" className="mb-2! text-lg! text-rose-200">
+      {!compact && <><h2 id="delete-location-heading" className="mb-2! text-lg! text-rose-200">
         Ta bort lagerplats
       </h2>
       <p className="text-sm leading-6 text-muted">
         Endast en oanvänd lagerplats kan tas bort permanent. Platser med saldo
         eller historik behöver behållas och kan inaktiveras.
-      </p>
+      </p></>}
 
       <button
         ref={trigger}
         type="button"
-        className="mt-5 inline-flex min-h-13 w-full items-center justify-center rounded-xl border border-rose-400/35 px-5 py-3 text-sm font-semibold text-rose-200 transition hover:bg-rose-400/10 sm:w-auto"
+        className={compact ? "" : "mt-5 inline-flex min-h-13 w-full items-center justify-center rounded-xl border border-rose-400/35 px-5 py-3 text-sm font-semibold text-rose-200 transition hover:bg-rose-400/10 sm:w-auto"}
         aria-haspopup="dialog"
         onClick={() => {
           setError("");
+          onOpen?.();
           setConfirming(true);
         }}
       >

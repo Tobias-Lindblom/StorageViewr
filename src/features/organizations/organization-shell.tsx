@@ -24,7 +24,7 @@ export async function OrganizationShell({
   return (
     <WorkspaceFrame>
       <WorkspaceHeader href="/organizations" account={account} organization={selected} />
-      <main id="main-content" className="organization-workspace min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-8 lg:px-0">
+      <main id="main-content" className="app-content organization-workspace min-h-0 min-w-0 flex-1 px-4 pb-8 lg:px-0">
         {children}
       </main>
     </WorkspaceFrame>

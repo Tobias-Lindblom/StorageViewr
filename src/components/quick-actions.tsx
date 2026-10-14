@@ -1,7 +1,7 @@
 import { AppIcon } from "./app-icon";
 
 export type MovementType = "RECEIPT" | "ISSUE" | "TRANSFER" | "CORRECTION";
-export const movementActions = [
+const movementActions = [
   { type: "RECEIPT", label: "Inleverans", icon: "plus", tone: "success" },
   { type: "ISSUE", label: "Uttag", icon: "minus", tone: "danger" },
   { type: "TRANSFER", label: "Flytta", icon: "transfer", tone: "neutral" },

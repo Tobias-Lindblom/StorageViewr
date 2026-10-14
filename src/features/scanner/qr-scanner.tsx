@@ -1,12 +1,16 @@
 "use client";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { AppIcon } from "@/components/app-icon";
 
-export function QrScanner({ locationCode, description, resolveCode, actionLabel = "Verifiera plats" }: {
-  locationCode: string; description: string; actionLabel?: string;
+export function QrScanner({ locationCode, description, resolveCode, actionLabel = "Verifiera plats", compact = false, active = true }: {
+  locationCode: string; description: string; actionLabel?: string; compact?: boolean; active?: boolean;
   resolveCode: (input: { qr: string } | { code: string }, signal: AbortSignal) => Promise<void>;
 }) {
   const video = useRef<HTMLVideoElement>(null);
+  const manualInput = useRef<HTMLInputElement>(null);
+  const manualId = useId();
+  const [manualOpen, setManualOpen] = useState(false);
+  useEffect(() => { if (manualOpen) manualInput.current?.focus(); }, [manualOpen]);
   const stopCamera = useRef<() => void>(() => {});
   const request = useRef<AbortController | null>(null);
   const resolving = useRef(false);
@@ -51,6 +55,7 @@ export function QrScanner({ locationCode, description, resolveCode, actionLabel 
   });
 
   useEffect(() => {
+    if (!active) return;
     let disposed = false;
     let stream: MediaStream | null = null;
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -146,8 +151,8 @@ export function QrScanner({ locationCode, description, resolveCode, actionLabel 
         }
         frame();
       } catch (error) {
+        if (disposed || stopped) return;
         stop();
-        if (disposed) return;
         setState("paused");
         setCameraIssue(true);
         setError(
@@ -169,18 +174,55 @@ export function QrScanner({ locationCode, description, resolveCode, actionLabel 
       stop();
       document.removeEventListener("visibilitychange", visibility);
     };
-  }, [attempt]);
+  }, [attempt, active]);
   useEffect(
     () => () => {
       request.current?.abort();
     },
-    [],
+    [active],
   );
 
   function manual(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     void resolve({ code });
   }
+  function retry() {
+    setError(""); setCameraIssue(false); setManualOpen(false);
+    setState("starting"); setAttempt(value => value + 1);
+  }
+  if (compact) return <div className="scanner-content">
+    <div className="scanner-camera" data-state={state} data-manual={manualOpen}>
+      <video ref={video} muted playsInline autoPlay aria-label="Kamera för QR-skanning" />
+      {state === "scanning" && <>
+        <div className="scanner-target" aria-hidden="true"><i /><i /><i /><i /></div>
+        <p className="scanner-camera-hint"><AppIcon name="scan" width={20} height={20} />Håll QR-koden inom ramen</p>
+      </>}
+      {state !== "scanning" && <div className="scanner-camera-status" role="status">
+        <AppIcon name={busy ? "location" : "camera"} width={30} height={30} />
+        <strong>{busy ? "Öppnar lagerplats…" : state === "starting" ? "Startar kameran…" :
+          cameraIssue ? "Kameran är inte tillgänglig" : manualOpen ? "Ange platskoden nedan" : "Kameran är pausad"}</strong>
+        {!busy && state === "paused" && <button type="button" className="scanner-retry" onClick={retry}>Starta kameran igen</button>}
+      </div>}
+    </div>
+    {error && <p role="alert" className="scanner-error">{error}</p>}
+    <button type="button" className="scanner-manual-trigger" disabled={busy}
+      aria-expanded={manualOpen} aria-controls={manualId} onClick={() => {
+        if (manualOpen) { retry(); return; }
+        stopCamera.current(); setState("paused"); setError(""); setCameraIssue(false); setManualOpen(true);
+      }}>
+      <AppIcon name="keyboard" width={25} height={25} />
+      <span>Ange platskod manuellt</span><AppIcon name="chevron" width={17} height={17} />
+    </button>
+    {manualOpen && <form id={manualId} className="scanner-manual-form" onSubmit={manual}>
+      <label>Platskod<input ref={manualInput} name="locationCode" value={code} required maxLength={16}
+        autoComplete="off" autoCapitalize="characters" placeholder={locationCode} spellCheck={false}
+        disabled={busy} onChange={event => setCode(event.target.value)} /></label>
+      <button type="submit" className="scanner-submit" disabled={busy || !code.trim()}>
+        {busy ? "Öppnar lagerplats…" : actionLabel}
+      </button>
+    </form>}
+    <p className="scanner-help"><AppIcon name="info" width={17} height={17} />Kan du inte skanna? Verifiera platsen manuellt.</p>
+  </div>;
   return (
     <div>
       <p className="text-sm leading-6 text-muted">

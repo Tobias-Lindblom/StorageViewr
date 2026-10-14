@@ -7,11 +7,11 @@ import { AppError } from "./errors";
 import { Session } from "@/models/session";
 import { User } from "@/models/user";
 
-export const sessionCookie =
+const sessionCookie =
   process.env.NODE_ENV === "production"
     ? "__Host-storageviewr"
     : "storageviewr";
-export const hashToken = (token: string) =>
+const hashToken = (token: string) =>
   createHash("sha256").update(token).digest("hex");
 export async function createSession(userId: Types.ObjectId) {
   await connectDb();

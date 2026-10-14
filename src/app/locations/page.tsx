@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
-import { PageHeading } from "@/components/page-heading";
-import { LocationList } from "@/features/locations/location-list";
+import { AppIcon } from "@/components/app-icon";
+import { LocationOverview } from "@/features/locations/location-overview";
 import { listLocations } from "@/features/locations/service";
 import { DownloadLocationReport } from "@/features/locations/download-location-report";
 import { getWarehouse, listWarehouses } from "@/features/warehouses/service";
@@ -17,67 +17,25 @@ export default async function LocationsPage({
 }) {
   const context = await pageTenant();
   const { warehouseId } = await searchParams;
-  if (warehouseId) await pageResource(() => getWarehouse(context, warehouseId));
+  const selectedWarehouse = warehouseId ? await pageResource(() => getWarehouse(context, warehouseId)) : null;
   const [locations, warehouses] = await Promise.all([
-    pageResource(() => listLocations(context, warehouseId)),
-    listWarehouses(context),
+    pageResource(() => listLocations(context, warehouseId)), listWarehouses(context),
   ]);
-  const scope = warehouseId ? "?warehouseId=" + warehouseId : "";
-  const activeWarehouses = warehouses
-    .filter((warehouse) => warehouse.active)
-    .map(({ id, name }) => ({ id, name }));
-
-  return (
-    <AppShell context={context}>
-      <PageHeading
-        title="Lagerplatser"
-        action={
-          <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap">
-            {context.role === "admin" && (
-              activeWarehouses.length ? (
-                <LocationEditorSheet
-                  warehouses={activeWarehouses}
-                  warehouseId={
-                    activeWarehouses.some(
-                      (warehouse) => warehouse.id === warehouseId,
-                    )
-                      ? warehouseId
-                      : undefined
-                  }
-                  label="+ Skapa platser"
-                  className="button col-span-2 w-full whitespace-nowrap px-4! sm:w-auto sm:flex-none"
-                />
-              ) : (
-                <WarehouseEditorSheet
-                  label="+ Skapa lager"
-                  className="button col-span-2 w-full whitespace-nowrap px-4! sm:w-auto sm:flex-none"
-                />
-              )
-            )}
-            {locations.some((location) => location.active) && (
-              <Link
-                className="button-secondary w-full whitespace-nowrap px-4! sm:w-auto sm:flex-none"
-                href={"/locations/labels" + scope}
-              >
-                QR-etiketter
-              </Link>
-            )}
-            {locations.length > 0 && (
-              <DownloadLocationReport warehouseId={warehouseId} />
-            )}
-          </div>
-        }
-      />
-      <LocationList
-        locations={locations}
-        warehouses={warehouses.map(({ id, name, active }) => ({
-          id,
-          name,
-          active,
-        }))}
-        warehouseId={warehouseId}
-        admin={context.role === "admin"}
-      />
-    </AppShell>
-  );
+  const scope = warehouseId ? "?" + new URLSearchParams({ warehouseId }) : "";
+  const activeWarehouses = warehouses.filter(warehouse => warehouse.active &&
+    (!warehouseId || warehouse.id === warehouseId)).map(({ id, name }) => ({ id, name }));
+  return <AppShell context={context}>
+    <LocationOverview locations={locations} warehouses={warehouses.map(({ id, name, active }) => ({ id, name, active }))}
+      warehouseId={warehouseId} admin={context.role === "admin"}
+      createAction={context.role === "admin" ? activeWarehouses.length ? (
+        <LocationEditorSheet warehouses={activeWarehouses} warehouseId={warehouseId}
+          label="+ Ny lagerplats" className="location-create" initialCount={1} />
+      ) : !selectedWarehouse ? <WarehouseEditorSheet label="+ Nytt lager" className="location-create" /> : undefined : undefined}
+      tools={locations.length ? <>
+        {locations.some(location => location.active) && <Link className="location-tools-link" href={"/locations/labels" + scope}>
+          <AppIcon name="qr" width={18} height={18} />QR-etiketter
+        </Link>}
+        <DownloadLocationReport warehouseId={warehouseId} className="location-tools-link" />
+      </> : undefined} />
+  </AppShell>;
 }

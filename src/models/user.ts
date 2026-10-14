@@ -15,7 +15,7 @@ const schema = new Schema(
   { timestamps: true, collection: "users" },
 );
 schema.index({ email: 1 }, { unique: true });
-export type UserRecord = InferSchemaType<typeof schema>;
+type UserRecord = InferSchemaType<typeof schema>;
 export const User: Model<UserRecord> =
   (models.User as Model<UserRecord> | undefined) ??
   model<UserRecord>("User", schema);

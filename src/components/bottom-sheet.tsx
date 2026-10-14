@@ -4,15 +4,23 @@ import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 export function BottomSheet({
+  id,
   title,
   children,
   footer,
   onClose,
+  onClosing,
+  variant = "default",
+  subtitle,
 }: {
+  id?: string;
   title: string;
   children: ReactNode;
   footer?: ReactNode;
   onClose: () => void;
+  onClosing?: () => void;
+  variant?: "default" | "scanner" | "navigation";
+  subtitle?: string;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const titleId = useId();
@@ -31,6 +39,9 @@ export function BottomSheet({
   useEffect(() => {
     const element = dialog.current;
     if (!element) return;
+    const workspace = document.querySelector(".app-workspace");
+    if (variant === "navigation" && workspace)
+      element.style.fontFamily = getComputedStyle(workspace).fontFamily;
     const previousOverflow = document.body.style.overflow;
     const previousOverscroll = document.body.style.overscrollBehavior;
     const previousRootOverflow = document.documentElement.style.overflow;
@@ -48,12 +59,13 @@ export function BottomSheet({
       document.body.style.overscrollBehavior = previousOverscroll;
       document.documentElement.style.overflow = previousRootOverflow;
     };
-  }, []);
+  }, [variant]);
 
   function requestClose() {
     const element = dialog.current;
     if (!element?.open || closingRef.current) return;
     closingRef.current = true;
+    onClosing?.();
     pointer.current = null;
     setClosing(true);
 
@@ -79,9 +91,10 @@ export function BottomSheet({
   return createPortal(
     <dialog
       ref={dialog}
+      id={id}
       tabIndex={-1}
       aria-labelledby={titleId}
-      className="bottom-sheet print:hidden"
+      className={"bottom-sheet print:hidden" + (variant === "default" ? "" : variant === "scanner" ? " scanner-sheet" : " navigation-sheet")}
       data-dragging={drag.active}
       data-closing={closing}
       style={{ translate: "0 " + drag.distance + "px" }}
@@ -125,11 +138,11 @@ export function BottomSheet({
         }
       }}
     >
-      <div className="sticky top-0 z-10 rounded-t-3xl bg-surface px-5 sm:px-7">
+      <div className="bottom-sheet-header sticky top-0 z-10 rounded-t-3xl bg-surface px-5 sm:px-7">
         <button
           type="button"
           aria-label={"Stäng " + title.toLocaleLowerCase("sv")}
-          className="group mx-auto flex min-h-13 w-full touch-none items-center justify-center rounded-xl cursor-grab! active:cursor-grabbing!"
+          className="bottom-sheet-handle group mx-auto flex min-h-13 w-full touch-none items-center justify-center rounded-xl cursor-grab! active:cursor-grabbing!"
           onPointerDown={(event) => {
             if (!event.isPrimary || event.button !== 0) return;
             pointer.current = {
@@ -179,9 +192,10 @@ export function BottomSheet({
             className="h-1 w-10 rounded-full bg-muted/40 transition-colors group-hover:bg-accent/70"
           />
         </button>
-        <h2 id={titleId} className="mb-0! border-b border-line/60 pb-5 text-xl">
-          {title}
-        </h2>
+        <div className="bottom-sheet-heading-row">
+          <h2 id={titleId} className="mb-0! border-b border-line/60 pb-5 text-xl">{title}</h2>
+        </div>
+        {subtitle && <p className="bottom-sheet-subtitle">{subtitle}</p>}
       </div>
       <div
         className={`bottom-sheet-content min-h-0 overflow-y-auto overscroll-contain px-5 pt-5 sm:px-7 sm:pt-6 ${footer ? "pb-6" : "pb-[max(1.5rem,env(safe-area-inset-bottom))]"}`}

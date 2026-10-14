@@ -6,6 +6,6 @@ const schema = new Schema({
   data: { type: Buffer, required: true, select: false },
 }, { timestamps: true, collection: "productPhotos" });
 schema.index({ organizationId: 1, productId: 1 }, { unique: true });
-export type ProductPhotoRecord = InferSchemaType<typeof schema>;
+type ProductPhotoRecord = InferSchemaType<typeof schema>;
 export const ProductPhoto: Model<ProductPhotoRecord> =
   (models.ProductPhoto as Model<ProductPhotoRecord> | undefined) ?? model<ProductPhotoRecord>("ProductPhoto", schema);

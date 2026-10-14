@@ -19,6 +19,7 @@ export function LocationForm({
   showDelete = true,
   onPendingChange,
   onSaved,
+  initialCount = 10,
 }: {
   warehouses: WarehouseOption[];
   warehouseId?: string;
@@ -29,12 +30,13 @@ export function LocationForm({
   showDelete?: boolean;
   onPendingChange?: (pending: boolean) => void;
   onSaved?: (target: string) => void;
+  initialCount?: number;
 }) {
   const router = useRouter();
   const [zone, setZone] = useState(initial?.zone ?? "A");
   const [shelf, setShelf] = useState(initial?.shelf ?? "01");
   const [position, setPosition] = useState(initial?.position ?? "1");
-  const [count, setCount] = useState("10");
+  const [count, setCount] = useState(String(initialCount));
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const preview = locationBatchSchema.safeParse({
