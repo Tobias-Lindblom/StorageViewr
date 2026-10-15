@@ -103,7 +103,7 @@ export function AuthForm({
         <p className="border-t border-line/60 pt-5 text-center text-sm text-muted">
           {registration ? "Har du redan ett konto? " : "Ny här? "}
           <Link
-            className="font-medium text-cyan hover:underline"
+            className="font-medium text-accent hover:underline"
             href={
               (registration ? "/login" : "/register") +
               (returnTo ? "?next=" + encodeURIComponent(returnTo) : "")

@@ -6,8 +6,17 @@ import { MoreMenu } from "./more-menu";
 import { AppNav } from "./app-nav";
 import { WorkspaceFrame, WorkspaceHeader } from "./workspace-frame";
 
-export async function AppShell({ context, children, mobileDetail = false }: { context: TenantContext; children: ReactNode; mobileDetail?: boolean }) {
-  const [organization, account] = await Promise.all([getOrganization(context), getAccount(context)]);
+export async function AppShell({ context, children, mobileDetail = false, account: suppliedAccount, contentClassName = "" }: {
+  context: TenantContext;
+  children: ReactNode;
+  mobileDetail?: boolean;
+  account?: { name: string; email: string };
+  contentClassName?: string;
+}) {
+  const [organization, account] = await Promise.all([
+    getOrganization(context),
+    suppliedAccount ? Promise.resolve(suppliedAccount) : getAccount(context),
+  ]);
   const company = { name: organization.name, slug: organization.slug, role: context.role };
   return (
     <WorkspaceFrame mobileDetail={mobileDetail}>
@@ -20,7 +29,7 @@ export async function AppShell({ context, children, mobileDetail = false }: { co
           </div>
           <div className="hidden lg:block"><AppNav admin={context.role === "admin"} /></div>
         </aside>
-        <main id="main-content" className="app-content col-start-1 row-start-1 min-h-0 min-w-0 px-4 pb-8 lg:col-start-2 lg:row-start-1 lg:px-0 lg:py-6 print:overflow-visible print:py-0">
+        <main id="main-content" className={"app-content col-start-1 row-start-1 min-h-0 min-w-0 px-4 pb-8 lg:col-start-2 lg:row-start-1 lg:px-0 lg:py-6 print:overflow-visible print:py-0 " + contentClassName}>
           {children}
         </main>
       </div>

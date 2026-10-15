@@ -3,6 +3,7 @@ import { ProductFilters } from "@/features/products/product-filters";
 import { ProductPhoto } from "@/components/product-photo";
 import { AppShell } from "@/components/app-shell";
 import { AppIcon } from "@/components/app-icon";
+import { EmptyState } from "@/components/empty-state";
 import { pageTenant } from "@/lib/server/page-auth";
 import { getProductStockCounts, listProducts } from "@/features/products/service";
 import { productQuerySchema } from "@/validation/product";
@@ -87,12 +88,11 @@ export default async function ProductsPage({
             ))}
           </div>
         ) : (
-          <div className="product-list-empty">
-            <h2>{filtered ? "Inga produkter matchar" : "Ditt produktregister börjar här"}</h2>
-            <p>{filtered ? "Prova en annan sökning eller ändra filtren." : admin
+          <EmptyState icon="product" title={filtered ? "Inga produkter matchar" : "Ditt produktregister börjar här"}>
+            {filtered ? "Prova en annan sökning eller ändra filtren." : admin
               ? "Lägg till din första produkt eller importera flera från filterpanelen."
-              : "Företaget har inga aktiva produkter ännu."}</p>
-          </div>
+              : "Företaget har inga aktiva produkter ännu."}
+          </EmptyState>
         )}
         {result.pages > 1 && (
           <nav aria-label="Produktsidor" className="product-pagination">

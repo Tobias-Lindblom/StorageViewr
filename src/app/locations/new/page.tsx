@@ -30,7 +30,7 @@ export default async function NewLocationPage({
     <AppShell context={context}>
       <Link
         href="/locations"
-        className="mb-4 inline-flex min-h-13 items-center gap-2 text-sm text-accent"
+        className="page-back"
       >
         <MaterialArrow name="back" />
         Alla lagerplatser

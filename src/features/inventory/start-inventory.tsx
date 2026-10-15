@@ -188,7 +188,7 @@ export function StartInventory({
                     {visiblePlaces.length > 0 && (
                       <button
                         type="button"
-                        className="min-h-11 text-sm text-cyan"
+                        className="min-h-11 text-sm text-accent"
                         onClick={toggleVisiblePlaces}
                       >
                         {allVisibleSelected
@@ -199,7 +199,7 @@ export function StartInventory({
                   </div>
 
                   {visiblePlaces.length ? (
-                    <div className="overflow-hidden rounded-xl border border-line bg-canvas">
+                    <div className="overflow-hidden rounded-lg border border-line bg-canvas">
                       {visiblePlaces.map((row) => {
                         const checked = selected.includes(row.id);
                         return (
@@ -212,7 +212,7 @@ export function StartInventory({
                           >
                             <input
                               type="checkbox"
-                              className="mt-0! h-4! min-h-0! w-4! shrink-0 px-0! accent-violet-500"
+                              className="mt-0! h-4! min-h-0! w-4! shrink-0 px-0! accent-accent"
                               checked={checked}
                               disabled={!checked && selected.length >= 200}
                               onChange={(event) =>
@@ -229,14 +229,14 @@ export function StartInventory({
                       })}
                     </div>
                   ) : (
-                    <p className="rounded-xl border border-line bg-canvas p-4 text-sm text-muted">
+                    <p className="rounded-lg border border-line bg-canvas p-4 text-sm text-muted">
                       Ingen lagerplats matchar sökningen.
                     </p>
                   )}
                   <p className="mt-3 text-xs text-muted">Högst 200 platser per inventering.</p>
                 </>
               ) : (
-                <p className="mt-4 rounded-xl border border-line bg-canvas p-4 text-sm leading-6 text-muted">
+                <p className="mt-4 rounded-lg border border-line bg-canvas p-4 text-sm leading-6 text-muted">
                   Det finns inga aktiva lagerplatser i det valda lagret.
                 </p>
               )}

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { AppViewport } from "@/components/app-viewport";
 import { ScrollbarActivity } from "@/components/scrollbar-activity";
 import { PwaRegistration } from "@/components/pwa-registration";
+import { workspaceFont } from "./fonts";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -37,7 +38,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#090810",
+  themeColor: "#08070d",
 };
 
 export default function RootLayout({
@@ -45,7 +46,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="sv">
-      <body>
+      <body className={workspaceFont.variable}>
         <AppViewport />
         <ScrollbarActivity />
         <PwaRegistration />

@@ -58,7 +58,7 @@ export function WarehouseForm({
     <form
       id={id}
       onSubmit={submit}
-      className={embedded ? "space-y-6" : "max-w-2xl space-y-8"}
+      className={embedded ? "space-y-6" : "editor-form max-w-2xl"}
     >
       <fieldset disabled={pending}>
         <section
@@ -66,7 +66,7 @@ export function WarehouseForm({
           aria-label={embedded ? "Lageruppgifter" : undefined}
         >
           {!embedded && (
-            <h2 id="warehouse-information-heading" className="mb-4! text-xl!">
+            <h2 id="warehouse-information-heading" className="form-section-heading">
               Lageruppgifter
             </h2>
           )}
@@ -74,7 +74,7 @@ export function WarehouseForm({
             className={
               embedded
                 ? ""
-                : "rounded-2xl border border-line bg-surface p-5 sm:p-6"
+                : "form-card"
             }
           >
             <div className="grid gap-5 sm:grid-cols-2">
@@ -143,7 +143,7 @@ export function WarehouseForm({
         </p>
       )}
       {!hideSubmit && (
-        <div className="flex flex-col-reverse gap-3 border-t border-line/60 pt-6 sm:flex-row sm:justify-end">
+        <div className="form-actions">
           <Link
             className="button-secondary w-full sm:w-auto"
             href="/warehouses"

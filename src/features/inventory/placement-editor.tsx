@@ -56,7 +56,7 @@ export function PlacementEditor({
 
   return (
     <form id="placement-editor-form" className="space-y-5" onSubmit={submit}>
-      <div className="rounded-xl bg-canvas px-4 py-3">
+      <div className="rounded-lg bg-canvas px-4 py-3">
         <p className="text-xs text-muted">
           {scope.kind === "product" ? "Produkt" : "Lagerplats"}
         </p>
@@ -69,7 +69,7 @@ export function PlacementEditor({
         lagerhändelse registreras.
       </p>
       {!choices.length ? (
-        <p className="rounded-xl border border-line bg-canvas p-4 text-sm leading-6 text-muted">
+        <p className="rounded-lg border border-line bg-canvas p-4 text-sm leading-6 text-muted">
           {scope.kind === "product"
             ? "Produkten är redan placerad på alla aktiva lagerplatser."
             : "Alla aktiva produkter är redan placerade på lagerplatsen."}
@@ -91,12 +91,12 @@ export function PlacementEditor({
               <p className="mb-2 text-sm font-medium">
                 Välj {scope.kind === "product" ? "lagerplats" : "produkt"}
               </p>
-              <div className="max-h-56 overflow-y-auto overscroll-y-contain rounded-xl border border-line bg-canvas">
+              <div className="max-h-56 overflow-y-auto overscroll-y-contain rounded-lg border border-line bg-canvas">
                 {visibleChoices.map((item) => (
                   <button
                     key={item.id}
                     type="button"
-                    className="flex min-h-13 w-full items-center border-b border-line/60 px-4 py-3 text-left text-sm transition last:border-0 hover:bg-surface-raised"
+                    className="flex min-h-11 w-full items-center border-b border-line/60 px-4 py-3 text-left text-sm transition last:border-0 hover:bg-surface-raised"
                     onClick={() => setChoice(item.id)}
                     disabled={pending}
                   >
@@ -121,13 +121,13 @@ export function PlacementEditor({
           <p className="mb-2 text-sm font-medium">
             {scope.kind === "product" ? "Lagerplats" : "Produkt"}
           </p>
-          <div className="flex min-h-13 items-center justify-between gap-3 rounded-xl border border-line bg-canvas px-4 py-3">
+          <div className="flex min-h-13 items-center justify-between gap-3 rounded-lg border border-line bg-canvas px-4 py-3">
             <span className="min-w-0 wrap-break-word text-sm">
               {selected?.label}
             </span>
             <button
               type="button"
-              className="shrink-0 text-sm text-cyan"
+              className="shrink-0 text-sm text-accent"
               onClick={() => setChoice("")}
               disabled={pending}
             >

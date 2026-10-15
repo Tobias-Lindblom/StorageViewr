@@ -1,16 +1,17 @@
 import Link from "next/link";
+import { AppIcon } from "@/components/app-icon";
 import { BrandLogo } from "@/components/brand-logo";
 export default function NotFound() {
   return (
-    <main className="viewport-page mx-auto max-w-xl px-5 py-12">
+    <main className="viewport-page system-state-page">
       <BrandLogo />
-      <div className="panel mt-10">
-        <p className="eyebrow">Sidan saknas</p>
-        <h1>Sidan kunde inte hittas.</h1>
-        <p className="mb-7 text-sm leading-7 text-muted">
+      <section className="system-state">
+        <span className="system-state-icon"><AppIcon name="search" width={24} height={24} /></span>
+        <h1>Sidan kunde inte hittas</h1>
+        <p>
           Kontrollera länken och att du har valt rätt företag.
         </p>
-        <div className="flex flex-col gap-3">
+        <div className="system-state-actions">
           <Link className="button" href="/dashboard">
             Till översikten
           </Link>
@@ -18,7 +19,7 @@ export default function NotFound() {
             Välj företag
           </Link>
         </div>
-      </div>
+      </section>
     </main>
   );
 }

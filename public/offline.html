@@ -3,33 +3,27 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#090810" />
+    <meta name="theme-color" content="#08070d" />
     <title>Ingen anslutning – StorageViewr</title>
     <style>
       :root { color-scheme: dark; font-family: Arial, Helvetica, sans-serif; }
       * { box-sizing: border-box; }
       html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; overscroll-behavior: none; }
-      body { position: fixed; inset: 0; background: #090810; color: #f6f3ff; }
+      body { position: fixed; inset: 0; background: #08070d; color: #f3f0f7; }
       main { width: min(100%, 560px); height: 100dvh; min-height: 0; margin: 0 auto; padding: max(40px,env(safe-area-inset-top)) max(20px,env(safe-area-inset-right)) max(40px,env(safe-area-inset-bottom)) max(20px,env(safe-area-inset-left)); display: flex; flex-direction: column; overflow-y: auto; overscroll-behavior-y: contain; -webkit-overflow-scrolling: touch; }
-      .brand { display: flex; align-items: center; gap: 10px; font-size: 20px; font-weight: 700; }
-      .mark { width: 36px; height: 36px; display: grid; place-items: center; border: 1px solid rgba(167, 120, 255, 0.45); border-radius: 12px; background: rgba(124, 58, 237, 0.12); color: #bda5ff; }
-      .dot { color: #bda5ff; }
-      section { flex-shrink: 0; margin: auto 0; padding: 28px; border: 1px solid #393047; border-radius: 18px; background: #13111f; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03); }
-      .eyebrow { margin: 0 0 14px; color: #bda5ff; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
-      h1 { margin: 0 0 14px; font-size: 30px; letter-spacing: -0.03em; }
-      p { margin: 0 0 26px; color: #b8b1ca; font-size: 14px; line-height: 1.75; }
-      button { width: 100%; min-height: 52px; border: 1px solid rgba(192, 132, 252, 0.4); border-radius: 12px; background: linear-gradient(115deg, #7934d8, #5921bb 65%, #4c27a1); color: white; font: inherit; font-size: 14px; font-weight: 700; }
+      .brand { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 700; }
+      section { flex-shrink: 0; margin: auto 0; padding: 22px; border: 1px solid rgba(255,255,255,.09); border-radius: 14px; background: #100e17; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025); }
+      .eyebrow { margin: 0 0 14px; color: #aa88ff; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+      h1 { margin: 0 0 14px; font-size: 22px; letter-spacing: -0.03em; }
+      p { margin: 0 0 26px; color: #aaa4b5; font-size: 14px; line-height: 1.75; }
+      button { width: 100%; min-height: 48px; border: 1px solid rgba(170,136,255,.48); border-radius: 10px; background: #956af7; color: white; font: inherit; font-size: 14px; font-weight: 700; }
     </style>
   </head>
   <body>
     <main>
       <div class="brand">
-        <span class="mark" aria-hidden="true">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-            <path d="m12 3 9 5v8l-9 5-9-5V8l9-5Zm0 9 9-4M12 12 3 8m9 4v9" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
-          </svg>
-        </span>
-        <span>StorageViewr<span class="dot">.</span></span>
+        <svg width="26" height="28" viewBox="0 0 24 26" fill="none" aria-hidden="true"><path d="M12 1 23 7 12 13 1 7 12 1Z" fill="#bda5ff"/><path d="M1 8 11.5 13.7V25L1 19V8Z" fill="#9254db"/><path d="m12.5 13.7 10.5-5.7v11l-10.5 6V13.7Z" fill="#c6a4f5"/></svg>
+        <span>StorageViewr</span>
       </div>
       <section>
         <p class="eyebrow">Ingen anslutning</p>

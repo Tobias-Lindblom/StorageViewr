@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { AppIcon } from "@/components/app-icon";
 import { MaterialArrow } from "@/components/material-arrow";
+import { EmptyState } from "@/components/empty-state";
 import { pageTenant } from "@/lib/server/page-auth";
 import { pageResource } from "@/lib/server/page-resource";
 import { listHistory } from "@/features/inventory/history-service";
@@ -57,11 +58,11 @@ export default async function StockHistoryPage({
         <p className="sr-only" role="status">{result.total} {result.total === 1 ? "händelse" : "händelser"}</p>
         {query.kind === "correction" && <p className="history-active-filter">Korrigeringar
           <Link href={link("all")}>Visa alla</Link></p>}
-        {result.items.length ? <HistoryList items={result.items} /> : <div className="product-list-empty">
-          <h2>{filtered ? "Inga händelser matchar" : "Ingen historik ännu"}</h2>
-          <p>{filtered ? "Prova en annan sökning eller ändra filtren." : "Inleveranser, uttag, flyttar och slutförda inventeringar visas här."}</p>
-          {filtered && <Link href={link("all", 1, "")} className="product-clear-filter">Rensa filter</Link>}
-        </div>}
+        {result.items.length ? <HistoryList items={result.items} /> : <EmptyState icon="history"
+          title={filtered ? "Inga händelser matchar" : "Ingen historik ännu"}
+          action={filtered && <Link href={link("all", 1, "")} className="button-secondary">Rensa filter</Link>}>
+          {filtered ? "Prova en annan sökning eller ändra filtren." : "Inleveranser, uttag, flyttar och slutförda inventeringar visas här."}
+        </EmptyState>}
         {result.pages > 1 && <nav aria-label="Historiksidor" className="product-pagination">
           {result.page > 1 ? <Link href={link(query.kind, result.page - 1)} className="product-page-control product-page-prev">
             <AppIcon name="chevron" width={15} height={15} /> Föregående

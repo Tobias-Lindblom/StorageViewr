@@ -49,7 +49,7 @@ export function AccountForm({
       onSubmit={submit}
       className={embedded ? "space-y-6" : "panel max-w-xl space-y-6"}
     >
-      {!embedded && <h2 className="mb-0!">Dina uppgifter</h2>}
+      {!embedded && <h2 className="form-section-heading">Dina uppgifter</h2>}
       <label>
         Namn
         <input
@@ -67,7 +67,7 @@ export function AccountForm({
       </label>
       <div>
         <p className="text-sm font-medium">E-postadress</p>
-        <div className="mt-2 flex min-h-13 items-center rounded-xl border border-line/70 bg-canvas/60 px-4 py-3 text-sm text-muted">
+        <div className="field-readonly">
           <span className="break-all">{email}</span>
         </div>
         <p className="mt-2 text-xs leading-5 text-muted">
@@ -82,7 +82,7 @@ export function AccountForm({
       {message && (
         <p
           role="status"
-          className="rounded-xl border border-emerald-400/20 bg-emerald-400/8 p-3 text-sm text-emerald-200"
+          className="notice notice-success"
         >
           {message}
         </p>

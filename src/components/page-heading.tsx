@@ -11,15 +11,15 @@ export function PageHeading({
   action?: ReactNode;
 }) {
   return (
-    <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <div className="page-heading">
       <div className="min-w-0">
         {eyebrow && <p className="eyebrow">{eyebrow}</p>}
-        <h1 className="mb-3">{title}</h1>
+        <h1 className="page-heading-title">{title}</h1>
         {description && (
-          <p className="max-w-xl text-sm leading-6 text-muted">{description}</p>
+          <p className="page-heading-description">{description}</p>
         )}
       </div>
-      {action && <div className="shrink-0">{action}</div>}
+      {action && <div className="page-heading-action">{action}</div>}
     </div>
   );
 }

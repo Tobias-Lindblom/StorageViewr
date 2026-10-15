@@ -28,7 +28,7 @@ export default async function AccountSettingsPage() {
   const content = (
     <>
       <Link
-        className="mb-5 inline-flex min-h-13 items-center gap-2 text-sm text-cyan"
+        className="page-back"
         href={context ? "/dashboard" : "/organizations"}
       >
         <MaterialArrow name="back" />{" "}

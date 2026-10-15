@@ -493,15 +493,6 @@ export async function registerStockMovement(
             "INSUFFICIENT_STOCK",
             "Det finns inte tillräckligt antal på källplatsen.",
           );
-        if (
-          sourceLevel.version >= Number.MAX_SAFE_INTEGER ||
-          (destinationLevel?.version ?? 0) >= Number.MAX_SAFE_INTEGER
-        )
-          throw new AppError(
-            409,
-            "VERSION_LIMIT",
-            "Ett av saldona kan inte ändras fler gånger.",
-          );
         const destinationQuantity = destinationLevel?.quantity ?? 0;
         if (data.quantity > Number.MAX_SAFE_INTEGER - destinationQuantity)
           throw new AppError(
@@ -511,18 +502,38 @@ export async function registerStockMovement(
           );
         const sourceQuantity = sourceLevel.quantity - data.quantity;
         const nextDestinationQuantity = destinationQuantity + data.quantity;
-        const savedSource = await InventoryLevel.findOneAndUpdate(
-          {
+        if (
+          (sourceQuantity > 0 &&
+            sourceLevel.version >= Number.MAX_SAFE_INTEGER) ||
+          (destinationLevel?.version ?? 0) >= Number.MAX_SAFE_INTEGER
+        )
+          throw new AppError(
+            409,
+            "VERSION_LIMIT",
+            "Ett av saldona kan inte ändras fler gånger.",
+          );
+        let sourceVersion: number | null = null;
+        if (sourceQuantity === 0) {
+          const removedSource = await InventoryLevel.findOneAndDelete({
             _id: sourceLevel._id,
             version: data.expectedSourceVersion,
-          },
-          {
-            $set: { quantity: sourceQuantity },
-            $inc: { version: 1 },
-          },
-          { session, returnDocument: "after", runValidators: true },
-        );
-        if (!savedSource) stale();
+          }).session(session);
+          if (!removedSource) stale();
+        } else {
+          const savedSource = await InventoryLevel.findOneAndUpdate(
+            {
+              _id: sourceLevel._id,
+              version: data.expectedSourceVersion,
+            },
+            {
+              $set: { quantity: sourceQuantity },
+              $inc: { version: 1 },
+            },
+            { session, returnDocument: "after", runValidators: true },
+          );
+          if (!savedSource) stale();
+          sourceVersion = savedSource.version;
+        }
         let savedDestination;
         if (destinationLevel) {
           savedDestination = await InventoryLevel.findOneAndUpdate(
@@ -602,8 +613,8 @@ export async function registerStockMovement(
           transferId: String(transferId),
           source: {
             locationId: String(source._id),
-            quantity: savedSource.quantity,
-            version: savedSource.version,
+            quantity: sourceQuantity,
+            version: sourceVersion,
           },
           destination: {
             locationId: String(destination._id),

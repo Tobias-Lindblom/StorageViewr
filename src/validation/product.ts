@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { parseSekValue } from "@/lib/money";
 import { productPhotoSchema } from "./product-photo";
 export const productSchema = z
   .object({
@@ -19,6 +20,10 @@ export const productSchema = z
       .max(160),
     barcode: z.string().trim().max(100).default(""),
     description: z.string().trim().max(2000).default(""),
+    unitValue: z.string().trim().regex(/^\d{1,14}([.,]\d{1,4})?$/, "Ange ett styckvärde med högst fyra decimaler.")
+      .transform(value => parseSekValue(value)!).nullable().optional(),
+    // Accept requests from clients using the previous integer-öre field.
+    unitValueOre: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER).nullable().optional(),
     imageUrl: z
       .union([
         z.literal(""),

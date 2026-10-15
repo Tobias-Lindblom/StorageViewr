@@ -28,7 +28,7 @@ export function AccountSettingsSheet({
         </button>
       }
     >
-      <p className="mb-6 text-sm leading-6 text-muted">
+      <p className="sheet-description">
         Uppgifterna används i alla företag där du är medlem.
       </p>
       <AccountForm

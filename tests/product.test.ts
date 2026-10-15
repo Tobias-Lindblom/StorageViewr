@@ -1,3 +1,4 @@
+import { formatSek, formatSekInput, formatUnitValue, parseSekValue, sekToUnits, legacyOreToSek } from "../src/lib/money";
 import assert from "node:assert/strict";
 import { before, after, test } from "node:test";
 import { MongoMemoryReplSet } from "mongodb-memory-server";
@@ -407,4 +408,82 @@ test("concurrent photo replacement and removal leave product and attachment cons
   const current = await getProduct(a, product.id);
   const count = await ProductPhoto.countDocuments({ organizationId: a.organizationId, productId: product.id });
   assert.equal(count, current.photoUrl ? 1 : 0);
+});
+
+
+test("four-decimal SEK values preserve precision and round only the final stock total", () => {
+  assert.equal(parseSekValue(" 0,8451 "), "0.8451");
+  assert.equal(parseSekValue("0.8451"), "0.8451");
+  assert.equal(parseSekValue("2,50"), "2.5000");
+  assert.equal(parseSekValue("0"), "0.0000");
+  assert.equal(parseSekValue(""), null);
+  assert.equal(formatSekInput("0.8451"), "0,8451");
+  assert.equal(formatSekInput("2.5000"), "2,50");
+  assert.equal(formatSekInput(null), "");
+  const normalized = (value: string) => value.replace(/\s/g, " ");
+  assert.equal(normalized(formatUnitValue("0.8451")), "0,8451 kr");
+  assert.equal(normalized(formatSek(BigInt(1000) * sekToUnits("0.8451"))), "845,10 kr");
+  assert.equal(normalized(formatSek(BigInt(3) * sekToUnits("0.8451"))), "2,54 kr");
+  assert.equal(normalized(formatSek(sekToUnits("0.0049"))), "0,00 kr");
+  assert.equal(normalized(formatSek(sekToUnits("0.0050"))), "0,01 kr");
+  assert.equal(normalized(formatSek(sekToUnits("0.9999"))), "1,00 kr");
+  assert.equal(normalized(formatSek(BigInt("9007199254740993") * sekToUnits("1.0100"))), "9 097 271 247 288 402,93 kr");
+  assert.equal(legacyOreToSek(Number.MAX_SAFE_INTEGER), "90071992547409.9100");
+  assert.equal(formatSekInput(legacyOreToSek(Number.MAX_SAFE_INTEGER)), "90071992547409,91");
+  assert.equal(legacyOreToSek(null), null);
+  for (const value of ["-1", "0,84511", "1.23456", "1e3", "NaN", "Infinity", "2,5.0", "100000000000000"])
+    assert.throws(() => parseSekValue(value));
+});
+
+test("unit value supports four decimals, zero, edits and clearing without resetting on older payloads", async () => {
+  const context = tenant();
+  const product = await createProduct(context, input);
+  assert.equal(product.unitValue, null);
+  await updateProduct(context, product.id, { ...input, active: true, unitValue: "0,8451" });
+  assert.equal((await getProduct(context, product.id)).unitValue, "0.8451");
+  assert.equal((await Product.findById(product.id).lean())?.unitValue, "0.8451");
+  await updateProduct(context, product.id, { ...input, name: "Nytt namn", active: true });
+  assert.equal((await getProduct(context, product.id)).unitValue, "0.8451");
+  assert.equal((await listProducts(context)).items[0].unitValue, "0.8451");
+  await updateProduct(context, product.id, { ...input, active: true, unitValue: "0" });
+  assert.equal((await getProduct(context, product.id)).unitValue, "0.0000");
+  await updateProduct(context, product.id, { ...input, active: true, unitValue: null });
+  assert.equal((await getProduct(context, product.id)).unitValue, null);
+  assert.equal((await createProduct(context, { ...input, sku: "VALUED", unitValue: "123.4567" })).unitValue, "123.4567");
+});
+
+test("legacy integer-öre values retain their scale and migrate only on an explicit value edit", async () => {
+  const context = tenant();
+  const product = await createProduct(context, input);
+  await Product.updateOne({ _id: product.id }, { $unset: { unitValue: "" }, $set: { unitValueOre: 250 } });
+  assert.equal((await getProduct(context, product.id)).unitValue, "2.5000");
+  assert.equal((await listProducts(context)).items[0].unitValue, "2.5000");
+  await updateProduct(context, product.id, { ...input, active: true });
+  assert.equal((await getProduct(context, product.id)).unitValue, "2.5000");
+  await updateProduct(context, product.id, { ...input, active: true, unitValue: "0.8451" });
+  assert.equal((await getProduct(context, product.id)).unitValue, "0.8451");
+  assert.equal((await Product.findById(product.id).lean())?.unitValueOre, undefined);
+  await updateProduct(context, product.id, { ...input, active: true, unitValueOre: 575 });
+  assert.equal((await getProduct(context, product.id)).unitValue, "5.7500");
+  await updateProduct(context, product.id, { ...input, active: true, unitValue: null });
+  assert.equal((await getProduct(context, product.id)).unitValue, null);
+  await Product.updateOne({ _id: product.id }, { $unset: { unitValue: "" }, $set: { unitValueOre: Number.MAX_SAFE_INTEGER } });
+  assert.equal((await getProduct(context, product.id)).unitValue, "90071992547409.9100");
+  await updateProduct(context, product.id, { ...input, active: true, unitValue: "90071992547409.9100" });
+  assert.equal((await getProduct(context, product.id)).unitValue, "90071992547409.9100");
+});
+
+test("unit value writes reject invalid amounts and respect admin and tenant boundaries", async () => {
+  const context = tenant(), foreign = tenant(), worker: TenantContext = { ...context, role: "warehouse" };
+  const product = await createProduct(context, { ...input, unitValue: "0.8451" });
+  const update = { ...input, active: true, unitValue: "1.2345" };
+  await assert.rejects(updateProduct(worker, product.id, update), status(403));
+  await assert.rejects(updateProduct(foreign, product.id, update), status(404));
+  for (const value of [-1, 0.8451, NaN, Infinity, true, "-1", "0.84511", "1e3"]) {
+    await assert.rejects(updateProduct(context, product.id, { ...update, unitValue: value }));
+    await assert.rejects(createProduct(context, { ...input, sku: "INVALID-VALUE", unitValue: value }));
+  }
+  assert.equal((await getProduct(context, product.id)).unitValue, "0.8451");
+  assert.equal((await getProduct(worker, product.id)).unitValue, "0.8451");
+  await assert.rejects(Product.updateOne({ _id: product.id }, { $set: { unitValue: "0.84511" } }, { runValidators: true }));
 });

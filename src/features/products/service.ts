@@ -1,4 +1,5 @@
 import "server-only";
+import { legacyOreToSek } from "@/lib/money";
 import { assertNoOpenInventory } from "@/features/inventory/open-references";
 import { Types, type PipelineStage } from "mongoose";
 import { productStockStages } from "./product-stock";
@@ -15,6 +16,12 @@ import {
   productQuerySchema,
 } from "@/validation/product";
 
+function withUnitValue<T extends { unitValue?: string | null; unitValueOre?: number | null }>(input: T) {
+  const { unitValueOre, ...data } = input;
+  return { ...data, ...(data.unitValue === undefined && unitValueOre !== undefined
+    ? { unitValue: legacyOreToSek(unitValueOre) } : {}) };
+}
+
 function serialize(record: ProductRecord & { _id: Types.ObjectId }) {
   return {
     id: record._id.toString(),
@@ -22,6 +29,7 @@ function serialize(record: ProductRecord & { _id: Types.ObjectId }) {
     name: record.name,
     barcode: record.barcode,
     description: record.description,
+    unitValue: record.unitValue !== undefined ? record.unitValue : legacyOreToSek(record.unitValueOre ?? null),
     imageUrl: record.imageUrl,
     photoUrl: record.hasPhoto ? "/api/products/" + record._id + "/photo?v=" + record.updatedAt.getTime() : "",
     active: record.active,
@@ -122,7 +130,8 @@ function conflict(error: unknown): never {
 }
 export async function createProduct(context: TenantContext, input: unknown) {
   requireAdmin(context);
-  const { photo: imageInput, ...data } = productCreateRequestSchema.parse(input);
+  const { photo: imageInput, ...parsed } = productCreateRequestSchema.parse(input);
+  const data = withUnitValue(parsed);
   const photo = await prepareProductPhoto(imageInput);
   try {
     if (!photo) return serialize(await Product.create({ ...data, organizationId: context.organizationId }));
@@ -136,7 +145,8 @@ export async function createProduct(context: TenantContext, input: unknown) {
 }
 export async function updateProduct(context: TenantContext, id: string, input: unknown) {
   requireAdmin(context);
-  const { photo: imageInput, ...data } = productUpdateRequestSchema.parse(input);
+  const { photo: imageInput, ...parsed } = productUpdateRequestSchema.parse(input);
+  const data = withUnitValue(parsed);
   const productId = objectIdSchema.parse(id);
   // Check ownership before decoding an uploaded image.
   await getProduct(context, productId);
@@ -146,7 +156,8 @@ export async function updateProduct(context: TenantContext, id: string, input: u
     const db = await connectDb();
     return await db.connection.transaction(async session => {
       const record = await Product.findOneAndUpdate(filter,
-        { $set: { ...data, ...(photo === undefined ? {} : { hasPhoto: photo !== null, imageUrl: "" }) }, $inc: { stockRevision: 1 } },
+        { $set: { ...data, ...(photo === undefined ? {} : { hasPhoto: photo !== null, imageUrl: "" }) }, $inc: { stockRevision: 1 },
+          ...(data.unitValue !== undefined ? { $unset: { unitValueOre: "" } } : {}) },
         { returnDocument: "after", runValidators: true, session });
       if (!record) throw new AppError(404, "PRODUCT_NOT_FOUND", "Produkten kunde inte hittas.");
       if (!data.active && await InventoryLevel.exists({ organizationId: context.organizationId, productId: record._id, quantity: { $gt: 0 } }).session(session)) {

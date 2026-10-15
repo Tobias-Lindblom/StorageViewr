@@ -20,6 +20,7 @@ export async function StockPanel({
   active,
   inventoryAction,
   productHeader,
+  unitValue = null,
 }: {
   context: TenantContext;
   kind: "product" | "location";
@@ -28,6 +29,7 @@ export async function StockPanel({
   active: boolean;
   inventoryAction?: ReactNode;
   productHeader?: (count: number) => ReactNode;
+  unitValue?: string | null;
 }) {
   const data = await listStock(
     context,
@@ -67,7 +69,7 @@ export async function StockPanel({
   return (
     <>
     {productHeader?.(data.items.length)}
-    {kind === "product" ? <ProductStockSummary total={data.total} verification={verification} /> : <>
+    {kind === "product" ? <ProductStockSummary total={data.total} verification={verification} unitValue={unitValue} /> : <>
       <LocationStockSummary total={data.total} count={data.items.length} />
       <LocationVerification data={verification} />
     </>}

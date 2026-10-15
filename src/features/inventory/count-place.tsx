@@ -149,8 +149,8 @@ export function CountPlace({
     <>
       {!verified && !scanning && (
         <section aria-labelledby="verify-location-heading">
-          <div className="flex items-start gap-4 rounded-2xl border border-line bg-canvas p-5">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-400/10 text-accent">
+          <div className="form-card flex items-start gap-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-violet-400/10 text-accent">
               <AppIcon name="qr" />
             </span>
             <div className="min-w-0">
@@ -228,10 +228,10 @@ export function CountPlace({
       )}
       {verified && (
         <form onSubmit={save} className={scanning ? "hidden" : ""}>
-          <div className="flex items-center justify-between gap-3 rounded-xl border border-emerald-400/20 bg-emerald-400/5 px-4 py-3">
+          <div className="notice notice-success count-verification">
             <p
               role="status"
-              className="inline-flex items-center gap-2 text-sm font-medium text-emerald-400"
+              className="font-medium"
             >
               <AppIcon name="check" className="shrink-0" />
               Lagerplats verifierad
@@ -250,7 +250,7 @@ export function CountPlace({
             Ange faktiskt antal för varje produkt. Saldot ändras först när hela inventeringen genomförs.
           </p>
           {snapshot.stale && (
-            <p className="mt-4 rounded-xl border border-amber-200/30 bg-amber-200/5 p-4 text-sm leading-6 text-amber-200">
+            <p className="notice notice-warning mt-4">
               Saldot har ändrats sedan förra räkningen. Kontrollera antal mot
               aktuellt saldo nedan.
             </p>
@@ -264,7 +264,7 @@ export function CountPlace({
               </span>
             </div>
             {rows.length ? (
-              <div className="overflow-hidden rounded-2xl border border-line bg-surface">
+              <div className="count-product-list">
                 {rows.map((row) => {
                   const valid =
                     row.value !== "" &&
@@ -274,12 +274,12 @@ export function CountPlace({
                     ? Number(row.value) - row.currentQuantity
                     : 0;
                   return (
-                    <div key={row.productId} className="border-b border-line/60 p-4 last:border-0 sm:p-5">
-                      <p className="wrap-break-word font-semibold">{row.productName}</p>
-                      <p className="mt-1 text-xs text-muted">
-                        {row.sku} · Aktuellt saldo {row.currentQuantity.toLocaleString("sv-SE")} st
-                      </p>
-                      <label className="mt-4">
+                    <div key={row.productId} className="count-product-row">
+                      <div className="count-product-identity">
+                        <p>{row.productName}</p>
+                        <p>{row.sku} · Aktuellt saldo {row.currentQuantity.toLocaleString("sv-SE")} st</p>
+                      </div>
+                      <label>
                         Räknat antal
                         <span className="sr-only"> {row.productName}</span>
                         <input
@@ -307,7 +307,7 @@ export function CountPlace({
                           className={
                             "mt-2 text-xs " +
                             (difference < 0
-                              ? "text-rose-200"
+                              ? "text-destructive"
                               : difference > 0
                                 ? "text-cyan"
                                 : "text-muted")
@@ -323,13 +323,13 @@ export function CountPlace({
                 })}
               </div>
             ) : (
-              <p className="rounded-2xl border border-line bg-surface p-5 text-sm leading-6 text-muted">
+              <p className="form-card text-sm leading-6 text-muted">
                 Inga produkter finns registrerade här. Bekräfta att platsen är
                 tom, eller lägg till en produkt du hittat.
               </p>
             )}
-            <details className="group mt-4 overflow-hidden rounded-xl border border-line bg-surface">
-              <summary className="flex min-h-13 cursor-pointer list-none items-center justify-between gap-3 px-4 text-sm text-cyan">
+            <details className="group mt-4 overflow-hidden rounded-lg border border-line bg-surface">
+              <summary className="flex min-h-13 cursor-pointer list-none items-center justify-between gap-3 px-4 text-sm text-accent">
                 Lägg till hittad produkt
                 <MaterialArrow name="expand" size={18} className="transition group-open:rotate-180" />
               </summary>
@@ -351,7 +351,7 @@ export function CountPlace({
                   Sök produkter
                 </button>
                 {choices.length > 0 && (
-                  <ul className="mt-3 overflow-hidden rounded-xl border border-line bg-canvas">
+                  <ul className="mt-3 overflow-hidden rounded-lg border border-line bg-canvas">
                     {choices.map((choice) => (
                       <li key={choice.id} className="border-b border-line/60 last:border-0">
                         <button
@@ -376,20 +376,20 @@ export function CountPlace({
               </div>
             </details>
             {recount && (
-              <label className="mt-4 flex min-h-13 items-start gap-3 rounded-xl border border-line bg-surface p-4 text-sm leading-6">
+              <label className="mt-4 flex min-h-13 items-start gap-3 rounded-lg border border-line bg-surface p-4 text-sm leading-6">
                 <input
                   type="checkbox"
-                  className="mt-1! h-4! min-h-0! w-4! shrink-0 px-0! accent-violet-500"
+                  className="mt-1! h-4! min-h-0! w-4! shrink-0 px-0! accent-accent"
                   checked={replace}
                   onChange={(event) => setReplace(event.target.checked)}
                 />
                 <span>Ersätt den tidigare räkningen på den här platsen.</span>
               </label>
             )}
-            <label className="mt-4 flex min-h-13 items-start gap-3 rounded-xl border border-line bg-surface p-4 text-sm leading-6">
+            <label className="mt-4 flex min-h-13 items-start gap-3 rounded-lg border border-line bg-surface p-4 text-sm leading-6">
               <input
                 type="checkbox"
-                className="mt-1! h-4! min-h-0! w-4! shrink-0 px-0! accent-violet-500"
+                className="mt-1! h-4! min-h-0! w-4! shrink-0 px-0! accent-accent"
                 checked={confirmed}
                 onChange={(event) => setConfirmed(event.target.checked)}
               />

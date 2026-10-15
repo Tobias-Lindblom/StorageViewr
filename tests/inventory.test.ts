@@ -350,7 +350,7 @@ test("transfers update both places atomically and retain one linked audit pair",
     ).quantity,
     4,
   );
-  await registerStockMovement(worker, {
+  const fullTransfer = await registerStockMovement(worker, {
     type: "TRANSFER",
     productId: f.product.id,
     sourceLocationId: f.location.id,
@@ -363,9 +363,16 @@ test("transfers update both places atomically and retain one linked audit pair",
   const emptySource = await listStock(worker, {
     locationId: f.location.id,
   });
-  assert.equal(emptySource.items.length, 1);
-  assert.equal(emptySource.items[0].quantity, 0);
+  assert.equal(emptySource.items.length, 0);
   assert.equal(emptySource.total, "0");
+  assert.ok(fullTransfer.source);
+  assert.equal(fullTransfer.source.quantity, 0);
+  assert.equal(fullTransfer.source.version, null);
+  assert.equal(await InventoryLevel.exists({
+    organizationId: f.context.organizationId,
+    productId: f.product.id,
+    locationId: f.location.id,
+  }), null);
   assert.deepEqual(
     await getStockPair(worker, {
       productId: f.product.id,
@@ -375,9 +382,14 @@ test("transfers update both places atomically and retain one linked audit pair",
       productId: f.product.id,
       locationId: f.location.id,
       quantity: 0,
-      version: 3,
+      version: null,
     },
   );
+  const fullTransferRows = await InventoryMovement.find({
+    transferId: new Types.ObjectId(fullTransfer.transferId),
+  }).lean();
+  assert.equal(fullTransferRows.length, 2);
+  assert.equal(fullTransferRows.find(row => row.type === "TRANSFER_OUT")?.newQuantity, 0);
 });
 
 test("history records before/after, signed difference, actor, reason and original names", async () => {

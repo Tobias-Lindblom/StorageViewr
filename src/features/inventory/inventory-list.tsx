@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AppIcon } from "@/components/app-icon";
+import { EmptyState } from "@/components/empty-state";
 import type { listInventories } from "./session-queries";
 
 export function InventoryList({
@@ -42,15 +43,12 @@ export function InventoryList({
           <span className="sr-only">{completed ? "Visa inventering och rapport" : "Fortsätt inventering"}</span>
         </Link>
       </li>)}
-    </ol> : <div className="inventory-list-empty">
-      <span className="inventory-empty-marker"><AppIcon name={completed ? "history" : "inventory"} width={23} height={23} /></span>
-      <div>
-        <h2>{completed ? "Inga genomförda inventeringar" : "Inga pågående inventeringar"}</h2>
-        <p>{completed ? "Avslutade inventeringar och rapporter visas här." : admin
+    </ol> : <EmptyState icon={completed ? "history" : "inventory"}
+      title={completed ? "Inga genomförda inventeringar" : "Inga pågående inventeringar"}>
+        {completed ? "Avslutade inventeringar och rapporter visas här." : admin
           ? "Starta en inventering och välj platser att räkna."
-          : "Inventeringar visas här när en administratör har startat dem."}</p>
-      </div>
-    </div>}
+          : "Inventeringar visas här när en administratör har startat dem."}
+    </EmptyState>}
     {result.pages > 1 && <nav aria-label="Inventeringssidor" className="product-pagination">
       {result.page > 1 ? <Link className="product-page-control product-page-prev" href={basePath + "?page=" + (result.page - 1)}>
         <AppIcon name="chevron" width={15} height={15} /> Föregående

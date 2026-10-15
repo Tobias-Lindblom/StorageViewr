@@ -26,7 +26,7 @@ export default async function LabelsPage({
       <div className="print-hidden">
         <Link
           href="/locations"
-          className="mb-4 inline-flex min-h-13 items-center gap-2 text-sm text-accent"
+          className="page-back"
         >
           <MaterialArrow name="back" />
           Alla lagerplatser
@@ -40,7 +40,7 @@ export default async function LabelsPage({
           }
           action={labels.length ? <PrintButton /> : undefined}
         />
-        <div className="mb-7 overflow-hidden rounded-2xl border border-line bg-surface">
+        <div className="form-card p-0! mb-5 overflow-hidden">
           <div className="p-4 sm:p-5">
             <p className="text-xs text-muted">QR-adress</p>
             <p className="mt-2 break-all text-sm font-medium">{origin}</p>
@@ -53,7 +53,7 @@ export default async function LabelsPage({
         </div>
         {labels.length > 0 && (
           <div className="mb-4 flex items-center justify-between gap-3">
-            <h2 className="mb-0! text-xl!">Förhandsgranskning</h2>
+            <h2 className="form-section-heading mb-0!">Förhandsgranskning</h2>
             <span className="text-xs text-muted">{labels.length} st</span>
           </div>
         )}

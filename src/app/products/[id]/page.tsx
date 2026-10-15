@@ -20,7 +20,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
         <ProductDetailsMenu product={product} admin={context.role === "admin"} />
       </div>
       <StockPanel context={context} kind="product" id={id}
-        label={product.name + " · " + product.sku} active={product.active}
+        label={product.name + " · " + product.sku} active={product.active} unitValue={product.unitValue}
         productHeader={count => <header className="product-detail-header">
           {photo ? <ProductPhoto src={photo} alt={"Produktbild: " + product.name} eager className="product-detail-photo" /> :
             <span className="product-detail-photo product-photo-placeholder"><AppIcon name="product" width={32} height={32} /></span>}

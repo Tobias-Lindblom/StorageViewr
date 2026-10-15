@@ -3,6 +3,7 @@ import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { clientApi } from "@/lib/client-api";
+import { formatSekInput, parseSekValue } from "@/lib/money";
 import type { getProduct } from "./service";
 import { ProductPhotoPicker } from "./product-photo-picker";
 
@@ -31,6 +32,7 @@ export function ProductForm({
           name: form.get("name"),
           barcode: form.get("barcode"),
           description: form.get("description"),
+          unitValue: parseSekValue(String(form.get("unitValue") ?? "")),
           imageUrl: photo === undefined ? initial?.imageUrl ?? "" : "",
           ...(photo !== undefined ? { photo } : {}),
           ...(initial ? { active: form.get("active") === "on" } : {}),
@@ -47,13 +49,13 @@ export function ProductForm({
     }
   }
   return (
-    <form onSubmit={submit} className="max-w-2xl space-y-8">
-      <fieldset disabled={pending || photoBusy} className="space-y-8">
+    <form onSubmit={submit} className="editor-form max-w-2xl">
+      <fieldset disabled={pending || photoBusy} className="space-y-5">
         <section aria-labelledby="product-information-heading">
-          <h2 id="product-information-heading" className="mb-4! text-xl!">
+          <h2 id="product-information-heading" className="form-section-heading">
             Produktuppgifter
           </h2>
-          <div className="space-y-5 rounded-2xl border border-line bg-surface p-5 sm:p-6">
+          <div className="space-y-5 form-card">
             <label>
               Produktnamn
               <input
@@ -96,6 +98,25 @@ export function ProductForm({
             </div>
 
             <label>
+              Styckvärde (kr) <span className="font-normal text-muted">(valfritt)</span>
+              <input
+                name="unitValue"
+                type="text"
+                inputMode="decimal"
+                maxLength={19}
+                defaultValue={formatSekInput(initial?.unitValue ?? null)}
+                placeholder="Exempel: 0,8451"
+                autoComplete="off"
+                spellCheck={false}
+                aria-describedby="unit-value-help"
+              />
+              <span id="unit-value-help" className="mt-2 block text-xs font-normal leading-5 text-muted">
+                Värde per styck i SEK, med högst fyra decimaler. Multipliceras med totalt saldo för att visa lagervärdet.
+                Lämna tomt om värdet inte är angivet.
+              </span>
+            </label>
+
+            <label>
               Beskrivning <span className="font-normal text-muted">(valfritt)</span>
               <textarea
                 name="description"
@@ -103,7 +124,7 @@ export function ProductForm({
                 rows={3}
                 defaultValue={initial?.description}
                 placeholder="Kort information om produkten"
-                className="mt-2 block w-full resize-y rounded-xl border border-line bg-canvas p-4 text-base text-foreground outline-none placeholder:text-muted/70 focus:border-accent focus:ring-2 focus:ring-accent/25"
+                className="resize-y"
               />
             </label>
 
@@ -139,7 +160,7 @@ export function ProductForm({
           {error}
         </p>
       )}
-      <div className="flex flex-col-reverse gap-3 border-t border-line/60 pt-6 sm:flex-row sm:justify-end">
+      <div className="form-actions">
         <Link
           className="button-secondary w-full sm:w-auto"
           href={initial ? "/products/" + initial.id : "/products"}

@@ -7,6 +7,7 @@ import { PlacementEditor } from "./placement-editor";
 import { StockEditor } from "./stock-editor";
 import type { Scope, Choice, EditorActionState } from "./stock-types";
 import { QuickActions, type MovementType } from "@/components/quick-actions";
+import { EmptyState } from "@/components/empty-state";
 import { ProductPlacementList } from "@/features/products/product-placement-list";
 import { LocationProductList } from "@/features/locations/location-product-list";
 
@@ -107,11 +108,12 @@ export function StockSection({
         </p>
       )}
       {data.items.length ? (compact ? <ProductPlacementList items={data.items} /> : <LocationProductList items={data.items} />) : (
-        <p className={compact ? "product-list-empty text-sm text-muted" : "location-list-empty text-sm text-muted"}>
+        <EmptyState icon={scope.kind === "product" ? "location" : "product"}
+          title={scope.kind === "product" ? "Inga lagerplatser" : "Inga produkter"}>
           {scope.kind === "product"
             ? "Produkten är inte placerad på någon lagerplats."
             : "Inga produkter är placerade på den här lagerplatsen."}
-        </p>
+        </EmptyState>
       )}
       {operable && <div className={compact ? "product-quick-actions" : "location-quick-actions"}>
         <h3>Snabbåtgärder</h3>

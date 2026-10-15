@@ -22,7 +22,7 @@ export default async function EditLocationPage({
     <AppShell context={context}>
       <Link
         href={"/locations/" + id}
-        className="mb-4 inline-flex min-h-13 items-center gap-2 text-sm text-accent"
+        className="page-back"
       >
         <MaterialArrow name="back" />
         Till lagerplatsen

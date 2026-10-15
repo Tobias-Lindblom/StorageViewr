@@ -114,7 +114,7 @@ export function LocationForm({
     <form
       id={id}
       onSubmit={submit}
-      className={embedded ? "space-y-6" : "max-w-2xl space-y-8"}
+      className={embedded ? "space-y-6" : "editor-form max-w-2xl"}
     >
       <fieldset disabled={pending}>
         <section
@@ -122,7 +122,7 @@ export function LocationForm({
           aria-label={embedded ? "Platsuppgifter" : undefined}
         >
           {!embedded && (
-            <h2 id="location-information-heading" className="mb-4! text-xl!">
+            <h2 id="location-information-heading" className="form-section-heading">
               Platsuppgifter
             </h2>
           )}
@@ -130,7 +130,7 @@ export function LocationForm({
             className={
               embedded
                 ? ""
-                : "rounded-2xl border border-line bg-surface p-5 sm:p-6"
+                : "form-card"
             }
           >
             {initial ? (
@@ -256,7 +256,7 @@ export function LocationForm({
         </p>
       )}
       {!hideSubmit && (
-        <div className="flex flex-col-reverse gap-3 border-t border-line/60 pt-6 sm:flex-row sm:justify-end">
+        <div className="form-actions">
           <Link
             className="button-secondary w-full sm:w-auto"
             href={initial ? "/locations/" + initial.id : "/locations"}

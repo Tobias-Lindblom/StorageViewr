@@ -229,7 +229,7 @@ export function QrScanner({ locationCode, description, resolveCode, actionLabel 
         {description}
       </p>
       {state === "starting" || state === "scanning" ? (
-        <div className="relative mt-5 aspect-[4/3] overflow-hidden rounded-2xl border border-line bg-canvas">
+        <div className="relative mt-5 aspect-[4/3] overflow-hidden rounded-xl border border-line bg-canvas">
           <video
             ref={video}
             muted
@@ -240,10 +240,7 @@ export function QrScanner({ locationCode, description, resolveCode, actionLabel 
           />
           {state === "scanning" ? (
             <>
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-[16%] rounded-2xl border-2 border-white/70 shadow-[0_0_0_999px_rgba(9,8,16,0.3)]"
-              />
+              <div className="scanner-target" aria-hidden="true"><i /><i /><i /><i /></div>
               <p className="absolute inset-x-0 bottom-4 text-center text-xs font-medium text-white">
                 Söker efter QR-kod…
               </p>
@@ -255,7 +252,7 @@ export function QrScanner({ locationCode, description, resolveCode, actionLabel 
           )}
         </div>
       ) : (
-        <div className="mt-5 flex min-h-28 items-center gap-4 rounded-2xl border border-line bg-canvas p-5" role="status">
+        <div className="form-card mt-4 flex items-center gap-3" role="status">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-surface-raised text-muted">
             <AppIcon name="camera" />
           </span>

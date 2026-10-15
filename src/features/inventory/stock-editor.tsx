@@ -235,7 +235,7 @@ export function StockEditor({
 
   return (
     <form id="stock-editor-form" className="space-y-5" onSubmit={submit}>
-      <div className="rounded-xl bg-canvas px-4 py-3">
+      <div className="rounded-lg bg-canvas px-4 py-3">
         <p className="text-xs text-muted">
           {scope.kind === "product" ? "Produkt" : "Lagerplats"}
         </p>
@@ -260,12 +260,7 @@ export function StockEditor({
                 type="button"
                 role="radio"
                 aria-checked={selected}
-                className={
-                  "min-h-12 rounded-xl border px-3 py-2 text-sm font-medium transition " +
-                  (selected
-                    ? "border-violet-400/40 bg-violet-500/15 text-foreground ring-1 ring-inset ring-violet-400/20"
-                    : "border-line bg-canvas text-muted hover:border-accent/60 hover:text-foreground")
-                }
+                className="choice-chip"
                 onClick={() => {
                   const next = value as MovementType;
                   setType(next);
@@ -310,12 +305,12 @@ export function StockEditor({
                   <p className="mb-2 text-sm font-medium">
                     Välj {scope.kind === "product" ? "lagerplats" : "produkt"}
                   </p>
-                  <div className="max-h-56 overflow-y-auto overscroll-y-contain rounded-xl border border-line bg-canvas">
+                  <div className="max-h-56 overflow-y-auto overscroll-y-contain rounded-lg border border-line bg-canvas">
                     {visibleChoices.map((item) => (
                       <button
                         key={item.id}
                         type="button"
-                        className="flex min-h-13 w-full items-center border-b border-line/60 px-4 py-3 text-left text-sm transition last:border-0 hover:bg-surface-raised"
+                        className="flex min-h-11 w-full items-center border-b border-line/60 px-4 py-3 text-left text-sm transition last:border-0 hover:bg-surface-raised"
                         onClick={() => selectChoice(item.id)}
                         disabled={pending}
                       >
@@ -341,14 +336,14 @@ export function StockEditor({
               <p className="mb-2 text-sm font-medium">
                 {scope.kind === "product" ? "Lagerplats" : "Produkt"}
               </p>
-              <div className="flex min-h-13 items-center justify-between gap-3 rounded-xl border border-line bg-canvas px-4 py-3">
+              <div className="flex min-h-13 items-center justify-between gap-3 rounded-lg border border-line bg-canvas px-4 py-3">
                 <span className="min-w-0 wrap-break-word text-sm">
                   {selectedChoice.label}
                 </span>
                 {!initialChoice && (
                   <button
                     type="button"
-                    className="shrink-0 text-sm text-cyan"
+                    className="shrink-0 text-sm text-accent"
                     onClick={() => selectChoice("")}
                     disabled={pending}
                   >
@@ -365,7 +360,7 @@ export function StockEditor({
           )}
           {pair && (
             <>
-              <p className="rounded-xl bg-canvas p-4 text-sm text-muted">
+              <p className="rounded-lg bg-canvas p-4 text-sm text-muted">
                 Nuvarande saldo:{" "}
                 <strong className="text-foreground">
                   {pair.quantity.toLocaleString("sv-SE")} st
@@ -392,12 +387,12 @@ export function StockEditor({
                           <p className="mb-2 text-sm font-medium">
                             Flytta till
                           </p>
-                          <div className="max-h-56 overflow-y-auto overscroll-y-contain rounded-xl border border-line bg-canvas">
+                          <div className="max-h-56 overflow-y-auto overscroll-y-contain rounded-lg border border-line bg-canvas">
                             {visibleDestinations.map((item) => (
                               <button
                                 key={item.id}
                                 type="button"
-                                className="flex min-h-13 w-full items-center border-b border-line/60 px-4 py-3 text-left text-sm transition last:border-0 hover:bg-surface-raised"
+                                className="flex min-h-11 w-full items-center border-b border-line/60 px-4 py-3 text-left text-sm transition last:border-0 hover:bg-surface-raised"
                                 onClick={() => selectDestination(item.id)}
                                 disabled={pending}
                               >
@@ -423,13 +418,13 @@ export function StockEditor({
                   ) : (
                     <div>
                       <p className="mb-2 text-sm font-medium">Flytta till</p>
-                      <div className="flex min-h-13 items-center justify-between gap-3 rounded-xl border border-line bg-canvas px-4 py-3">
+                      <div className="flex min-h-13 items-center justify-between gap-3 rounded-lg border border-line bg-canvas px-4 py-3">
                         <span className="min-w-0 wrap-break-word text-sm">
                           {selectedDestination?.label}
                         </span>
                         <button
                           type="button"
-                          className="shrink-0 text-sm text-cyan"
+                          className="shrink-0 text-sm text-accent"
                           onClick={() => selectDestination("")}
                           disabled={pending}
                         >
@@ -446,7 +441,7 @@ export function StockEditor({
                 </p>
               )}
               {type === "TRANSFER" && destinationPair && (
-                <p className="rounded-xl bg-canvas p-4 text-sm text-muted">
+                <p className="rounded-lg bg-canvas p-4 text-sm text-muted">
                   Saldo på destinationen:{" "}
                   <strong className="text-foreground">
                     {destinationPair.quantity.toLocaleString("sv-SE")} st

@@ -30,12 +30,12 @@ export function OrganizationSettingsSheet({
         </button>
       }
     >
-      <p className="mb-6 text-sm leading-6 text-muted">
+      <p className="sheet-description">
         Uppgifterna visas för alla medlemmar i företaget.
       </p>
-      <div className="mb-6">
+      <div className="mb-5">
         <p className="text-sm font-medium">Företagskod</p>
-        <div className="mt-2 flex min-h-13 items-center rounded-xl border border-line/70 bg-canvas/60 px-4 py-3 text-sm text-muted">
+        <div className="field-readonly">
           <span className="break-all">{slug}</span>
         </div>
         <p className="mt-2 text-xs leading-5 text-muted">

@@ -28,14 +28,14 @@ export default async function LocationsPage({
     <LocationOverview locations={locations} warehouses={warehouses.map(({ id, name, active }) => ({ id, name, active }))}
       warehouseId={warehouseId} admin={context.role === "admin"}
       createAction={context.role === "admin" ? activeWarehouses.length ? (
-        <LocationEditorSheet warehouses={activeWarehouses} warehouseId={warehouseId}
+        <LocationEditorSheet key="create-location" warehouses={activeWarehouses} warehouseId={warehouseId}
           label="+ Ny lagerplats" className="location-create" initialCount={1} />
-      ) : !selectedWarehouse ? <WarehouseEditorSheet label="+ Nytt lager" className="location-create" /> : undefined : undefined}
+      ) : !selectedWarehouse ? <WarehouseEditorSheet key="create-warehouse" label="+ Nytt lager" className="location-create" /> : undefined : undefined}
       tools={locations.length ? <>
-        {locations.some(location => location.active) && <Link className="location-tools-link" href={"/locations/labels" + scope}>
+        {locations.some(location => location.active) && <Link key="labels" className="location-tools-link" href={"/locations/labels" + scope}>
           <AppIcon name="qr" width={18} height={18} />QR-etiketter
         </Link>}
-        <DownloadLocationReport warehouseId={warehouseId} className="location-tools-link" />
+        <DownloadLocationReport key="report" warehouseId={warehouseId} className="location-tools-link" />
       </> : undefined} />
   </AppShell>;
 }

@@ -13,7 +13,7 @@ export default async function NewWarehousePage() {
     <AppShell context={context}>
       <Link
         href="/warehouses"
-        className="mb-4 inline-flex min-h-13 items-center gap-2 text-sm text-accent"
+        className="page-back"
       >
         <MaterialArrow name="back" />
         Alla lager

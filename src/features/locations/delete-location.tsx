@@ -51,9 +51,9 @@ export function DeleteLocation({
     <section
       aria-labelledby={compact ? undefined : "delete-location-heading"}
       aria-label={compact ? "Ta bort lagerplats" : undefined}
-      className={compact ? "location-delete-menu" : "mt-10 max-w-2xl border-t border-rose-400/20 pt-7"}
+      className={compact ? "location-delete-menu" : "mt-6 max-w-2xl border-t border-destructive/20 pt-5"}
     >
-      {!compact && <><h2 id="delete-location-heading" className="mb-2! text-lg! text-rose-200">
+      {!compact && <><h2 id="delete-location-heading" className="form-section-heading text-destructive">
         Ta bort lagerplats
       </h2>
       <p className="text-sm leading-6 text-muted">
@@ -64,7 +64,7 @@ export function DeleteLocation({
       <button
         ref={trigger}
         type="button"
-        className={compact ? "" : "mt-5 inline-flex min-h-13 w-full items-center justify-center rounded-xl border border-rose-400/35 px-5 py-3 text-sm font-semibold text-rose-200 transition hover:bg-rose-400/10 sm:w-auto"}
+        className={compact ? "" : "mt-5 inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-rose-400/35 px-5 py-3 text-sm font-semibold text-destructive transition hover:bg-rose-400/10 sm:w-auto"}
         aria-haspopup="dialog"
         onClick={() => {
           setError("");
@@ -91,7 +91,7 @@ export function DeleteLocation({
               </button>
               <button
                 type="button"
-                className="inline-flex min-h-13 w-full items-center justify-center rounded-xl border border-rose-400/40 bg-rose-950/40 px-4 py-3 text-sm font-semibold text-rose-100 transition hover:bg-rose-900/50 disabled:opacity-60"
+                className="inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-rose-400/40 bg-rose-950/40 px-4 py-3 text-sm font-semibold text-rose-100 transition hover:bg-rose-900/50 disabled:opacity-60"
                 onClick={remove}
                 disabled={pending}
               >
@@ -100,7 +100,7 @@ export function DeleteLocation({
             </div>
           }
         >
-          <div className="rounded-2xl border border-rose-400/25 bg-rose-950/20 p-5">
+          <div className="rounded-lg border border-destructive/25 bg-destructive/5 p-5">
             <p className="font-medium text-foreground">
               Ta bort {code} permanent?
             </p>

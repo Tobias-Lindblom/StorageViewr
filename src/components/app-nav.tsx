@@ -22,13 +22,13 @@ export function AppNav({ admin, mobile = false }: { admin: boolean; mobile?: boo
     { href: "/inventories", label: "Inventering", icon: "inventory" as const },
     ...(admin ? [{ href: history, label: "Historik", icon: "history" as const }] : []),
   ];
-  return <nav aria-label="Huvudnavigation" className={mobile ? "mobile-nav grid h-full grid-cols-4" : "grid gap-2 rounded-2xl border border-line/55 bg-surface/90 p-3"}>
+  return <nav aria-label="Huvudnavigation" className={mobile ? "mobile-nav grid h-full grid-cols-4" : "desktop-nav"}>
     {items.map(item => {
       const active = pathname === item.href || pathname.startsWith(item.href + "/") ||
         (item.icon === "location" && pathname.startsWith("/location/"));
       const className = mobile ? "mobile-nav-item " + (active ? "is-active" : "") :
-        "flex min-h-13 min-w-0 items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition " +
-        (active ? "bg-accent/10 text-accent" : "text-muted hover:bg-surface-raised hover:text-foreground");
+        "desktop-nav-item " +
+        (active ? "is-active" : "");
       const content = <>
         <span className={mobile && item.icon === "scan" ? "nav-scanner" : "nav-icon"}>
           {mobile && item.icon === "product" ? <BrandCube size={17} /> :

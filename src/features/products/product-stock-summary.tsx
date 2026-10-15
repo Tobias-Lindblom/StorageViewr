@@ -2,11 +2,15 @@
 
 import { useRef, useState } from "react";
 import { AppIcon } from "@/components/app-icon";
+import { formatSek, formatUnitValue, sekToUnits } from "@/lib/money";
 import { BottomSheet } from "@/components/bottom-sheet";
 import { InventoryVerification, verificationLabels } from "@/components/inventory-verification";
 import type { VerificationData } from "@/features/inventory/verification";
 
-export function ProductStockSummary({ total, verification }: { total: string; verification: VerificationData }) {
+export function ProductStockSummary({ total, verification, unitValue }: {
+  total: string; verification: VerificationData; unitValue: string | null;
+}) {
+  const totalValueUnits = unitValue === null ? null : BigInt(total) * sekToUnits(unitValue);
   const [open, setOpen] = useState(false);
   const trigger = useRef<HTMLButtonElement>(null);
   const date = verification.countedAt ? new Date(verification.countedAt) : null;
@@ -31,6 +35,22 @@ export function ProductStockSummary({ total, verification }: { total: string; ve
           {date && verification.state !== "verified" && <span className="product-count-warning">{labels[verification.state]}</span>}
         </span>
       </button>
+      <div className="product-valuation" aria-label="Produktens lagervärde">
+        <div className="product-valuation-item">
+          <span className="product-summary-icon"><AppIcon name="tag" width={21} height={21} /></span>
+          <dl>
+            <dt>Styckvärde</dt>
+            <dd>{unitValue === null ? "Ej angivet" : formatUnitValue(unitValue)}</dd>
+          </dl>
+        </div>
+        <div className="product-valuation-item product-valuation-total">
+          <span className="product-summary-icon"><AppIcon name="coins" width={21} height={21} /></span>
+          <dl>
+            <dt>Totalt lagervärde</dt>
+            <dd>{totalValueUnits === null ? "Ej beräknat" : formatSek(totalValueUnits)}</dd>
+          </dl>
+        </div>
+      </div>
     </div>
     {open && <BottomSheet title="Inventeringsstatus" onClose={() => { setOpen(false); trigger.current?.focus(); }}>
       <InventoryVerification data={verification} />

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AppIcon } from "@/components/app-icon";
+import { EmptyState } from "@/components/empty-state";
 import { WarehouseEditorSheet } from "./warehouse-editor-sheet";
 import { WarehouseCardMenu } from "./warehouse-card-menu";
 import type { listWarehouses } from "./service";
@@ -33,12 +34,9 @@ export function WarehouseOverview({ warehouses, admin }: {
         </Link>
         {admin && <WarehouseCardMenu warehouse={warehouse} />}
       </li>)}
-    </ol> : <div className="warehouse-list-empty">
-      <span className="warehouse-card-marker"><AppIcon name="warehouse" width={23} height={23} /></span>
-      <div><h2>{admin ? "Inga lager ännu" : "Inga aktiva lager"}</h2>
-        <p>{admin ? "Lägg till ditt första lager och börja skapa lagerplatser."
-          : "En administratör kan lägga till lager och lagerplatser."}</p>
-      </div>
-    </div>}
+    </ol> : <EmptyState title={admin ? "Inga lager ännu" : "Inga aktiva lager"}>
+      {admin ? "Lägg till ditt första lager och börja skapa lagerplatser."
+        : "En administratör kan lägga till lager och lagerplatser."}
+    </EmptyState>}
   </section>;
 }

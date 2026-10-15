@@ -23,17 +23,17 @@ export function ProductPhotoPicker({ existing, value, onChange, onBusy, disabled
     finally { setBusy(false); onBusy(false); }
   }
   return <section aria-labelledby="product-photo-heading">
-    <h2 id="product-photo-heading" className="mb-4! text-xl!">Produktbild <span className="text-sm font-normal text-muted">(valfritt)</span></h2>
+    <h2 id="product-photo-heading" className="form-section-heading">Produktbild <span className="text-sm font-normal text-muted">(valfritt)</span></h2>
     <input ref={camera} type="file" accept="image/jpeg,image/png,image/webp" capture="environment" aria-label="Ta produktfoto" className="hidden" onChange={select} disabled={disabled || busy} />
     <input ref={gallery} type="file" accept="image/jpeg,image/png,image/webp" aria-label="Välj produktbild" className="hidden" onChange={select} disabled={disabled || busy} />
-    <div className="overflow-hidden rounded-2xl border border-line bg-surface">
+    <div className="form-card overflow-hidden p-0!">
       <div className={source ? "grid sm:grid-cols-[180px_minmax(0,1fr)]" : ""}>
         {source ? (
           <div className="flex min-h-44 items-center justify-center border-b border-line/60 bg-canvas p-3 sm:border-r sm:border-b-0">
             <ProductPhoto src={source} alt="Förhandsvisning av produktbild" eager className="max-h-44 w-full object-contain" />
           </div>
         ) : (
-          <div className="flex items-center gap-4 p-5 sm:p-6">
+          <div className="flex items-center gap-4 form-card-body">
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-surface-raised text-accent">
               <AppIcon name="camera" />
             </span>
@@ -44,7 +44,7 @@ export function ProductPhotoPicker({ existing, value, onChange, onBusy, disabled
           </div>
         )}
 
-        <div className={source ? "flex flex-col justify-center p-5 sm:p-6" : "border-t border-line/60 p-5 sm:p-6"}>
+        <div className={source ? "flex flex-col justify-center form-card-body" : "border-t border-line/60 form-card-body"}>
           {source && (
             <div className="mb-4">
               <h3 className="mb-1! text-sm! font-semibold">Produktbild vald</h3>

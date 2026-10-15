@@ -77,8 +77,8 @@ export function ProductImport() {
   if (imported !== null)
     return (
       <section className="max-w-2xl" role="status">
-        <h2 className="mb-4! text-xl!">Importen är klar</h2>
-        <div className="rounded-2xl border border-line bg-surface p-5 sm:p-6">
+        <h2 className="form-section-heading">Importen är klar</h2>
+        <div className="form-card">
           <div className="flex items-start gap-4">
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-cyan/10 text-cyan">
               <AppIcon name="check" />
@@ -99,11 +99,11 @@ export function ProductImport() {
       </section>
     );
   return (
-    <div className="max-w-3xl space-y-8">
+    <div className="editor-form max-w-3xl">
       <form onSubmit={inspect}>
         <section aria-labelledby="csv-file-heading">
           <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
-            <h2 id="csv-file-heading" className="mb-0! text-xl!">Välj CSV-fil</h2>
+            <h2 id="csv-file-heading" className="form-section-heading mb-0!">Välj CSV-fil</h2>
             <a
               href="/templates/products.csv"
               download
@@ -114,8 +114,8 @@ export function ProductImport() {
             </a>
           </div>
 
-          <div className="overflow-hidden rounded-2xl border border-line bg-surface">
-            <div className="p-5 sm:p-6">
+          <div className="form-card overflow-hidden p-0!">
+            <div className="form-card-body">
               <p className="text-sm leading-6 text-muted">
                 Använd en CSV-fil i UTF-8. Filen får innehålla högst 500 produkter och vara högst 500 kB.
               </p>
@@ -131,7 +131,7 @@ export function ProductImport() {
               </dl>
             </div>
 
-            <fieldset disabled={pending} className="border-t border-line/60 p-5 sm:p-6">
+            <fieldset disabled={pending} className="border-t border-line/60 form-card-body">
               <input
                 ref={fileInput}
                 type="file"
@@ -179,12 +179,7 @@ export function ProductImport() {
                         setDelimiter(value);
                         reset();
                       }}
-                      className={
-                        "min-h-12 rounded-xl border px-3 text-sm transition " +
-                        (delimiter === value
-                          ? "border-violet-400/60 bg-violet-500/15 text-foreground"
-                          : "border-line bg-canvas text-muted hover:border-accent/70")
-                      }
+                      className="choice-chip"
                     >
                       {label}
                     </button>
@@ -193,7 +188,7 @@ export function ProductImport() {
               </div>
             </fieldset>
 
-            <div className="border-t border-line/60 p-5 sm:flex sm:items-center sm:justify-between sm:gap-5 sm:p-6">
+            <div className="form-card-body border-t border-line/60 sm:flex sm:items-center sm:justify-between sm:gap-5">
               <p className="mb-4 text-xs leading-5 text-muted sm:mb-0">
                 Befintliga produkter skrivs inte över.
               </p>
@@ -211,8 +206,8 @@ export function ProductImport() {
       )}
       {preview && (
         <section aria-labelledby="import-preview">
-          <h2 id="import-preview" className="mb-4! text-xl!">Förhandsgranskning</h2>
-          <div className="overflow-hidden rounded-2xl border border-line bg-surface">
+          <h2 id="import-preview" className="form-section-heading">Förhandsgranskning</h2>
+          <div className="form-card overflow-hidden p-0!">
             <dl className="grid grid-cols-3 divide-x divide-line/60 p-5 text-center sm:p-6" role="status">
               {[
                 ["Rader", preview.total],
@@ -226,7 +221,7 @@ export function ProductImport() {
               ))}
             </dl>
             {preview.invalid > 0 && (
-              <div className="border-t border-line/60 p-5 sm:p-6">
+              <div className="border-t border-line/60 form-card-body">
                 <p className="error">
                   Rätta felen och välj filen igen. Alla rader måste vara giltiga före importen.
                 </p>
@@ -240,13 +235,13 @@ export function ProductImport() {
                       <p className="wrap-break-word text-sm font-medium">{row.name || "Namn saknas"}</p>
                       <p className="mt-1 break-all text-xs text-muted">{row.sku || "Artikelnummer saknas"}</p>
                     </div>
-                    <span className={"shrink-0 text-xs " + (row.errors.length ? "text-rose-200" : "text-cyan")}>
+                    <span className={"shrink-0 text-xs " + (row.errors.length ? "text-destructive" : "text-success")}>
                       {row.errors.length ? "Fel" : "Redo"}
                     </span>
                   </div>
                   <p className="mt-2 text-xs text-muted">Rad {row.line}</p>
                   {row.errors.map((message, index) => (
-                    <p key={index} className="mt-2 wrap-break-word text-xs leading-5 text-rose-200">{message}</p>
+                    <p key={index} className="mt-2 wrap-break-word text-xs leading-5 text-destructive">{message}</p>
                   ))}
                 </li>
               ))}

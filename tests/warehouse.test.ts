@@ -399,21 +399,31 @@ test("dashboard numbers reflect only real active data belonging to the current t
     warehouseCount: 0,
     locationCount: 0,
     productCount: 0,
+    stockUnitCount: "0",
+    inventoryValueUnits: "0",
     activeInventories: [],
   });
   const warehouse = await createWarehouse(a, warehouseInput);
-  await createLocationBatch(a, { ...batchInput, warehouseId: warehouse.id });
+  const ownLocations = await createLocationBatch(a, { ...batchInput, warehouseId: warehouse.id });
   const foreign = await createWarehouse(b, warehouseInput);
   await createLocationBatch(b, {
     ...batchInput,
     warehouseId: foreign.id,
     count: 20,
   });
-  await Product.create([
-    { organizationId: a.organizationId, sku: "ACTIVE", name: "Aktiv produkt" },
+  const [activeProduct] = await Product.create([
+    { organizationId: a.organizationId, sku: "ACTIVE", name: "Aktiv produkt", unitValue: "0.8451" },
     { organizationId: a.organizationId, sku: "INACTIVE", name: "Inaktiv produkt", active: false },
     { organizationId: b.organizationId, sku: "FOREIGN", name: "Annat företags produkt" },
   ]);
+  await InventoryLevel.create({
+    organizationId: a.organizationId,
+    warehouseId: warehouse.id,
+    productId: activeProduct._id,
+    locationId: ownLocations[0].id,
+    quantity: 1000,
+    version: 1,
+  });
   const [activeInventory, completedInventory, foreignInventory] =
     await InventorySession.create([
       {
@@ -474,6 +484,8 @@ test("dashboard numbers reflect only real active data belonging to the current t
   ]);
   const dashboard = await getDashboard(a);
   assert.equal(dashboard.productCount, 1);
+  assert.equal(dashboard.stockUnitCount, "1000");
+  assert.equal(dashboard.inventoryValueUnits, "8451000");
   assert.equal((await getDashboard({ ...a, role: "warehouse" })).productCount, 1);
   assert.equal(dashboard.warehouseCount, 1);
   assert.equal(dashboard.locationCount, 10);

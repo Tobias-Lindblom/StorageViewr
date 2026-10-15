@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { AppIcon } from "@/components/app-icon";
+import { EmptyState } from "@/components/empty-state";
 import { LocationFilters, type LocationFiltersValue } from "./location-filters";
 import type { listLocations } from "./service";
 
@@ -93,15 +94,14 @@ export function LocationOverview({ locations, warehouses, warehouseId, admin, cr
             </span>
           </Link>
         </li>)}
-      </ul> : <div className="location-list-empty">
-        <h2>{selectedWarehouse && !locations.length ? "Inga lagerplatser i lagret" : filtered ? "Inga matchande lagerplatser" : "Inga lagerplatser ännu"}</h2>
-        <p>{selectedWarehouse && !locations.length ? !selectedWarehouse.active
+      </ul> : <EmptyState icon="location" title={selectedWarehouse && !locations.length ? "Inga lagerplatser i lagret" : filtered ? "Inga matchande lagerplatser" : "Inga lagerplatser ännu"}>
+        {selectedWarehouse && !locations.length ? !selectedWarehouse.active
           ? "Lagret är inaktivt. Aktivera det från lagerkortets meny för att skapa platser."
           : admin ? "Lägg till din första lagerplats i detta lager." : "En administratör behöver lägga till lagerplatser i detta lager."
           : filtered ? "Prova en annan sökning eller ändra filtren." : admin
           ? warehouses.some(warehouse => warehouse.active) ? "Lägg till din första lagerplats för att komma igång." : "Börja med att skapa ett lager och lägg sedan till lagerplatser."
-          : "En administratör behöver lägga till lagerplatser innan de visas här."}</p>
-      </div>}
+          : "En administratör behöver lägga till lagerplatser innan de visas här."}
+      </EmptyState>}
     </div>
   </section>;
 }

@@ -92,7 +92,7 @@ export function OrganizationForm({
       {message && (
         <p
           role="status"
-          className="rounded-xl border border-emerald-400/20 bg-emerald-400/8 p-3 text-sm text-emerald-200"
+          className="notice notice-success"
         >
           {message}
         </p>
