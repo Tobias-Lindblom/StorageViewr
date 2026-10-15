@@ -3,14 +3,13 @@
 import { useState } from "react";
 import { BottomSheet } from "@/components/bottom-sheet";
 import { OrganizationForm } from "./organization-form";
+import type { OrganizationDocumentDetails } from "./types";
 
 export function OrganizationSettingsSheet({
-  name,
-  slug,
+  organization,
   onClose,
 }: {
-  name: string;
-  slug: string;
+  organization: OrganizationDocumentDetails & { name: string; slug: string };
   onClose: () => void;
 }) {
   const [pending, setPending] = useState(false);
@@ -31,12 +30,12 @@ export function OrganizationSettingsSheet({
       }
     >
       <p className="sheet-description">
-        Uppgifterna visas för alla medlemmar i företaget.
+        Uppgifterna visas för företagets medlemmar och kan användas i rapporter och andra dokument.
       </p>
       <div className="mb-5">
         <p className="text-sm font-medium">Företagskod</p>
         <div className="field-readonly">
-          <span className="break-all">{slug}</span>
+          <span className="break-all">{organization.slug}</span>
         </div>
         <p className="mt-2 text-xs leading-5 text-muted">
           Företagets unika identifierare kan inte ändras.
@@ -44,7 +43,8 @@ export function OrganizationSettingsSheet({
       </div>
       <OrganizationForm
         id="organization-settings-form"
-        name={name}
+        name={organization.name}
+        details={organization}
         hideSubmit
         onPendingChange={setPending}
       />

@@ -158,7 +158,22 @@ test("two tenants stay isolated; role and membership changes apply immediately",
   await assert.rejects(
     updateOrganization(contextA, { name: "Intrång", organizationId: orgB.id }),
   );
-  await updateOrganization(contextA, { name: "Nytt namn A" });
+  const documentDetails = {
+    organizationNumber: "556016-0680",
+    addressLine1: "Lagergatan 12",
+    addressLine2: "C/o Godsmottagningen",
+    postalCode: "123 45",
+    city: "Stockholm",
+    country: "Sverige",
+    contactEmail: "info@example.com",
+    phone: "08-123 45 67",
+    website: "https://example.com",
+  };
+  await updateOrganization(contextA, { name: "Nytt namn A", ...documentDetails });
+  const updatedOrganization = await getOrganization(contextA);
+  assert.equal(updatedOrganization.name, "Nytt namn A");
+  for (const [field, value] of Object.entries(documentDetails))
+    assert.equal(updatedOrganization[field as keyof typeof documentDetails], value);
   assert.equal(
     (
       await getOrganization(
@@ -167,6 +182,7 @@ test("two tenants stay isolated; role and membership changes apply immediately",
     ).name,
     "Företag B",
   );
+  assert.equal((await getOrganization(await tenantForSession(await resolveSession(tokenB)))).organizationNumber, "");
   // The same person may legitimately be a warehouse user in another organization.
   await Membership.create({
     userId: userA._id,
@@ -269,6 +285,11 @@ test("runtime validation rejects injected filters, unexpected tenant ids, unsafe
     }).success,
     false,
   );
+  for (const invalid of [
+    { organizationNumber: "123" },
+    { contactEmail: "inte-en-adress" },
+    { website: "example.com" },
+  ]) assert.equal(updateOrganizationSchema.safeParse({ name: "Name", ...invalid }).success, false);
   assert.equal(
     registerSchema.safeParse({
       name: "Anna",

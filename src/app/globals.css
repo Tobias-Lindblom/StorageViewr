@@ -1201,6 +1201,30 @@
 }
 .form-card { background: var(--surface-1); }
 .form-actions { border-color: var(--border-subtle); }
+.organization-details-section {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-subtle);
+}
+.organization-details-section > legend {
+  width: 100%;
+  margin-bottom: 4px;
+  font-size: 14px;
+  line-height: 1.4;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.organization-details-section > p {
+  margin-top: -10px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.55;
+}
+.organization-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 12px; }
+.organization-field-wide { grid-column: 1 / -1; }
+.organization-details-section label > span { color: var(--text-muted); font-size: 11px; font-weight: 400; }
 .field-readonly,
 .notice {
   min-height: var(--control-height);

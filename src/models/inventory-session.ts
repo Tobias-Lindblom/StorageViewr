@@ -1,10 +1,25 @@
 import {
   Schema,
+  deleteModel,
   model,
   models,
   type InferSchemaType,
   type Model,
 } from "mongoose";
+const organizationDetailsSchema = new Schema(
+  {
+    organizationNumber: String,
+    addressLine1: String,
+    addressLine2: String,
+    postalCode: String,
+    city: String,
+    country: String,
+    contactEmail: String,
+    phone: String,
+    website: String,
+  },
+  { _id: false },
+);
 const schema = new Schema(
   {
     organizationId: {
@@ -30,6 +45,7 @@ const schema = new Schema(
     completedAt: Date,
     completedBy: Schema.Types.ObjectId,
     organizationName: String,
+    organizationDetails: organizationDetailsSchema,
     startedByName: { type: String, immutable: true },
     completedByName: String,
     revision: { type: Number, required: true, default: 0 },
@@ -38,6 +54,9 @@ const schema = new Schema(
 );
 schema.index({ organizationId: 1, warehouseId: 1, status: 1 });
 type InventorySessionRecord = InferSchemaType<typeof schema>;
+const cachedInventorySession = models.InventorySession as Model<InventorySessionRecord> | undefined;
+if (cachedInventorySession && !cachedInventorySession.schema.path("organizationDetails"))
+  deleteModel("InventorySession");
 export const InventorySession: Model<InventorySessionRecord> =
   (models.InventorySession as Model<InventorySessionRecord> | undefined) ??
   model<InventorySessionRecord>("InventorySession", schema);

@@ -7,10 +7,11 @@ import { AppIcon } from "./app-icon";
 import { LogoutButton } from "./logout-button";
 import { AccountSettingsSheet } from "@/features/account/account-settings-sheet";
 import { OrganizationSettingsSheet } from "@/features/organizations/organization-settings-sheet";
+import type { OrganizationDocumentDetails } from "@/features/organizations/types";
 
 export function AccountMenu({ account, organization }: {
   account: { name: string; email: string };
-  organization?: { name: string; slug: string; role: "admin" | "warehouse" };
+  organization?: OrganizationDocumentDetails & { name: string; slug: string; role: "admin" | "warehouse" };
 }) {
   const [open, setOpen] = useState(false);
   const [activeSheet, setActiveSheet] = useState<"account" | "organization" | null>(null);
@@ -89,7 +90,7 @@ export function AccountMenu({ account, organization }: {
       </div>
     </div>
     {activeSheet === "organization" && organization?.role === "admin" &&
-      <OrganizationSettingsSheet name={organization.name} slug={organization.slug} onClose={closeSheet} />}
+      <OrganizationSettingsSheet organization={organization} onClose={closeSheet} />}
     {activeSheet === "account" && <AccountSettingsSheet account={account} onClose={closeSheet} />}
   </>;
 }

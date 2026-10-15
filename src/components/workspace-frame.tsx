@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { BrandLogo } from "./brand-logo";
 import { AccountMenu } from "./account-menu";
+import type { OrganizationDocumentDetails } from "@/features/organizations/types";
 
 export function WorkspaceFrame({ children, mobileDetail = false }: { children: ReactNode; mobileDetail?: boolean }) {
   return <div className={(mobileDetail ? " app-shell app-workspace mobile-detail " : " app-shell app-workspace ") +
@@ -12,7 +13,7 @@ export function WorkspaceFrame({ children, mobileDetail = false }: { children: R
 export function WorkspaceHeader({ href = "/dashboard", account, organization }: {
   href?: string;
   account: { name: string; email: string };
-  organization?: { name: string; slug: string; role: "admin" | "warehouse" };
+  organization?: OrganizationDocumentDetails & { name: string; slug: string; role: "admin" | "warehouse" };
 }) {
   return <header className="workspace-header print-hidden relative z-40 flex shrink-0 items-center justify-between gap-3 px-4 lg:px-0">
     <BrandLogo href={href} compact />

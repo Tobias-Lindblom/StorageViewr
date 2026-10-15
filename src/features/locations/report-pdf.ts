@@ -3,6 +3,7 @@ import PDFDocument from "pdfkit";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import type { LocationStockReport } from "./report-data";
+import { formatSek, formatUnitValue } from "@/lib/money";
 
 const colors = {
   ink: "#201B2E",
@@ -37,7 +38,7 @@ export function locationStockReportFilename(report: LocationStockReport) {
       .replace(/[^a-zA-Z0-9]+/g, "-")
       .replace(/^-|-$/g, "")
       .slice(0, 60) || "alla-lager";
-  return "lagerplatsrapport-" + scope.toLowerCase() + ".pdf";
+  return "lagervardesrapport-" + scope.toLowerCase() + ".pdf";
 }
 
 export async function renderLocationStockReport(
@@ -54,9 +55,9 @@ export async function renderLocationStockReport(
     bufferPages: true,
     autoFirstPage: false,
     info: {
-      Title: "Lagerplatsrapport – " + clean(report.scopeName),
+      Title: "Lagervärdesrapport – " + clean(report.scopeName),
       Author: "StorageViewr",
-      Subject: "Aktuella produktplaceringar och lagersaldon",
+      Subject: "Aktuella lagersaldon och lagervärden",
       Creator: "StorageViewr",
       CreationDate: exportedAt,
     },
@@ -71,7 +72,7 @@ export async function renderLocationStockReport(
     try {
       const left = 42;
       const width = 511.28;
-      const bottom = 778;
+      const bottom = 733;
       let y = 0;
       const measure = (value: string, w: number, size = 9, strong = false) =>
         doc
@@ -120,14 +121,9 @@ export async function renderLocationStockReport(
           .restore();
         text("StorageViewr.", left + 36, 35, 175, 16, true);
         if (firstPage) {
-          text(report.scopeName, left, 73, width, 24, true);
-          const selectedWarehouse =
-            report.scopeName !== "Alla lager" && report.warehouses.length === 1
-              ? report.warehouses[0]
-              : null;
+          text("Lagervärdesrapport", left, 73, width, 24, true);
           text(
             report.companyName +
-              (selectedWarehouse ? " · " + selectedWarehouse.code : "") +
               " · Exporterad " +
               date(exportedAt),
             left,
@@ -161,16 +157,25 @@ export async function renderLocationStockReport(
             .roundedRect(x, y, cardWidth, 52, 7)
             .fillAndStroke(colors.pale, colors.line);
           text(label, x + 12, y + 8, cardWidth - 24, 7.5, false, colors.muted);
-          text(value, x + 12, y + 23, cardWidth - 24, 15, true);
+          let valueSize = 15;
+          doc.font("bold");
+          while (valueSize > 9) {
+            doc.fontSize(valueSize);
+            if (doc.widthOfString(value) <= cardWidth - 24) break;
+            valueSize -= 0.5;
+          }
+          text(value, x + 12, y + 23, cardWidth - 24, valueSize, true);
         });
         y += 62;
       }
       function tableHeader() {
         doc.rect(left, y, width, 22).fill(colors.pale);
-        text("Lagerplats", left + 8, y + 6, 90, 7.5, true, colors.purple);
-        text("Produkt", left + 106, y + 6, 216, 7.5, true, colors.purple);
-        text("Artikelnummer", left + 330, y + 6, 100, 7.5, true, colors.purple);
-        text("Antal", left + 438, y + 6, 65, 7.5, true, colors.purple, "right");
+        text("Lagerplats", left + 8, y + 7, 62, 6.6, true, colors.purple);
+        text("Produkt", left + 78, y + 7, 128, 6.6, true, colors.purple);
+        text("Art.nr", left + 214, y + 7, 68, 6.6, true, colors.purple);
+        text("Antal", left + 290, y + 7, 43, 6.6, true, colors.purple, "right");
+        text("Styckvärde", left + 341, y + 7, 75, 6.6, true, colors.purple, "right");
+        text("Totalt värde", left + 424, y + 7, 79, 6.6, true, colors.purple, "right");
         y += 22;
       }
       function warehouseHeader(
@@ -181,8 +186,7 @@ export async function renderLocationStockReport(
           line(y);
           y += 11;
         }
-        const suffix = continued ? " · fortsättning" : "";
-        y += text(warehouse.name + suffix, left, y, width, 12, true) + 3;
+        y += text(warehouse.name, left, y, width, 12, true) + 3;
         if (!continued) {
           const details =
             warehouse.code +
@@ -207,14 +211,17 @@ export async function renderLocationStockReport(
       metricCards([
         ["Lagerplatser", amount(report.summary.locations)],
         ["Unika produkter", amount(report.summary.uniqueProducts)],
-        ["Produktplaceringar", amount(report.summary.placements)],
+        [
+          "Totalt lagervärde",
+          formatSek(BigInt(report.summary.inventoryValueUnits)),
+        ],
       ]);
       y +=
         text(
           "Omfattning: " +
             quantityLabel(report.summary.warehouses, "lager", "lager") +
             "  –  " +
-            quantityLabel(report.summary.placements, "produktplacering", "produktplaceringar") +
+            quantityLabel(report.summary.locations, "lagerplats", "lagerplatser") +
             "  –  " +
             quantityLabel(report.summary.emptyLocations, "tom lagerplats", "tomma lagerplatser"),
           left,
@@ -223,6 +230,25 @@ export async function renderLocationStockReport(
           8.5,
           false,
           colors.muted,
+        ) + 5;
+      const productsWithoutValue = report.summary.productsWithoutValue;
+      y +=
+        text(
+          productsWithoutValue === 0
+            ? "Värdering: Alla produkter har ett registrerat styckvärde."
+            : "Värdering: " +
+                quantityLabel(
+                  productsWithoutValue,
+                  "produkt saknar styckvärde",
+                  "produkter saknar styckvärde",
+                ) +
+                " och ingår inte i totalen.",
+          left,
+          y,
+          width,
+          8,
+          false,
+          productsWithoutValue === 0 ? colors.green : colors.purple,
         ) + 16;
 
       if (!report.warehouses.length) {
@@ -239,12 +265,9 @@ export async function renderLocationStockReport(
         y += 56;
       }
 
-      const selectedWarehouseReport =
-        report.scopeName !== "Alla lager" && report.warehouses.length === 1;
       for (const warehouse of report.warehouses) {
-        ensure(selectedWarehouseReport ? 46 : 70);
-        if (selectedWarehouseReport) tableHeader();
-        else warehouseHeader(warehouse);
+        ensure(70);
+        warehouseHeader(warehouse);
         let rowIndex = 0;
         for (const location of warehouse.locations) {
           const rows = location.rows.length ? location.rows : [null];
@@ -254,17 +277,25 @@ export async function renderLocationStockReport(
             const productLabel = row
               ? row.name + (row.active ? "" : " · Inaktiv produkt")
               : "Tom lagerplats";
+            const unitValueLabel = row?.unitValue
+              ? formatUnitValue(row.unitValue)
+              : "Ej angivet";
+            const totalValueLabel = row?.totalValueUnits
+              ? formatSek(BigInt(row.totalValueUnits))
+              : "–";
             const height =
               Math.max(
                 24,
-                measure(locationLabel, 90, 8.5, true) + 12,
-                measure(productLabel, 216, 8.5, Boolean(row)) + 12,
-                row ? measure(row.sku, 100, 8.5, true) + 12 : 24,
+                measure(locationLabel, 62, 7.5, true) + 12,
+                measure(productLabel, 128, 7.5, Boolean(row)) + 12,
+                row ? measure(row.sku, 68, 7.2, true) + 12 : 24,
+                row ? measure(amount(row.quantity) + " st", 43, 7.2, true) + 12 : 24,
+                row ? measure(unitValueLabel, 75, 7, Boolean(row.unitValue)) + 12 : 24,
+                row ? measure(totalValueLabel, 79, 7, Boolean(row.totalValueUnits)) + 12 : 24,
               );
             if (y + height > bottom) {
               newPage();
-              if (selectedWarehouseReport) tableHeader();
-              else warehouseHeader(warehouse, true);
+              warehouseHeader(warehouse, true);
             }
             if (rowIndex % 2 === 1)
               doc.rect(left, y, width, height).fill(colors.soft);
@@ -272,38 +303,58 @@ export async function renderLocationStockReport(
               locationLabel,
               left + 8,
               y + 7,
-              90,
-              8.5,
+              62,
+              7.5,
               true,
               location.active ? colors.ink : colors.muted,
             );
             text(
               productLabel,
-              left + 106,
+              left + 78,
               y + 7,
-              216,
-              8.5,
+              128,
+              7.5,
               Boolean(row),
               row ? colors.ink : colors.green,
             );
             if (row)
               text(
                 row.sku,
-                left + 330,
+                left + 214,
                 y + 7,
-                100,
-                8.5,
+                68,
+                7.2,
                 true,
                 colors.ink,
               );
             text(
               row ? amount(row.quantity) + " st" : "–",
-              left + 438,
+              left + 290,
               y + 7,
-              65,
-              8.5,
+              43,
+              7.2,
               Boolean(row),
               row ? colors.ink : colors.muted,
+              "right",
+            );
+            text(
+              row ? unitValueLabel : "–",
+              left + 341,
+              y + 7,
+              75,
+              7,
+              Boolean(row?.unitValue),
+              row?.unitValue ? colors.ink : colors.muted,
+              "right",
+            );
+            text(
+              row ? totalValueLabel : "–",
+              left + 424,
+              y + 7,
+              79,
+              7,
+              Boolean(row?.totalValueUnits),
+              row?.totalValueUnits ? colors.ink : colors.muted,
               "right",
             );
             y += height;
@@ -315,35 +366,84 @@ export async function renderLocationStockReport(
       }
 
       const range = doc.bufferedPageRange();
+      const details = report.companyDetails;
+      const footerRows = [
+        report.companyName,
+        details.organizationNumber
+          ? "Org.nr " + details.organizationNumber
+          : "",
+        details.addressLine1,
+        details.addressLine2,
+        [details.postalCode, details.city].filter(Boolean).join(" "),
+        details.country,
+        details.contactEmail,
+        details.phone,
+        details.website,
+      ].filter(Boolean);
+      function singleLine(
+        value: string,
+        maxWidth: number,
+        size: number,
+        strong = false,
+      ) {
+        const normalized = clean(value);
+        doc.font(strong ? "bold" : "regular").fontSize(size);
+        if (doc.widthOfString(normalized) <= maxWidth) return normalized;
+        const ellipsis = "…";
+        let low = 0;
+        let high = normalized.length;
+        while (low < high) {
+          const middle = Math.ceil((low + high) / 2);
+          if (doc.widthOfString(normalized.slice(0, middle) + ellipsis) <= maxWidth)
+            low = middle;
+          else high = middle - 1;
+        }
+        return normalized.slice(0, low).trimEnd() + ellipsis;
+      }
       for (let page = range.start; page < range.start + range.count; page++) {
         doc.switchToPage(page);
         const originalBottom = doc.page.margins.bottom;
         doc.page.margins.bottom = 0;
-        line(793);
-        text(
-          "StorageViewr · Lagerplatsrapport",
-          left,
-          803,
-          310,
-          7,
-          false,
-          colors.muted,
-        );
-        text(
-          "Exporterad " + date(exportedAt),
-          left,
-          816,
-          310,
-          7,
-          false,
-          colors.muted,
-        );
+        line(748);
+        footerRows.forEach((row, index) => {
+          const strong = index === 0;
+          const size = strong ? 7.2 : 6.8;
+          text(
+            singleLine(row, 350, size, strong),
+            left,
+            756 + index * 9,
+            350,
+            size,
+            strong,
+            colors.muted,
+          );
+        });
         text(
           "Sida " + (page + 1) + " av " + range.count,
           left + width - 105,
-          809,
+          756,
           105,
           8,
+          false,
+          colors.muted,
+          "right",
+        );
+        text(
+          "Lagervärdesrapport",
+          left + width - 125,
+          770,
+          125,
+          6.8,
+          false,
+          colors.muted,
+          "right",
+        );
+        text(
+          "Exporterad " + date(exportedAt),
+          left + width - 125,
+          782,
+          125,
+          6.8,
           false,
           colors.muted,
           "right",

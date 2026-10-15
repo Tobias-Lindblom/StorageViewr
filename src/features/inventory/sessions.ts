@@ -13,6 +13,7 @@ import { Location } from "@/models/location";
 import { Product } from "@/models/product";
 import { User } from "@/models/user";
 import { Organization } from "@/models/organization";
+import { organizationDocumentDetails } from "@/features/organizations/document-profile";
 import { objectIdSchema } from "@/validation/organization";
 import {
   startInventorySchema,
@@ -421,7 +422,7 @@ export async function finishInventory(
       );
     }
     const organization = await Organization.findById(context.organizationId)
-      .select("name")
+      .select("name organizationNumber addressLine1 addressLine2 postalCode city country contactEmail phone website")
       .session(session)
       .lean();
     await InventorySession.updateOne(
@@ -433,6 +434,9 @@ export async function finishInventory(
           completedBy: context.userId,
           completedByName: actor?.name ?? "Ej sparat",
           organizationName: organization?.name,
+          organizationDetails: organization
+            ? organizationDocumentDetails(organization)
+            : undefined,
         },
       },
       { session },

@@ -26,7 +26,7 @@ export function DownloadLocationReport({
         const result = await response.json().catch(() => null);
         throw new Error(
           result?.error?.message ??
-            "Lagerplatsrapporten kunde inte hämtas. Försök igen.",
+            "Lagervärdesrapporten kunde inte hämtas. Försök igen.",
         );
       }
       if (!response.headers.get("Content-Type")?.startsWith("application/pdf"))
@@ -38,7 +38,7 @@ export function DownloadLocationReport({
       anchor.download =
         /filename="([^"]+)"/.exec(
           response.headers.get("Content-Disposition") ?? "",
-        )?.[1] ?? "lagerplatsrapport.pdf";
+        )?.[1] ?? "lagervardesrapport.pdf";
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();
@@ -47,7 +47,7 @@ export function DownloadLocationReport({
       setError(
         error instanceof Error
           ? error.message
-          : "Lagerplatsrapporten kunde inte hämtas.",
+          : "Lagervärdesrapporten kunde inte hämtas.",
       );
     } finally {
       setBusy(false);

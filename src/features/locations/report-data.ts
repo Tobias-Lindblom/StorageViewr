@@ -7,6 +7,8 @@ import { Organization } from "@/models/organization";
 import { Product } from "@/models/product";
 import { Warehouse } from "@/models/warehouse";
 import { objectIdSchema } from "@/validation/organization";
+import { organizationDocumentDetails } from "@/features/organizations/document-profile";
+import { legacyOreToSek, sekToUnits } from "@/lib/money";
 
 export async function getLocationStockReport(
   context: TenantContext,
@@ -17,7 +19,9 @@ export async function getLocationStockReport(
     : undefined;
   const visible = context.role === "admin" ? {} : { active: true };
   const [organization, warehouses] = await Promise.all([
-    Organization.findOne({ _id: context.organizationId }).select("name").lean(),
+    Organization.findOne({ _id: context.organizationId }).select(
+      "name organizationNumber addressLine1 addressLine2 postalCode city country contactEmail phone website",
+    ).lean(),
     Warehouse.find({
       organizationId: context.organizationId,
       ...(selectedWarehouseId ? { _id: selectedWarehouseId } : {}),
@@ -56,7 +60,7 @@ export async function getLocationStockReport(
         _id: { $in: levels.map((level) => level.productId) },
         ...visible,
       })
-        .select("name sku active")
+        .select("name sku active unitValue unitValueOre")
         .lean()
     : [];
   const productMap = new Map(
@@ -72,6 +76,8 @@ export async function getLocationStockReport(
       name: string;
       sku: string;
       quantity: number;
+      unitValue: string | null;
+      totalValueUnits: string | null;
       active: boolean;
     }>
   >();
@@ -84,6 +90,10 @@ export async function getLocationStockReport(
       String(level.warehouseId) !== String(location.warehouseId)
     )
       continue;
+    const unitValue =
+      product.unitValue !== undefined
+        ? product.unitValue
+        : legacyOreToSek(product.unitValueOre ?? null);
     const key = String(location._id);
     const rows = rowsByLocation.get(key) ?? [];
     rows.push({
@@ -91,6 +101,11 @@ export async function getLocationStockReport(
       name: product.name,
       sku: product.sku,
       quantity: level.quantity,
+      unitValue,
+      totalValueUnits:
+        unitValue === null
+          ? null
+          : (BigInt(level.quantity) * sekToUnits(unitValue)).toString(),
       active: product.active,
     });
     rowsByLocation.set(key, rows);
@@ -129,8 +144,22 @@ export async function getLocationStockReport(
     (warehouse) => warehouse.locations,
   );
   const productRows = locationRows.flatMap((location) => location.rows);
+  const productsWithoutValue = new Set(
+    productRows
+      .filter((row) => row.unitValue === null)
+      .map((row) => row.productId),
+  ).size;
+  const inventoryValueUnits = productRows
+    .reduce(
+      (total, row) =>
+        total +
+        (row.totalValueUnits === null ? BigInt(0) : BigInt(row.totalValueUnits)),
+      BigInt(0),
+    )
+    .toString();
   return {
     companyName: organization.name,
+    companyDetails: organizationDocumentDetails(organization),
     scopeName: selectedWarehouseId
       ? (warehouses[0]?.name ?? "Valt lager")
       : "Alla lager",
@@ -141,7 +170,8 @@ export async function getLocationStockReport(
       emptyLocations: locationRows.filter((location) => !location.rows.length)
         .length,
       uniqueProducts: new Set(productRows.map((row) => row.productId)).size,
-      placements: productRows.length,
+      productsWithoutValue,
+      inventoryValueUnits,
     },
   };
 }

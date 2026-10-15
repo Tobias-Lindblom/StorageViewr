@@ -17,7 +17,7 @@ export default async function OrganizationPage() {
       <section className="panel max-w-2xl">
         <h2>Företagsuppgifter</h2>
         {context.role === "admin" ? (
-          <OrganizationForm name={organization.name} />
+          <OrganizationForm name={organization.name} details={organization} />
         ) : (
           <p className="text-muted">
             En administratör kan ändra företagets uppgifter.

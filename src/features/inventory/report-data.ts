@@ -7,6 +7,7 @@ import { InventorySessionLocation } from "@/models/inventory-session-location";
 import { InventoryCount } from "@/models/inventory-count";
 import { Organization } from "@/models/organization";
 import { Warehouse } from "@/models/warehouse";
+import { organizationDocumentDetails } from "@/features/organizations/document-profile";
 
 export async function getInventoryReport(context: TenantContext, id: string) {
   const inventory = await InventorySession.findOne({
@@ -31,7 +32,9 @@ export async function getInventoryReport(context: TenantContext, id: string) {
     inventorySessionId: inventory._id,
   };
   const [organization, warehouse, scopes, counts] = await Promise.all([
-    Organization.findOne({ _id: context.organizationId }).select("name").lean(),
+    Organization.findOne({ _id: context.organizationId }).select(
+      "name organizationNumber addressLine1 addressLine2 postalCode city country contactEmail phone website",
+    ).lean(),
     Warehouse.exists({
       _id: inventory.warehouseId,
       organizationId: context.organizationId,
@@ -97,6 +100,9 @@ export async function getInventoryReport(context: TenantContext, id: string) {
     id: String(inventory._id),
     name: inventory.name,
     companyName: inventory.organizationName ?? organization.name,
+    companyDetails: organizationDocumentDetails(
+      inventory.organizationDetails ?? organization,
+    ),
     currentCompanyName: !inventory.organizationName,
     warehouseName: inventory.warehouseName,
     startedAt: inventory.startedAt.toISOString(),

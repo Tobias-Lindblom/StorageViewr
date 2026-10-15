@@ -17,7 +17,7 @@ export async function AppShell({ context, children, mobileDetail = false, accoun
     getOrganization(context),
     suppliedAccount ? Promise.resolve(suppliedAccount) : getAccount(context),
   ]);
-  const company = { name: organization.name, slug: organization.slug, role: context.role };
+  const company = { ...organization, role: context.role };
   return (
     <WorkspaceFrame mobileDetail={mobileDetail}>
       <WorkspaceHeader account={account} organization={company} />

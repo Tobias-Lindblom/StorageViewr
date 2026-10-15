@@ -43,9 +43,23 @@ after(async () => { await (await connectDb()).disconnect(); await replica?.stop(
 const status = (code: number) => (error: unknown) => error instanceof AppError && error.status === code;
 async function fixture(quantity = 10) {
   const context: TenantContext = { organizationId: new Types.ObjectId(), userId: new Types.ObjectId(), role: "admin" };
-  await Organization.create({ _id: context.organizationId, name: "Åström Lager AB", slug: String(context.organizationId) });
+  await Organization.create({
+    _id: context.organizationId,
+    name: "Åström Lager AB",
+    slug: String(context.organizationId),
+    organizationNumber: "556016-0680",
+    addressLine1: "Lagergatan 12",
+    postalCode: "123 45",
+    city: "Stockholm",
+    country: "Sverige",
+    contactEmail: "info@astrom.example",
+  });
   await User.create({ _id: context.userId, name: "Tobias Åström", email: context.userId + "@example.test", passwordHash: "unused" });
-  const product = await createProduct(context, { name: "Arbetshandske – förstärkt", sku: "HANDSKE-01" });
+  const product = await createProduct(context, {
+    name: "Arbetshandske – förstärkt",
+    sku: "HANDSKE-01",
+    unitValue: "0.8451",
+  });
   const warehouse = await createWarehouse(context, { name: "Huvudlager Borås", code: "MAIN" });
   const location = await createLocation(context, { warehouseId: warehouse.id, zone: "A", shelf: "01", position: "01" });
   const empty = await createLocation(context, { warehouseId: warehouse.id, zone: "A", shelf: "01", position: "02" });
@@ -68,6 +82,8 @@ test("reports require completion and tenant ownership and use immutable counting
   await f.complete();
   const original = await getInventoryReport(f.context, f.inventory.id);
   assert.equal(original.companyName, "Åström Lager AB");
+  assert.equal(original.companyDetails.organizationNumber, "556016-0680");
+  assert.equal(original.companyDetails.city, "Stockholm");
   assert.equal(original.startedBy, "Tobias Åström"); assert.equal(original.completedBy, "Tobias Åström");
   assert.equal(original.summary.discrepancies, 1); assert.equal(original.summary.emptyPlaces, 1);
   assert.equal(original.summary.expected, "10"); assert.equal(original.summary.counted, "8");
@@ -76,7 +92,11 @@ test("reports require completion and tenant ownership and use immutable counting
   await Product.updateOne({ _id: f.product.id }, { $set: { name: "Nytt produktnamn", active: false } });
   await Location.updateOne({ _id: f.location.id }, { $set: { code: "B-01-01", active: false } });
   await Warehouse.updateOne({ _id: f.warehouse.id }, { $set: { name: "Nytt lager", active: false } });
-  await Organization.updateOne({ _id: f.context.organizationId }, { $set: { name: "Nytt företagsnamn" } });
+  await Organization.updateOne({ _id: f.context.organizationId }, { $set: {
+    name: "Nytt företagsnamn",
+    organizationNumber: "556677-8899",
+    addressLine1: "Ny adress 99",
+  } });
   await User.updateOne({ _id: f.context.userId }, { $set: { name: "Nytt användarnamn" } });
   assert.deepEqual(await getInventoryReport(f.context, f.inventory.id), original);
   assert.deepEqual(await getInventoryReport({ ...f.context, role: "warehouse" }, f.inventory.id), original);
@@ -108,16 +128,23 @@ test("location stock reports include zero-balance placements, empty places and c
 
   const report = await getLocationStockReport(f.context, f.warehouse.id);
   assert.equal(report.companyName, "Åström Lager AB");
+  assert.equal(report.companyDetails.addressLine1, "Lagergatan 12");
+  assert.equal(report.companyDetails.contactEmail, "info@astrom.example");
   assert.equal(report.scopeName, "Huvudlager Borås");
   assert.deepEqual(report.summary, {
     warehouses: 1,
     locations: 3,
     emptyLocations: 1,
     uniqueProducts: 2,
-    placements: 2,
+    productsWithoutValue: 1,
+    inventoryValueUnits: "84510",
   });
   assert.equal(report.warehouses[0].locations[0].rows[0].quantity, 10);
+  assert.equal(report.warehouses[0].locations[0].rows[0].unitValue, "0.8451");
+  assert.equal(report.warehouses[0].locations[0].rows[0].totalValueUnits, "84510");
   assert.equal(report.warehouses[0].locations[1].rows[0].quantity, 0);
+  assert.equal(report.warehouses[0].locations[1].rows[0].unitValue, null);
+  assert.equal(report.warehouses[0].locations[1].rows[0].totalValueUnits, null);
   assert.equal(report.warehouses[0].locations[2].id, vacant.id);
   assert.equal(report.warehouses[0].locations[2].rows.length, 0);
 
@@ -154,7 +181,7 @@ test("location stock reports include zero-balance placements, empty places and c
   assert.ok(pageCount <= 2);
   assert.match(
     locationStockReportFilename({ ...report, scopeName: 'Å-lager / "test"\r\nHeader' }),
-    /^lagerplatsrapport-[a-z0-9-]+\.pdf$/,
+    /^lagervardesrapport-[a-z0-9-]+\.pdf$/,
   );
   await writeFile(path.join(folder, "location-stock.pdf"), bytes);
   await writeFile(
@@ -182,7 +209,9 @@ test("reports retain unchanged rows, empty places and exact totals beyond safe i
 
 test("legacy sessions remain downloadable without inventing missing historical names", async () => {
   const f = await fixture(); await f.complete(10);
-  await InventorySession.collection.updateOne({ _id: new Types.ObjectId(f.inventory.id) }, { $unset: { organizationName: "", startedByName: "", completedByName: "" } });
+  await InventorySession.collection.updateOne({ _id: new Types.ObjectId(f.inventory.id) }, { $unset: {
+    organizationName: "", organizationDetails: "", startedByName: "", completedByName: "",
+  } });
   const report = await getInventoryReport(f.context, f.inventory.id);
   assert.equal(report.companyName, "Åström Lager AB"); assert.equal(report.currentCompanyName, true);
   assert.equal(report.startedBy, "Ej sparat"); assert.equal(report.completedBy, "Ej sparat");

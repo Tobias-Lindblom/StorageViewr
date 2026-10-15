@@ -11,6 +11,7 @@ import {
   selectOrganizationSchema,
   updateOrganizationSchema,
 } from "@/validation/organization";
+import { organizationDocumentDetails } from "./document-profile";
 
 type AuthSession = Awaited<ReturnType<typeof resolveSession>>;
 export async function listOrganizations(session: AuthSession) {
@@ -22,6 +23,7 @@ export async function listOrganizations(session: AuthSession) {
     id: o._id.toString(),
     name: o.name,
     slug: o.slug,
+    ...organizationDocumentDetails(o),
     role: memberships.find((m) => m.organizationId.equals(o._id))!.role,
   }));
 }
@@ -94,6 +96,7 @@ export async function getOrganization(context: TenantContext) {
     id: organization._id.toString(),
     name: organization.name,
     slug: organization.slug,
+    ...organizationDocumentDetails(organization),
     role: context.role,
   };
 }
@@ -114,5 +117,11 @@ export async function updateOrganization(
       "ORGANIZATION_NOT_FOUND",
       "Företaget kunde inte hittas.",
     );
-  return { id: organization._id.toString(), name: organization.name };
+  return {
+    id: organization._id.toString(),
+    name: organization.name,
+    slug: organization.slug,
+    role: context.role,
+    ...organizationDocumentDetails(organization),
+  };
 }
