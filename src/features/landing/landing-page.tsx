@@ -8,16 +8,39 @@ import { registrationEnabled } from "@/features/auth/registration";
 import styles from "./landing-page.module.css";
 
 export const landingMetadata: Metadata = {
-  title: "StorageViewr – se hur lagret faktiskt mår",
+  title: "StorageViewr – lagerkontroll och inventering med QR",
   description:
-    "Få kontroll över lagersaldon, verifieringsgrad, avvikelser och lagervärde. Skanna QR-koder, inventera och skapa tydliga lagerrapporter.",
+    "Se vad du har, var det finns och när lagersaldot senast verifierades. Inventera med QR, följ lagerhändelser och skapa färdiga rapporter.",
 };
 
 const overviewFacts = [
-  "Aktuell lagerhälsa",
-  "QR-baserat arbetsflöde",
-  "Byggt för mobilen",
+  "Kom igång på några minuter",
+  "Ingen installation",
+  "Mobil och dator",
 ];
+
+const audienceTypes = [
+  "E-handel",
+  "Grossist",
+  "Verkstad",
+  "Reservdelar",
+  "Produktion",
+  "Förråd",
+];
+
+const onboardingSteps = [
+  "Skapa lager",
+  "Importera produkter",
+  "Skapa lagerplatser",
+  "Skriv QR-etiketter",
+  "Börja inventera",
+];
+
+const healthSignals = [
+  { label: "Nyligen verifierat", icon: "verified" },
+  { label: "Öppna avvikelser", icon: "alert" },
+  { label: "Behöver verifieras", icon: "history" },
+] as const;
 
 const supportingFeatures = [
   {
@@ -48,8 +71,10 @@ const supportingFeatures = [
 
 export default function LandingPage() {
   const registrationAvailable = registrationEnabled();
-  const primaryHref = registrationAvailable ? "/register" : "/login";
-  const primaryLabel = registrationAvailable ? "Skapa konto" : "Öppna appen";
+  const primaryHref = "/register";
+  const primaryLabel = registrationAvailable
+    ? "Prova StorageViewr"
+    : "Starta pilot";
 
   return (
     <main id="toppen" className={`viewport-page ${styles.page}`}>
@@ -65,12 +90,23 @@ export default function LandingPage() {
               <a href="#inventering">Inventering</a>
               <a href="#rapporter">Rapporter</a>
             </div>
-            <Link
-              className={`${styles.loginButton} button-secondary`}
-              href="/login"
-            >
-              Logga in
-            </Link>
+            <div className={styles.headerActions}>
+              <Link
+                className={`${styles.loginButton} button-secondary`}
+                href="/login"
+              >
+                Logga in
+              </Link>
+              <Link
+                className={`${styles.headerPrimary} button`}
+                href={primaryHref}
+              >
+                <span className={styles.headerPrimaryFull}>{primaryLabel}</span>
+                <span className={styles.headerPrimaryShort}>
+                  {registrationAvailable ? "Prova" : "Pilot"}
+                </span>
+              </Link>
+            </div>
           </nav>
         </div>
       </header>
@@ -103,10 +139,10 @@ export default function LandingPage() {
                 <MaterialArrow name="forward" />
               </Link>
               <a
-                href="#qr-skanner"
+                href="#kom-igang"
                 className={`${styles.secondaryAction} button-secondary`}
               >
-                Se funktionerna
+                Se hur det fungerar
                 <MaterialArrow name="down" />
               </a>
             </div>
@@ -132,6 +168,48 @@ export default function LandingPage() {
               sizes="(max-width: 900px) 86vw, 48vw"
               priority
             />
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="lagerhalsa"
+        aria-labelledby="health-title"
+        className={styles.healthSection}
+      >
+        <div className={styles.healthInner}>
+          <div className={styles.healthPanel}>
+            <div className={styles.healthCopy}>
+              <h2 id="health-title">
+                Vet vilka saldon du faktiskt kan lita på.
+              </h2>
+              <div
+                className={styles.healthScore}
+                aria-label="Exempel på lagerhälsa: 92 procent"
+              >
+                <strong>92%</strong>
+                <span>Lagerhälsa</span>
+              </div>
+            </div>
+            <div className={styles.healthExplanation}>
+              <p className={styles.healthBody}>
+                Lagerhälsa väger samman hur nyligen saldon verifierats, om det
+                finns öppna avvikelser och vilka delar av lagret som behöver
+                kontrolleras igen.
+              </p>
+              <p className={styles.healthStatement}>
+                Du ser direkt hur tillförlitligt lagret är — och var nästa
+                kontroll gör störst skillnad.
+              </p>
+              <ul aria-label="Det här påverkar lagerhälsan">
+                {healthSignals.map((signal) => (
+                  <li key={signal.label}>
+                    <AppIcon name={signal.icon} width={18} height={18} />
+                    {signal.label}
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </div>
       </section>
@@ -322,18 +400,45 @@ export default function LandingPage() {
       </section>
 
       <section
+        aria-labelledby="audience-title"
+        className={styles.audienceSection}
+      >
+        <div className={styles.audienceInner}>
+          <header className={styles.audienceHeader}>
+            <h2 id="audience-title">
+              Byggt för verksamheter med ett fysiskt lager.
+            </h2>
+          </header>
+          <div className={styles.audienceDetails}>
+            <p className={styles.audienceLead}>
+              För företag som behöver veta vad som finns, var det finns och om
+              saldot stämmer — utan att införa ett tungt WMS.
+            </p>
+            <p className={styles.audiencePrompt}>Passar särskilt bra för:</p>
+            <ul
+              className={styles.audienceTypes}
+              aria-label="Passar bland annat"
+            >
+              {audienceTypes.map((audience) => (
+                <li key={audience}>{audience}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section
         aria-labelledby="supporting-features-title"
         className={styles.supportingSection}
       >
         <div className={styles.supportingInner}>
           <header className={styles.supportingHeader}>
             <h2 id="supporting-features-title">
-              Allt runt omkring, redan på plats.
+              Det viktigaste finns redan på plats.
             </h2>
             <p>
-              StorageViewr ger både administratörer och lagerpersonal ett enkelt
-              sätt att komma igång, arbeta mobilt och hålla strukturen tydlig
-              när verksamheten växer.
+              Mobil åtkomst, tydliga roller, snabb produktimport och stöd för
+              flera lager — utan ett tungt implementationsprojekt.
             </p>
           </header>
 
@@ -351,15 +456,39 @@ export default function LandingPage() {
         </div>
       </section>
 
+      <section
+        id="kom-igang"
+        aria-labelledby="onboarding-title"
+        className={styles.onboardingSection}
+      >
+        <header className={styles.onboardingHeader}>
+          <h2 id="onboarding-title">
+            Kom igång utan ett implementationsprojekt.
+          </h2>
+          <p>Sätt upp grunden och börja arbeta i lagret samma dag.</p>
+        </header>
+        <ol className={styles.onboardingSteps}>
+          {onboardingSteps.map((step, index) => (
+            <li key={step}>
+              <span aria-hidden="true">
+                {String(index + 1).padStart(2, "0")}
+              </span>
+              <strong>{step}</strong>
+            </li>
+          ))}
+        </ol>
+      </section>
+
       <section aria-labelledby="cta-title" className={styles.ctaSection}>
         <div className={styles.ctaPanel}>
-          <div>
-            <p className={styles.sectionNumber}>
-              Ett tydligare lager börjar här
-            </p>
+          <div className={styles.ctaCopy}>
             <h2 id="cta-title">
-              Få kontroll utan att göra arbetet krångligare.
+              Vet vad du har. Vet var det finns. Vet att saldot stämmer.
             </h2>
+            <p>
+              Skapa ditt första lager, importera produkter och börja inventera
+              samma dag.
+            </p>
           </div>
           <Link href={primaryHref} className={`${styles.primaryAction} button`}>
             {primaryLabel}
@@ -398,12 +527,10 @@ export default function LandingPage() {
               <div className={styles.footerLinkGroup}>
                 <h2>Konto</h2>
                 <Link href="/login">Logga in</Link>
-                {registrationAvailable && (
-                  <Link className={styles.footerAccentLink} href="/register">
-                    Skapa konto
-                    <MaterialArrow name="forward" size={16} />
-                  </Link>
-                )}
+                <Link className={styles.footerAccentLink} href={primaryHref}>
+                  {primaryLabel}
+                  <MaterialArrow name="forward" size={16} />
+                </Link>
               </div>
             </nav>
           </div>
