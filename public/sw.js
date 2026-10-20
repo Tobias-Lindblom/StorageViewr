@@ -1,10 +1,10 @@
-const CACHE_NAME = "storageviewr-shell-v1";
+const CACHE_NAME = "storageviewr-shell-v2";
 const OFFLINE_URL = "/offline.html";
 const PRECACHE = [
   OFFLINE_URL,
-  "/icons/icon-192.png",
-  "/icons/icon-512.png",
-  "/icons/apple-touch-icon.png",
+  "/icons/icon-192.png?v=2",
+  "/icons/icon-512.png?v=2",
+  "/icons/apple-touch-icon.png?v=2",
 ];
 
 self.addEventListener("install", (event) => {
