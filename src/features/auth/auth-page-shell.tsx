@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
 import { BrandLogo } from "@/components/brand-logo";
-import { PageHeading } from "@/components/page-heading";
+import styles from "./auth-page.module.css";
 
 export function AuthPageShell({
   title,
@@ -12,14 +13,29 @@ export function AuthPageShell({
   children: ReactNode;
 }) {
   return (
-    <div className="app-shell auth-shell mx-auto w-full max-w-5xl px-4 sm:px-8">
-      <header className="auth-header flex min-h-20 shrink-0 items-center sm:min-h-22">
-        <BrandLogo compact />
+    <div className={`viewport-page ${styles.page}`}>
+      <header className={styles.header}>
+        <div className={styles.headerInner}>
+          <BrandLogo />
+          <nav aria-label="Inloggningsnavigation" className={styles.headerActions}>
+            <Link href="/" className={styles.backLink}>
+              <span className={styles.backLinkLong}>Tillbaka till startsidan</span>
+              <span className={styles.backLinkShort}>Startsidan</span>
+            </Link>
+            <Link href="/pilot" className={`button ${styles.pilotLink}`}>
+              <span className={styles.pilotLinkLong}>Starta pilot</span>
+              <span className={styles.pilotLinkShort}>Pilot</span>
+            </Link>
+          </nav>
+        </div>
       </header>
-      <main id="main-content" className="app-content">
-        <section className="auth-content mx-auto w-full max-w-md">
-          <PageHeading title={title} description={description} />
-          <div className="panel">{children}</div>
+      <main id="main-content" className={styles.main}>
+        <section className={styles.card} aria-labelledby="auth-page-title">
+          <header className={styles.heading}>
+            <h1 id="auth-page-title">{title}</h1>
+            <p>{description}</p>
+          </header>
+          <div>{children}</div>
         </section>
       </main>
     </div>

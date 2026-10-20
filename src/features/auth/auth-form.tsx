@@ -3,19 +3,19 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { clientApi } from "@/lib/client-api";
+import styles from "./auth-page.module.css";
 
 export function AuthForm({
   mode,
   returnTo,
-  registrationAvailable = true,
 }: {
   mode: "login" | "register";
   returnTo?: string;
-  registrationAvailable?: boolean;
 }) {
   const router = useRouter();
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
+  const [passwordVisible, setPasswordVisible] = useState(false);
   const registration = mode === "register";
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -40,9 +40,9 @@ export function AuthForm({
     }
   }
   return (
-    <form onSubmit={submit} className="space-y-5">
+    <form onSubmit={submit} className={styles.form} aria-busy={pending}>
       {registration && (
-        <label>
+        <label className={styles.field}>
           Ditt namn
           <input
             name="name"
@@ -55,7 +55,7 @@ export function AuthForm({
           />
         </label>
       )}
-      <label>
+      <label className={styles.field}>
         E-postadress
         <input
           name="email"
@@ -68,29 +68,42 @@ export function AuthForm({
           disabled={pending}
         />
       </label>
-      <label>
-        Lösenord
-        <input
-          name="password"
-          type="password"
-          autoComplete={registration ? "new-password" : "current-password"}
-          required
-          minLength={registration ? 12 : 1}
-          maxLength={128}
-          disabled={pending}
-        />
+      <div className={styles.field}>
+        <label htmlFor="auth-password">Lösenord</label>
+        <span className={styles.passwordField}>
+          <input
+            id="auth-password"
+            name="password"
+            type={passwordVisible ? "text" : "password"}
+            autoComplete={registration ? "new-password" : "current-password"}
+            required
+            minLength={registration ? 12 : 1}
+            maxLength={128}
+            disabled={pending}
+          />
+          <button
+            type="button"
+            className={styles.passwordToggle}
+            aria-label={passwordVisible ? "Dölj lösenordet" : "Visa lösenordet"}
+            aria-pressed={passwordVisible}
+            disabled={pending}
+            onClick={() => setPasswordVisible((visible) => !visible)}
+          >
+            {passwordVisible ? "Dölj" : "Visa"}
+          </button>
+        </span>
         {registration && (
-          <span className="mt-2 block text-xs leading-5 font-normal text-muted">
+          <span className={styles.hint}>
             Använd minst 12 tecken.
           </span>
         )}
-      </label>
+      </div>
       {error && (
-        <p role="alert" className="error">
+        <p role="alert" className={styles.error}>
           {error}
         </p>
       )}
-      <button className="button w-full" disabled={pending}>
+      <button className={`button ${styles.submit}`} disabled={pending}>
         {pending
           ? registration
             ? "Skapar konto…"
@@ -99,20 +112,19 @@ export function AuthForm({
             ? "Skapa konto"
             : "Logga in"}
       </button>
-      {(registration || registrationAvailable) && (
-        <p className="border-t border-line/60 pt-5 text-center text-sm text-muted">
-          {registration ? "Har du redan ett konto? " : "Ny här? "}
-          <Link
-            className="font-medium text-accent hover:underline"
-            href={
-              (registration ? "/login" : "/register") +
-              (returnTo ? "?next=" + encodeURIComponent(returnTo) : "")
-            }
-          >
-            {registration ? "Logga in" : "Skapa konto"}
-          </Link>
-        </p>
-      )}
+      <p className={styles.alternate}>
+        {registration ? "Har du redan ett konto? " : "Vill du testa StorageViewr? "}
+        <Link
+          href={
+            registration
+              ? "/login" +
+                (returnTo ? "?next=" + encodeURIComponent(returnTo) : "")
+              : "/pilot"
+          }
+        >
+          {registration ? "Logga in" : "Starta pilot"}
+        </Link>
+      </p>
     </form>
   );
 }

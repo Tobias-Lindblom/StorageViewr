@@ -13,11 +13,28 @@ import { Organization } from "../src/models/organization";
 import { Membership } from "../src/models/membership";
 import { Session } from "../src/models/session";
 import { RateLimit } from "../src/models/rate-limit";
+import { PilotRequest } from "../src/models/pilot-request";
 
 async function main() {
   const db = await connectDb();
   try {
-    for (const model of [User, Organization, Membership, Session, RateLimit, Warehouse, Location, Product, ProductPhoto, InventoryLevel, InventoryMovement, InventorySession, InventorySessionLocation, InventoryCount]) {
+    for (const model of [
+      User,
+      Organization,
+      Membership,
+      Session,
+      RateLimit,
+      PilotRequest,
+      Warehouse,
+      Location,
+      Product,
+      ProductPhoto,
+      InventoryLevel,
+      InventoryMovement,
+      InventorySession,
+      InventorySessionLocation,
+      InventoryCount,
+    ]) {
       await model.createCollection();
       await model.createIndexes();
       console.log(model.collection.name + ": index klara");

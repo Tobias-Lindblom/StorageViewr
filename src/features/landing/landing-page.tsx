@@ -4,7 +4,8 @@ import Link from "next/link";
 import { AppIcon } from "@/components/app-icon";
 import { BrandLogo } from "@/components/brand-logo";
 import { MaterialArrow } from "@/components/material-arrow";
-import { registrationEnabled } from "@/features/auth/registration";
+import { LandingHeader } from "./landing-header";
+import { FloatingScrollToTop, FooterScrollToTop } from "./scroll-to-top";
 import styles from "./landing-page.module.css";
 
 export const landingMetadata: Metadata = {
@@ -70,46 +71,13 @@ const supportingFeatures = [
 ] as const;
 
 export default function LandingPage() {
-  const registrationAvailable = registrationEnabled();
-  const primaryHref = "/register";
-  const primaryLabel = registrationAvailable
-    ? "Prova StorageViewr"
-    : "Starta pilot";
+  const primaryHref = "/pilot";
+  const primaryLabel = "Starta pilot";
 
   return (
     <main id="toppen" className={`viewport-page ${styles.page}`}>
-      <header className={styles.header}>
-        <div className={styles.headerInner}>
-          <BrandLogo />
-          <nav aria-label="Huvudnavigation" className={styles.navigation}>
-            <div className={styles.navigationLinks}>
-              <a href="#oversikt">Översikt</a>
-              <a href="#qr-skanner">QR-skanner</a>
-              <a href="#lagerplatser">Lagerplatser</a>
-              <a href="#lagerhandelser">Historik</a>
-              <a href="#inventering">Inventering</a>
-              <a href="#rapporter">Rapporter</a>
-            </div>
-            <div className={styles.headerActions}>
-              <Link
-                className={`${styles.loginButton} button-secondary`}
-                href="/login"
-              >
-                Logga in
-              </Link>
-              <Link
-                className={`${styles.headerPrimary} button`}
-                href={primaryHref}
-              >
-                <span className={styles.headerPrimaryFull}>{primaryLabel}</span>
-                <span className={styles.headerPrimaryShort}>
-                  {registrationAvailable ? "Prova" : "Pilot"}
-                </span>
-              </Link>
-            </div>
-          </nav>
-        </div>
-      </header>
+      <LandingHeader />
+      <FloatingScrollToTop />
 
       <section
         id="oversikt"
@@ -502,10 +470,17 @@ export default function LandingPage() {
           <div className={styles.footerTop}>
             <div className={styles.footerBrand}>
               <BrandLogo href="#toppen" />
-              <p>
-                Lagerkontroll för mindre företag — från fysisk hylla till
-                färdigt underlag.
-              </p>
+              <div className={styles.footerDescription}>
+                <p>Lagerkontroll för verksamheter med ett fysiskt lager.</p>
+                <p>
+                  Från lagerplats och saldo till inventering, historik och
+                  färdiga rapporter.
+                </p>
+              </div>
+              <span className={styles.footerStatus}>
+                <span aria-hidden="true" />
+                Begränsad pilot pågår
+              </span>
             </div>
 
             <nav
@@ -514,38 +489,31 @@ export default function LandingPage() {
             >
               <div className={styles.footerLinkGroup}>
                 <h2>Produkt</h2>
-                <a href="#oversikt">Översikt</a>
+                <a href="#oversikt">Lageröversikt</a>
                 <a href="#qr-skanner">QR-skanner</a>
-                <a href="#lagerplatser">Lagerplatser</a>
+                <a href="#lagerplatser">Lagerplatser &amp; produkter</a>
               </div>
               <div className={styles.footerLinkGroup}>
                 <h2>Arbetsflöde</h2>
-                <a href="#lagerhandelser">Historik</a>
+                <a href="#lagerhandelser">Lagerhändelser</a>
                 <a href="#inventering">Inventering</a>
-                <a href="#rapporter">Rapporter</a>
+                <a href="#rapporter">Rapporter &amp; dokument</a>
               </div>
               <div className={styles.footerLinkGroup}>
-                <h2>Konto</h2>
-                <Link href="/login">Logga in</Link>
+                <h2>Kom igång</h2>
+                <a href="#kom-igang">Så fungerar det</a>
                 <Link className={styles.footerAccentLink} href={primaryHref}>
                   {primaryLabel}
                   <MaterialArrow name="forward" size={16} />
                 </Link>
+                <Link href="/login">Logga in</Link>
               </div>
             </nav>
           </div>
 
           <div className={styles.footerBottom}>
             <span>© {new Date().getFullYear()} StorageViewr</span>
-            <a className={styles.footerTopLink} href="#toppen">
-              Till toppen
-              <AppIcon
-                name="chevron"
-                width={15}
-                height={15}
-                className={styles.footerTopIcon}
-              />
-            </a>
+            <FooterScrollToTop />
           </div>
         </div>
       </footer>

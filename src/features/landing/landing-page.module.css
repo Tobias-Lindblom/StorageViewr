@@ -32,6 +32,13 @@
   border-bottom: 1px solid rgb(255 255 255 / 0.065);
   background: rgb(8 7 13 / 0.76);
   backdrop-filter: blur(20px) saturate(135%);
+  transition: background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.headerScrolled {
+  border-bottom-color: rgb(181 137 255 / 0.12);
+  background: rgb(8 7 13 / 0.92);
+  box-shadow: 0 12px 34px rgb(0 0 0 / 0.18);
 }
 
 .headerInner,
@@ -51,6 +58,7 @@
 }
 
 .headerInner {
+  position: relative;
   display: flex;
   min-height: 76px;
   align-items: center;
@@ -65,11 +73,11 @@
 }
 
 .navigation {
-  gap: 28px;
+  gap: 34px;
 }
 
 .navigationLinks {
-  gap: 26px;
+  gap: 24px;
 }
 
 .headerActions {
@@ -80,31 +88,140 @@
 }
 
 .navigationLinks a {
+  position: relative;
+  padding-block: 12px;
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: 13px;
   text-decoration: none;
   transition: color 180ms ease;
 }
 
-.navigationLinks a:hover {
+.navigationLinks a::after {
+  position: absolute;
+  right: 50%;
+  bottom: 5px;
+  left: 50%;
+  height: 2px;
+  border-radius: 999px;
+  background: #b982ff;
+  content: "";
+  opacity: 0;
+  transition: right 180ms ease, left 180ms ease, opacity 180ms ease;
+}
+
+.navigationLinks a:hover,
+.navigationLinks a[aria-current="location"] {
   color: var(--text-primary);
+}
+
+.navigationLinks a[aria-current="location"]::after {
+  right: calc(50% - 8px);
+  left: calc(50% - 8px);
+  opacity: 1;
+}
+
+.navigationLinks a:focus-visible,
+.mobileNavigation a:focus-visible,
+.menuButton:focus-visible {
+  border-radius: 5px;
+  outline: 2px solid rgb(181 137 255 / 0.74);
+  outline-offset: 3px;
 }
 
 .loginButton {
   min-height: 42px !important;
-  border-color: rgb(170 136 255 / 0.28) !important;
-  background: rgb(24 21 34 / 0.78) !important;
+  border-color: rgb(170 136 255 / 0.18) !important;
+  background: rgb(24 21 34 / 0.56) !important;
+}
+
+.loginButton:hover {
+  border-color: rgb(170 136 255 / 0.34) !important;
+  background: rgb(29 25 41 / 0.86) !important;
 }
 
 .headerPrimary {
   min-height: 42px !important;
   padding-inline: 16px !important;
+  border-color: rgb(195 153 255 / 0.32) !important;
   border-radius: 11px !important;
-  box-shadow: inset 0 1px rgb(255 255 255 / 0.18), 0 10px 24px rgb(86 28 181 / 0.22) !important;
+  background: linear-gradient(180deg, #9363df, #7740cd) !important;
+  box-shadow: inset 0 1px rgb(255 255 255 / 0.15), 0 8px 20px rgb(86 28 181 / 0.15) !important;
 }
 
 .headerPrimaryShort {
   display: none;
+}
+
+.menuButton,
+.mobileNavigation {
+  display: none;
+}
+
+.menuButton {
+  width: 42px;
+  height: 42px;
+  place-content: center;
+  gap: 4px;
+  padding: 0;
+  border: 1px solid rgb(170 136 255 / 0.18);
+  border-radius: 10px;
+  background: rgb(24 21 34 / 0.56);
+  color: var(--text-primary);
+}
+
+.menuButton > span {
+  width: 16px;
+  height: 1.5px;
+  border-radius: 999px;
+  background: currentColor;
+  transition: transform 180ms ease, opacity 180ms ease;
+}
+
+.menuButton[aria-expanded="true"] > span:first-child {
+  transform: translateY(5.5px) rotate(45deg);
+}
+
+.menuButton[aria-expanded="true"] > span:nth-child(2) {
+  opacity: 0;
+}
+
+.menuButton[aria-expanded="true"] > span:last-child {
+  transform: translateY(-5.5px) rotate(-45deg);
+}
+
+.mobileNavigation {
+  position: absolute;
+  top: calc(100% - 1px);
+  right: var(--landing-gutter);
+  width: min(340px, calc(100% - var(--landing-gutter) - var(--landing-gutter)));
+  gap: 3px;
+  padding: 12px;
+  border: 1px solid rgb(181 137 255 / 0.13);
+  border-radius: 0 0 16px 16px;
+  background: rgb(12 10 18 / 0.98);
+  box-shadow: 0 24px 50px rgb(0 0 0 / 0.32);
+  backdrop-filter: blur(22px);
+}
+
+.mobileNavigation a {
+  display: flex;
+  min-height: 46px;
+  align-items: center;
+  padding-inline: 13px;
+  border-radius: 9px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.mobileNavigation a:hover,
+.mobileNavigation a[aria-current="location"] {
+  background: rgb(139 92 246 / 0.09);
+  color: var(--text-primary);
+}
+
+.mobileLoginLink {
+  display: none !important;
 }
 
 .hero {
@@ -861,7 +978,7 @@
 }
 
 .footerInner {
-  padding-block: clamp(72px, 8vw, 104px) max(32px, env(safe-area-inset-bottom));
+  padding-block: 72px max(32px, env(safe-area-inset-bottom));
 }
 
 .footerTop {
@@ -869,31 +986,43 @@
   grid-template-columns: minmax(290px, 1fr) auto;
   align-items: start;
   gap: clamp(56px, 10vw, 150px);
+  padding-bottom: 56px;
 }
 
 .footerBrand {
   max-width: 410px;
 }
 
-.footerBrand > p {
+.footerDescription {
+  display: grid;
+  gap: 7px;
   margin: 20px 0 0;
+}
+
+.footerDescription p {
+  margin: 0;
   color: var(--text-secondary);
   font-size: 15px;
   line-height: 1.7;
 }
 
+.footerDescription p:first-child {
+  color: #d7d1df;
+  font-weight: 600;
+}
+
 .footerStatus {
   display: inline-flex;
-  min-height: 36px;
+  min-height: 30px;
   align-items: center;
-  gap: 10px;
-  margin-top: 24px;
-  padding: 8px 12px;
-  border: 1px solid rgb(85 217 173 / 0.16);
+  gap: 8px;
+  margin-top: 20px;
+  padding: 5px 10px;
+  border: 1px solid rgb(85 217 173 / 0.12);
   border-radius: 999px;
-  background: rgb(27 91 73 / 0.09);
-  color: #a9c9bf;
-  font-size: 12px;
+  background: rgb(27 91 73 / 0.065);
+  color: #9bb9b0;
+  font-size: 11px;
 }
 
 .footerStatus > span {
@@ -901,7 +1030,7 @@
   height: 6px;
   border-radius: 50%;
   background: var(--color-success);
-  box-shadow: 0 0 10px rgb(85 217 173 / 0.48);
+  box-shadow: 0 0 7px rgb(85 217 173 / 0.32);
 }
 
 .footerNavigation {
@@ -940,6 +1069,13 @@
   color: var(--text-primary);
 }
 
+.footerLinkGroup a:focus-visible,
+.footerTopLink:focus-visible {
+  border-radius: 4px;
+  outline: 2px solid rgb(181 137 255 / 0.72);
+  outline-offset: 4px;
+}
+
 .footerLinkGroup .footerAccentLink {
   display: inline-flex;
   align-items: center;
@@ -952,7 +1088,8 @@
   align-items: center;
   justify-content: flex-end;
   gap: 12px 22px;
-  margin-top: clamp(58px, 8vw, 88px);
+  padding-top: 24px;
+  border-top: 1px solid rgb(255 255 255 / 0.06);
   color: var(--text-muted);
   font-size: 12px;
 }
@@ -965,17 +1102,74 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  padding: 0;
+  border: 0;
+  background: transparent;
   color: var(--text-muted);
   font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
 }
 
 .footerTopIcon {
   transform: rotate(-90deg);
 }
 
+.floatingTopButton {
+  position: fixed;
+  right: max(22px, env(safe-area-inset-right));
+  bottom: max(22px, env(safe-area-inset-bottom));
+  z-index: 18;
+  display: grid;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgb(181 137 255 / 0.28);
+  border-radius: 11px;
+  background: rgb(18 15 27 / 0.92);
+  box-shadow: inset 0 1px rgb(255 255 255 / 0.045), 0 14px 34px rgb(0 0 0 / 0.3);
+  color: #c5a1f3;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(10px);
+  transition: opacity 180ms ease, transform 180ms ease, border-color 180ms ease, background-color 180ms ease;
+  backdrop-filter: blur(16px);
+}
+
+.floatingTopButton > svg {
+  transform: rotate(-90deg);
+}
+
+.floatingTopButtonVisible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.floatingTopButton:hover {
+  border-color: rgb(195 153 255 / 0.5);
+  background: rgb(29 23 44 / 0.97);
+  color: #dec6ff;
+  transform: translateY(-2px);
+}
+
+.floatingTopButton:focus-visible {
+  outline: 2px solid rgb(181 137 255 / 0.74);
+  outline-offset: 3px;
+}
+
 @media (max-width: 1120px) {
   .navigationLinks {
     display: none;
+  }
+
+  .menuButton {
+    display: grid;
+  }
+
+  .mobileNavigation:not([hidden]) {
+    display: grid;
   }
 }
 
@@ -1097,7 +1291,7 @@
 
   .footerTop {
     grid-template-columns: minmax(0, 1fr);
-    gap: 52px;
+    gap: 44px;
   }
 
   .footerNavigation {
@@ -1111,9 +1305,16 @@
     gap: 12px;
   }
 
+  .floatingTopButton {
+    right: max(16px, env(safe-area-inset-right));
+    bottom: max(18px, env(safe-area-inset-bottom));
+    width: 44px;
+    height: 44px;
+  }
+
   .navigation {
     flex-shrink: 0;
-    gap: 0;
+    gap: 8px;
   }
 
   .headerActions {
@@ -1121,8 +1322,11 @@
   }
 
   .loginButton {
-    min-height: 40px !important;
-    padding-inline: 14px !important;
+    display: none !important;
+  }
+
+  .mobileLoginLink {
+    display: flex !important;
   }
 
   .headerPrimary {
@@ -1260,7 +1464,7 @@
   }
 
   .footerInner {
-    padding-top: 64px;
+    padding-top: 56px;
   }
 
   .footerNavigation {
@@ -1283,6 +1487,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .header,
+  .navigationLinks a::after,
+  .menuButton > span,
+  .floatingTopButton,
   .navigationLinks a,
   .footerLinkGroup a,
   .footerTopLink,
@@ -1291,6 +1499,10 @@
   }
 
   .ctaPanel .primaryAction:hover {
+    transform: none;
+  }
+
+  .floatingTopButton:hover {
     transform: none;
   }
 }

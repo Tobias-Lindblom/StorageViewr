@@ -1,7 +1,13 @@
+import type { Metadata } from "next";
 import { AuthForm } from "@/features/auth/auth-form";
 import { AuthPageShell } from "@/features/auth/auth-page-shell";
-import { registrationEnabled } from "@/features/auth/registration";
 import { locationReturnPath } from "@/validation/return-path";
+
+export const metadata: Metadata = {
+  title: "Logga in | StorageViewr",
+  description:
+    "Logga in i StorageViewr och fortsätt arbeta med lager, inventering och lagerplatser.",
+};
 
 export default async function AuthPage({
   searchParams,
@@ -12,13 +18,9 @@ export default async function AuthPage({
   return (
     <AuthPageShell
       title="Logga in"
-      description="Fortsätt till ditt företag och dagens lagerarbete."
+      description="Fortsätt till ert lager och dagens arbete."
     >
-      <AuthForm
-        mode="login"
-        returnTo={returnTo}
-        registrationAvailable={registrationEnabled()}
-      />
+      <AuthForm mode="login" returnTo={returnTo} />
     </AuthPageShell>
   );
 }
