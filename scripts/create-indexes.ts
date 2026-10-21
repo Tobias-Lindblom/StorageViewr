@@ -1,6 +1,7 @@
 import { InventorySession } from "../src/models/inventory-session";
 import { InventorySessionLocation } from "../src/models/inventory-session-location";
 import { InventoryCount } from "../src/models/inventory-count";
+import { InventoryDiscrepancy } from "../src/models/inventory-discrepancy";
 import { InventoryLevel } from "../src/models/inventory-level";
 import { InventoryMovement } from "../src/models/inventory-movement";
 import { ProductPhoto } from "../src/models/product-photo";
@@ -14,6 +15,7 @@ import { Membership } from "../src/models/membership";
 import { Session } from "../src/models/session";
 import { RateLimit } from "../src/models/rate-limit";
 import { PilotRequest } from "../src/models/pilot-request";
+import { OrganizationInvitation } from "../src/models/organization-invitation";
 
 async function main() {
   const db = await connectDb();
@@ -25,6 +27,7 @@ async function main() {
       Session,
       RateLimit,
       PilotRequest,
+      OrganizationInvitation,
       Warehouse,
       Location,
       Product,
@@ -34,6 +37,7 @@ async function main() {
       InventorySession,
       InventorySessionLocation,
       InventoryCount,
+      InventoryDiscrepancy,
     ]) {
       await model.createCollection();
       await model.createIndexes();

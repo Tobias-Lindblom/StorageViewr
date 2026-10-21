@@ -10,6 +10,7 @@ const destinations = [
   { href: "/dashboard", label: "Översikt", description: "Lagerhälsa och senaste aktivitet", icon: "dashboard" },
   { href: "/warehouses", label: "Lager", description: "Dina lager och lagerplatser", icon: "warehouse" },
   { href: "/inventories", label: "Inventering", description: "Pågående och genomförda inventeringar", icon: "inventory" },
+  { href: "/reports", label: "Rapporter & dokument", description: "Lagervärde och inventeringsunderlag", icon: "document" },
 ] as const;
 
 export function MoreMenu({ admin }: { admin: boolean }) {

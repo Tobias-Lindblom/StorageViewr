@@ -1,0 +1,48 @@
+.layout { display: grid; gap: 16px; max-width: 780px; }
+.inviteCard, .listCard { overflow: hidden; border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); background: var(--surface-1); box-shadow: var(--shadow-card); }
+.inviteCard { padding: clamp(18px, 4vw, 26px); }
+.sectionHeading { display: flex; align-items: flex-start; gap: 13px; margin-bottom: 22px; }
+.headingIcon { display: grid; width: 42px; height: 42px; flex-shrink: 0; place-items: center; border: 1px solid color-mix(in srgb, var(--color-accent) 24%, transparent); border-radius: 11px; background: color-mix(in srgb, var(--color-accent) 10%, var(--surface-2)); color: var(--color-accent); }
+.sectionHeading h2, .listHeading h2 { margin: 0; font-size: 16px; }
+.sectionHeading p, .listHeading p { margin-top: 4px; color: var(--text-secondary); font-size: 12px; line-height: 1.5; }
+.form { display: grid; grid-template-columns: minmax(0, 1fr) minmax(180px, .48fr); gap: 16px 12px; }
+.form label { min-width: 0; font-size: 12px; }
+.form input, .form select { min-height: 48px; margin-top: 7px; }
+.roleHelp { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.roleHelp p { padding: 11px 12px; border-radius: 9px; background: var(--surface-2); }
+.roleHelp strong, .roleHelp span { display: block; }
+.roleHelp strong { font-size: 11px; }
+.roleHelp span { margin-top: 3px; color: var(--text-secondary); font-size: 10px; line-height: 1.45; }
+.form > button { grid-column: 1 / -1; justify-self: start; min-width: 180px; }
+.created { display: flex; gap: 11px; margin-top: 20px; padding: 14px; border: 1px solid color-mix(in srgb, var(--color-success) 25%, var(--border-subtle)); border-radius: 11px; background: color-mix(in srgb, var(--color-success) 6%, var(--surface-2)); }
+.createdIcon { display: grid; width: 30px; height: 30px; flex-shrink: 0; place-items: center; border-radius: 8px; background: color-mix(in srgb, var(--color-success) 14%, transparent); color: var(--color-success); }
+.createdContent { min-width: 0; flex: 1; }
+.createdContent > strong { font-size: 13px; }
+.createdContent > p { margin-top: 3px; color: var(--text-secondary); font-size: 11px; line-height: 1.5; }
+.linkRow { display: flex; gap: 7px; margin-top: 10px; }
+.linkRow input { min-width: 0; min-height: 42px; margin: 0; font-size: 11px; }
+.linkRow button { flex-shrink: 0; padding-inline: 13px; border: 1px solid var(--border-default); border-radius: 8px; background: var(--surface-3); color: var(--text-primary); font-size: 11px; font-weight: 650; }
+.mailLink { display: inline-flex; margin-top: 10px; color: var(--color-accent); font-size: 11px; font-weight: 650; }
+.inviteCard > :global(.error) { margin-top: 14px; }
+.listHeading { padding: 17px 18px 13px; }
+.peopleList { margin: 0; padding: 0; list-style: none; }
+.peopleList > li { display: flex; min-width: 0; align-items: center; gap: 11px; min-height: 70px; padding: 11px 18px; border-top: 1px solid var(--border-subtle); }
+.avatar { display: grid; width: 38px; height: 38px; flex-shrink: 0; place-items: center; border-radius: 50%; background: color-mix(in srgb, var(--color-accent) 14%, var(--surface-3)); color: var(--color-accent); font-size: 11px; font-weight: 750; }
+.pendingAvatar { border-radius: 10px; color: var(--color-warning); background: color-mix(in srgb, var(--color-warning) 9%, var(--surface-3)); }
+.personIdentity { min-width: 0; flex: 1; }
+.personIdentity strong, .personIdentity > span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.personIdentity strong { font-size: 12px; }
+.personIdentity strong em { margin-left: 7px; padding: 2px 6px; border-radius: 999px; background: var(--surface-3); color: var(--text-secondary); font-size: 9px; font-style: normal; font-weight: 600; }
+.personIdentity > span { margin-top: 4px; color: var(--text-secondary); font-size: 10px; }
+.roleBadge { flex-shrink: 0; padding: 5px 8px; border: 1px solid var(--border-subtle); border-radius: 999px; background: var(--surface-2); color: var(--text-secondary); font-size: 9px; white-space: nowrap; }
+.roleBadge.admin { border-color: color-mix(in srgb, var(--color-accent) 25%, var(--border-subtle)); color: var(--color-accent); }
+.invitationActions { display: flex; align-items: center; gap: 8px; }
+.invitationActions button { min-height: 34px; color: var(--color-destructive); font-size: 10px; }
+@media (max-width: 620px) {
+  .form, .roleHelp { grid-template-columns: 1fr; }
+  .emailField, .roleHelp, .form > button { grid-column: auto; }
+  .form > button { width: 100%; }
+  .peopleList > li { padding-inline: 14px; }
+  .roleBadge { display: none; }
+  .invitationActions .roleBadge { display: none; }
+}

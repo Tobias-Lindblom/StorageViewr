@@ -15,14 +15,16 @@ import { InventoryMovement } from "../src/models/inventory-movement";
 import { InventorySession } from "../src/models/inventory-session";
 import { InventorySessionLocation } from "../src/models/inventory-session-location";
 import { InventoryCount } from "../src/models/inventory-count";
+import { InventoryDiscrepancy } from "../src/models/inventory-discrepancy";
 import { createProduct, updateProduct, getProduct } from "../src/features/products/service";
 import { createWarehouse } from "../src/features/warehouses/service";
 import { createLocation, updateLocation, getLocation } from "../src/features/locations/service";
-import { listStock, adjustStock, getStockPair, listMovements } from "../src/features/inventory/service";
+import { listStock, adjustStock, getStockPair, listMovements, registerStockMovement } from "../src/features/inventory/service";
 import { startInventory, saveLocationCount, finishInventory } from "../src/features/inventory/sessions";
 import { getDashboard } from "../src/features/dashboard/service";
 import { getDashboardActivity } from "../src/features/dashboard/activity";
 import { getVerification } from "../src/features/inventory/verification";
+import { getInventoryHealthSummary } from "../src/features/inventory/inventory-health";
 import { getInventory, listInventories } from "../src/features/inventory/session-queries";
 import { startInventorySchema, saveCountSchema } from "../src/validation/inventory-session";
 
@@ -32,7 +34,7 @@ before(async () => {
   process.env.MONGODB_URI = replica.getUri();
   process.env.MONGODB_DB = "storageviewr_counting_tests";
   await connectDb();
-  for (const model of [Product, ProductPhoto, Warehouse, Location, User, InventoryLevel, InventoryMovement, InventorySession, InventorySessionLocation, InventoryCount]) {
+  for (const model of [Product, ProductPhoto, Warehouse, Location, User, InventoryLevel, InventoryMovement, InventorySession, InventorySessionLocation, InventoryCount, InventoryDiscrepancy]) {
     await model.createCollection(); await model.createIndexes();
   }
 });
@@ -414,7 +416,7 @@ test("general scanner resolves tenant-owned QR labels and disambiguates codes ac
   await assert.rejects(resolveLocation(worker, { qr: "https://evil.example/location/" + f.location.qrToken }), status(400));
 });
 
-test("dashboard suggests stale and never-counted places and only active discrepancies in its tenant", async () => {
+test("dashboard prioritizes real open discrepancies and excludes unplaced products from health", async () => {
   const f = await fixture(10);
   await saveLocationCount(f.context, f.inventory.id, f.location.id, f.count(10));
   await saveLocationCount(f.context, f.inventory.id, f.empty.id, f.blank);
@@ -428,9 +430,12 @@ test("dashboard suggests stale and never-counted places and only active discrepa
   const pending = await startInventory(f.context, { name: "Ny kontroll", warehouseId: f.warehouse.id, locationIds: [f.location.id] });
   await saveLocationCount(f.context, pending.id, f.location.id, f.count(12));
   const result = await getDashboard(f.context);
-  assert.deepEqual(result.insights.health, { verifiedProducts: 1, needsCountingProducts: 1, oldProducts: 0 });
+  assert.equal(result.insights.health.score, 0);
+  assert.equal(result.insights.health.openDiscrepancies, 1);
+  assert.equal(result.insights.health.productsWithoutInventory, 1);
   assert.equal(result.insights.pendingDiscrepancies, 1);
-  assert.deepEqual(new Set(result.insights.suggestedLocations.map(row => row.id)), new Set([f.empty.id, uncounted.id]));
+  assert.equal(result.insights.suggestedLocations[0].id, f.location.id);
+  assert.ok(!result.insights.suggestedLocations.some(row => row.id === uncounted.id));
 });
 
 test("dashboard health verifies every placement, ignores active counts and separates old or changed stock", async () => {
@@ -441,7 +446,9 @@ test("dashboard health verifies every placement, ignores active counts and separ
   await createProduct(f.context, { name: "Inte räknad", sku: "UNCOUNTED" });
   await fixture(99);
   let dashboard = await getDashboard(f.context);
-  assert.deepEqual(dashboard.insights.health, { verifiedProducts: 1, needsCountingProducts: 1, oldProducts: 0 });
+  assert.equal(dashboard.insights.health.score, 100);
+  assert.equal(dashboard.insights.health.fullyVerifiedProducts, 1);
+  assert.equal(dashboard.insights.health.productsWithoutInventory, 1);
   assert.ok(dashboard.activity.some(row => row.amount === "INV"));
   const worker = await getDashboard({ ...f.context, role: "warehouse" });
   assert.deepEqual(worker.insights.health, dashboard.insights.health);
@@ -449,7 +456,8 @@ test("dashboard health verifies every placement, ignores active counts and separ
 
   await adjustStock(f.context, { ...f.pair, quantity: 11, expectedVersion: 1, reason: "Senare ändring" });
   dashboard = await getDashboard(f.context);
-  assert.deepEqual(dashboard.insights.health, { verifiedProducts: 0, needsCountingProducts: 2, oldProducts: 0 });
+  assert.equal(dashboard.insights.health.score, 0);
+  assert.equal(dashboard.insights.health.manualCorrections, 1);
   const recount = await startInventory(f.context, { name: "Ny kontroll", warehouseId: f.warehouse.id, locationIds: [f.location.id] });
   await saveLocationCount(f.context, recount.id, f.location.id, {
     expectedRevision: 0, confirmComplete: true, rows: [{ productId: f.product.id, expectedVersion: 2, countedQuantity: 11 }],
@@ -458,10 +466,76 @@ test("dashboard health verifies every placement, ignores active counts and separ
   await InventoryCount.collection.updateMany({ organizationId: f.context.organizationId, inventorySessionId: new Types.ObjectId(recount.id) },
     { $set: { countedAt: new Date(Date.now() - 91 * 86400000) } });
   dashboard = await getDashboard(f.context);
-  assert.deepEqual(dashboard.insights.health, { verifiedProducts: 0, needsCountingProducts: 1, oldProducts: 1 });
+  assert.equal(dashboard.insights.health.score, 0);
+  assert.equal(dashboard.insights.health.stale, 1);
   await adjustStock(f.context, { productId: f.product.id, locationId: f.empty.id, quantity: 3, expectedVersion: null, reason: "Ny placering" });
   dashboard = await getDashboard(f.context);
-  assert.deepEqual(dashboard.insights.health, { verifiedProducts: 0, needsCountingProducts: 2, oldProducts: 0 });
+  assert.equal(dashboard.insights.health.score, 0);
+  assert.equal(dashboard.insights.health.stale, 1);
+  assert.equal(dashboard.insights.health.neverCounted, 1);
+});
+
+test("investigated discrepancies stay open and do not change the current balance", async () => {
+  const f = await fixture(10);
+  await saveLocationCount(f.context, f.inventory.id, f.location.id, f.count(8));
+  await saveLocationCount(f.context, f.inventory.id, f.empty.id, f.blank);
+  const detail = await getInventory(f.context, f.inventory.id);
+  await finishInventory(f.context, f.inventory.id, {
+    confirmed: true,
+    expectedRevision: detail.revision,
+    resolutions: [{ productId: f.product.id, locationId: f.location.id, action: "INVESTIGATE" }],
+  });
+  assert.equal((await getStockPair(f.context, f.pair)).quantity, 10);
+  const discrepancy = await InventoryDiscrepancy.findOne({ organizationId: f.context.organizationId }).lean();
+  assert.equal(discrepancy?.status, "OPEN");
+  const health = await getInventoryHealthSummary(f.context);
+  assert.equal(health.openDiscrepancies, 1);
+  assert.equal(health.attentionItems[0].reason, "OPEN_DISCREPANCY");
+});
+
+test("approved discrepancies update stock, create audit history and become a new baseline", async () => {
+  const f = await fixture(10);
+  await saveLocationCount(f.context, f.inventory.id, f.location.id, f.count(8));
+  await saveLocationCount(f.context, f.inventory.id, f.empty.id, f.blank);
+  const detail = await getInventory(f.context, f.inventory.id);
+  await finishInventory(f.context, f.inventory.id, {
+    confirmed: true,
+    expectedRevision: detail.revision,
+    resolutions: [{ productId: f.product.id, locationId: f.location.id, action: "APPROVE" }],
+  });
+  assert.equal((await getStockPair(f.context, f.pair)).quantity, 8);
+  assert.equal((await InventoryDiscrepancy.findOne({ organizationId: f.context.organizationId }).lean())?.status, "RESOLVED");
+  assert.equal(await InventoryMovement.countDocuments({ organizationId: f.context.organizationId, type: "INVENTORY" }), 1);
+  const health = await getInventoryHealthSummary(f.context);
+  assert.equal(health.score, 100);
+  assert.equal(health.verified, 1);
+});
+
+test("registered receipts, issues and complete transfers preserve real position trust", async () => {
+  const context = tenant();
+  const product = await createProduct(context, productInput);
+  const warehouse = await createWarehouse(context, { name: "Spårbart lager", code: "TRACE" });
+  const source = await createLocation(context, { ...parts, warehouseId: warehouse.id });
+  const destination = await createLocation(context, { ...parts, position: "02", warehouseId: warehouse.id });
+  await adjustStock(context, { productId: product.id, locationId: source.id, quantity: 20, expectedVersion: null, reason: "Startsaldo" });
+  await adjustStock(context, { productId: product.id, locationId: destination.id, quantity: 7, expectedVersion: null, reason: "Startsaldo" });
+  const inventory = await startInventory(context, { name: "Baslinje", warehouseId: warehouse.id, locationIds: [source.id, destination.id] });
+  await saveLocationCount(context, inventory.id, source.id, { expectedRevision: 0, confirmComplete: true,
+    rows: [{ productId: product.id, expectedVersion: 1, countedQuantity: 20 }] });
+  await saveLocationCount(context, inventory.id, destination.id, { expectedRevision: 0, confirmComplete: true,
+    rows: [{ productId: product.id, expectedVersion: 1, countedQuantity: 7 }] });
+  await finishInventory(context, inventory.id, { confirmed: true, expectedRevision: (await getInventory(context, inventory.id)).revision });
+  await registerStockMovement(context, { type: "RECEIPT", productId: product.id, locationId: source.id,
+    quantity: 5, expectedVersion: 1, reason: "Leverans" });
+  await registerStockMovement(context, { type: "ISSUE", productId: product.id, locationId: source.id,
+    quantity: 2, expectedVersion: 2, reason: "Uttag" });
+  await registerStockMovement(context, { type: "TRANSFER", productId: product.id,
+    sourceLocationId: source.id, destinationLocationId: destination.id, quantity: 3,
+    expectedSourceVersion: 3, expectedDestinationVersion: 1, reason: "Intern flytt" });
+  const health = await getInventoryHealthSummary(context);
+  assert.equal(health.score, 100);
+  assert.equal(health.trustedPositions, 2);
+  assert.ok(health.positions.every(row => row.reason === "VERIFIED"));
 });
 
 test("location activity scopes physical counts and stock history without duplicates or worker history access", async () => {

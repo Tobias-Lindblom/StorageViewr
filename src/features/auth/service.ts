@@ -11,14 +11,24 @@ import {
 import { createSession } from "@/lib/server/session";
 import { rateLimit } from "@/lib/server/rate-limit";
 import { assertRegistrationEnabled } from "./registration";
+import { registerFromOrganizationInvitation } from "@/features/organizations/members";
 
 export async function register(input: unknown) {
-  assertRegistrationEnabled();
   const data = registerSchema.parse(input);
+  if (!data.inviteToken) assertRegistrationEnabled();
   await connectDb();
   await rateLimit("register:global", 30);
   await rateLimit("register:" + data.email, 5);
   const passwordHash = await hashPassword(data.password);
+  if (data.inviteToken) {
+    const invited = await registerFromOrganizationInvitation({
+      token: data.inviteToken,
+      email: data.email,
+      name: data.name,
+      passwordHash,
+    });
+    return createSession(invited.userId, invited.organizationId);
+  }
   const user = await User.create({
     email: data.email,
     name: data.name,

@@ -1,6 +1,7 @@
 import "server-only";
 import { AppError } from "@/lib/server/errors";
 import type { TenantContext } from "@/lib/server/tenant";
+import { sekToUnits } from "@/lib/money";
 import { objectIdSchema } from "@/validation/organization";
 import { InventorySession } from "@/models/inventory-session";
 import { InventorySessionLocation } from "@/models/inventory-session-location";
@@ -32,9 +33,11 @@ export async function getInventoryReport(context: TenantContext, id: string) {
     inventorySessionId: inventory._id,
   };
   const [organization, warehouse, scopes, counts] = await Promise.all([
-    Organization.findOne({ _id: context.organizationId }).select(
-      "name organizationNumber addressLine1 addressLine2 postalCode city country contactEmail phone website",
-    ).lean(),
+    Organization.findOne({ _id: context.organizationId })
+      .select(
+        "name organizationNumber addressLine1 addressLine2 postalCode city country contactEmail phone website",
+      )
+      .lean(),
     Warehouse.exists({
       _id: inventory.warehouseId,
       organizationId: context.organizationId,
@@ -60,6 +63,7 @@ export async function getInventoryReport(context: TenantContext, id: string) {
       "Rapportunderlaget är ofullständigt. Kontakta administratören.",
     );
   }
+
   const byLocation = new Map<string, typeof counts>();
   for (const count of counts) {
     const key = String(count.locationId);
@@ -67,22 +71,41 @@ export async function getInventoryReport(context: TenantContext, id: string) {
     group.push(count);
     byLocation.set(key, group);
   }
+
   const places = scopes
     .map((scope) => ({
       code: scope.locationCode,
       countedBy: scope.completedByName ?? "Ej sparat",
       countedAt: scope.completedAt?.toISOString() ?? null,
       rows: (byLocation.get(String(scope.locationId)) ?? [])
-        .map((row) => ({
-          productId: String(row.productId),
-          name: row.productName,
-          sku: row.sku,
-          expected: row.expectedQuantity,
-          counted: row.countedQuantity,
-          difference: row.difference,
-          countedBy: row.countedByName,
-          countedAt: row.countedAt.toISOString(),
-        }))
+        .map((row) => {
+          const unitValue = row.unitValue ?? null;
+          const valueUnits =
+            unitValue === null ? null : sekToUnits(unitValue);
+          return {
+            productId: String(row.productId),
+            name: row.productName,
+            sku: row.sku,
+            expected: row.expectedQuantity,
+            counted: row.countedQuantity,
+            difference: row.difference,
+            unitValue,
+            expectedValueUnits:
+              valueUnits === null
+                ? null
+                : (BigInt(row.expectedQuantity) * valueUnits).toString(),
+            countedValueUnits:
+              valueUnits === null
+                ? null
+                : (BigInt(row.countedQuantity) * valueUnits).toString(),
+            valueDifferenceUnits:
+              valueUnits === null
+                ? null
+                : (BigInt(row.difference) * valueUnits).toString(),
+            countedBy: row.countedByName,
+            countedAt: row.countedAt.toISOString(),
+          };
+        })
         .sort(
           (a, b) =>
             a.name.localeCompare(b.name, "sv") ||
@@ -91,11 +114,22 @@ export async function getInventoryReport(context: TenantContext, id: string) {
     }))
     .sort((a, b) => a.code.localeCompare(b.code, "sv", { numeric: true }));
   const rows = places.flatMap((place) => place.rows);
+
   // Exact totals even when multiple safe integer balances exceed JS's safe total.
-  const sum = (values: number[]) =>
+  const sum = (values: Array<number | string | bigint>) =>
     values
       .reduce((total, value) => total + BigInt(value), BigInt(0))
       .toString();
+  const valuedRows = rows.filter(
+    (
+      row,
+    ): row is typeof row & {
+      expectedValueUnits: string;
+      countedValueUnits: string;
+      valueDifferenceUnits: string;
+    } => row.unitValue !== null,
+  );
+
   return {
     id: String(inventory._id),
     name: inventory.name,
@@ -125,7 +159,20 @@ export async function getInventoryReport(context: TenantContext, id: string) {
       shortage: sum(
         rows.filter((row) => row.difference < 0).map((row) => row.difference),
       ),
+      productsWithoutValue: new Set(
+        rows
+          .filter((row) => row.unitValue === null)
+          .map((row) => row.productId),
+      ).size,
+      expectedValueUnits: sum(
+        valuedRows.map((row) => row.expectedValueUnits),
+      ),
+      countedValueUnits: sum(valuedRows.map((row) => row.countedValueUnits)),
+      valueDifferenceUnits: sum(
+        valuedRows.map((row) => row.valueDifferenceUnits),
+      ),
     },
   };
 }
+
 export type InventoryReport = Awaited<ReturnType<typeof getInventoryReport>>;

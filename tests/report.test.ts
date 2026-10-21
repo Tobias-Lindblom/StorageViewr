@@ -88,6 +88,14 @@ test("reports require completion and tenant ownership and use immutable counting
   assert.equal(original.summary.discrepancies, 1); assert.equal(original.summary.emptyPlaces, 1);
   assert.equal(original.summary.expected, "10"); assert.equal(original.summary.counted, "8");
   assert.equal(original.summary.shortage, "-2"); assert.equal(original.summary.surplus, "0");
+  assert.equal(original.places[0].rows[0].unitValue, "0.8451");
+  assert.equal(original.places[0].rows[0].expectedValueUnits, "84510");
+  assert.equal(original.places[0].rows[0].countedValueUnits, "67608");
+  assert.equal(original.places[0].rows[0].valueDifferenceUnits, "-16902");
+  assert.equal(original.summary.expectedValueUnits, "84510");
+  assert.equal(original.summary.countedValueUnits, "67608");
+  assert.equal(original.summary.valueDifferenceUnits, "-16902");
+  assert.equal(original.summary.productsWithoutValue, 0);
   await adjustStock(f.context, { ...f.pair, quantity: 777, expectedVersion: 2, reason: "Senare leverans" });
   await Product.updateOne({ _id: f.product.id }, { $set: { name: "Nytt produktnamn", active: false } });
   await Location.updateOne({ _id: f.location.id }, { $set: { code: "B-01-01", active: false } });

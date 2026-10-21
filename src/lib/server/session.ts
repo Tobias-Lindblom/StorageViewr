@@ -13,11 +13,11 @@ const sessionCookie =
     : "storageviewr";
 const hashToken = (token: string) =>
   createHash("sha256").update(token).digest("hex");
-export async function createSession(userId: Types.ObjectId) {
+export async function createSession(userId: Types.ObjectId, organizationId?: Types.ObjectId) {
   await connectDb();
   const token = randomBytes(32).toString("hex");
   const expiresAt = new Date(Date.now() + 7 * 86400_000);
-  await Session.create({ tokenHash: hashToken(token), userId, expiresAt });
+  await Session.create({ tokenHash: hashToken(token), userId, organizationId, expiresAt });
   return { token, expiresAt };
 }
 export async function resolveSession(token?: string) {
@@ -39,6 +39,14 @@ export async function resolveSession(token?: string) {
 }
 export async function requireSession() {
   return resolveSession((await cookies()).get(sessionCookie)?.value);
+}
+export async function optionalSession() {
+  try {
+    return await requireSession();
+  } catch (error) {
+    if (error instanceof AppError && error.status === 401) return null;
+    throw error;
+  }
 }
 export async function setSessionCookie(token: string, expiresAt: Date) {
   (await cookies()).set(sessionCookie, token, {

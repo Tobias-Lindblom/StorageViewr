@@ -12,5 +12,6 @@ export const registerSchema = loginSchema
   .extend({
     password: passwordSchema,
     name: z.string().trim().min(2).max(100),
+    inviteToken: z.string().regex(/^[a-f0-9]{64}$/).optional(),
   })
   .strict();

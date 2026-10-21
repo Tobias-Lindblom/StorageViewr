@@ -31,6 +31,7 @@ export function InventoryWorkspace({
   );
   const [review, setReview] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
+  const [resolutions, setResolutions] = useState<Record<string, "APPROVE" | "INVESTIGATE">>({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -44,6 +45,9 @@ export function InventoryWorkspace({
   const progress = data.places.length
     ? Math.round((data.counted / data.places.length) * 100)
     : 0;
+  const discrepancyKey = (productId: string, locationId: string) => productId + ":" + locationId;
+  const allDiscrepanciesHandled = data.discrepancies.every(row =>
+    Boolean(resolutions[discrepancyKey(row.productId, row.locationId)]));
   const place = data.places.find((row) => row.id === placeId);
   function openPlace(id: string) {
     setVerifiedPlaceId(null);
@@ -76,7 +80,11 @@ export function InventoryWorkspace({
       await clientApi(
         "/api/inventory/sessions/" + data.id + "/complete",
         "POST",
-        { expectedRevision: data.revision, confirmed },
+        { expectedRevision: data.revision, confirmed,
+          resolutions: data.discrepancies.map(row => ({
+            productId: row.productId, locationId: row.locationId,
+            action: resolutions[discrepancyKey(row.productId, row.locationId)],
+          })) },
       );
       await reload();
       close();
@@ -228,7 +236,7 @@ export function InventoryWorkspace({
               catch { setError("Kunde inte läsa in inventeringen. Försök igen."); }
             }}>Läs in inventeringen igen</button>
           </div>}
-          <button type="button" className="button w-full" disabled={!ready || !confirmed || busy} onClick={finish}>
+          <button type="button" className="button w-full" disabled={!ready || !confirmed || !allDiscrepanciesHandled || busy} onClick={finish}>
             {busy ? "Genomför…" : "Genomför och uppdatera saldo"}
           </button>
         </> : undefined}>
@@ -255,6 +263,19 @@ export function InventoryWorkspace({
                 timeZone: "Europe/Stockholm", dateStyle: "medium", timeStyle: "short",
               })}</p>
             {row.stale && <p className="inventory-detail-stale-note">Saldot har ändrats. Räkna om platsen.</p>}
+            {admin && !row.stale && <div className="inventory-discrepancy-actions" role="group" aria-label={"Hantera avvikelse för " + row.productName}>
+              <button type="button" onClick={() => { setReview(false); openPlace(row.locationId); }}>
+                Räkna igen
+              </button>
+              <button type="button" className={resolutions[discrepancyKey(row.productId, row.locationId)] === "APPROVE" ? "is-selected" : ""}
+                onClick={() => setResolutions(current => ({ ...current, [discrepancyKey(row.productId, row.locationId)]: "APPROVE" }))}>
+                Godkänn räknat saldo
+              </button>
+              <button type="button" className={resolutions[discrepancyKey(row.productId, row.locationId)] === "INVESTIGATE" ? "is-selected" : ""}
+                onClick={() => setResolutions(current => ({ ...current, [discrepancyKey(row.productId, row.locationId)]: "INVESTIGATE" }))}>
+                Markera för utredning
+              </button>
+            </div>}
           </li>)}</ul>
         </section> : <div className="inventory-review-no-differences">
           <AppIcon name="verified" width={23} height={23} />
@@ -262,8 +283,8 @@ export function InventoryWorkspace({
         </div>}
         {admin && <label className="inventory-review-confirm">
           <input type="checkbox" className="m-0! mt-1! h-4! min-h-0! w-4! shrink-0 px-0! accent-violet-500"
-            checked={confirmed} disabled={!ready || busy} onChange={event => setConfirmed(event.target.checked)} />
-          <span>Jag har granskat räkningarna och godkänner att lagersaldot uppdateras. Åtgärden kan inte ångras.</span>
+            checked={confirmed} disabled={!ready || !allDiscrepanciesHandled || busy} onChange={event => setConfirmed(event.target.checked)} />
+          <span>Jag har granskat räkningarna och valt hur varje avvikelse ska hanteras. Godkända saldon uppdateras när inventeringen slutförs.</span>
         </label>}
       </BottomSheet>}
     </article>

@@ -8,9 +8,13 @@ import styles from "./auth-page.module.css";
 export function AuthForm({
   mode,
   returnTo,
+  initialEmail,
+  inviteToken,
 }: {
   mode: "login" | "register";
   returnTo?: string;
+  initialEmail?: string;
+  inviteToken?: string;
 }) {
   const router = useRouter();
   const [error, setError] = useState("");
@@ -25,13 +29,14 @@ export function AuthForm({
     const data = {
       email: form.get("email"),
       password: form.get("password"),
-      ...(registration ? { name: form.get("name") } : {}),
+      ...(registration ? { name: form.get("name"), ...(inviteToken ? { inviteToken } : {}) } : {}),
     };
     try {
       await clientApi("/api/auth/" + mode, "POST", data);
       router.push(
-        "/organizations" +
-          (returnTo ? "?next=" + encodeURIComponent(returnTo) : ""),
+        registration && inviteToken ? "/dashboard" :
+          returnTo?.startsWith("/invite/") ? returnTo :
+            "/organizations" + (returnTo ? "?next=" + encodeURIComponent(returnTo) : ""),
       );
       router.refresh();
     } catch (error) {
@@ -60,6 +65,8 @@ export function AuthForm({
         <input
           name="email"
           type="email"
+            defaultValue={initialEmail}
+            readOnly={Boolean(initialEmail)}
           autoComplete="email"
           placeholder="namn@foretag.se"
           spellCheck={false}

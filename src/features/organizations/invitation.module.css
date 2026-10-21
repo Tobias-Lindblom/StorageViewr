@@ -1,0 +1,92 @@
+.summary {
+  display: grid;
+  gap: 16px;
+}
+
+.company {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 15px;
+  border: 1px solid rgb(181 137 255 / 0.16);
+  border-radius: 13px;
+  background: rgb(139 92 246 / 0.065);
+}
+
+.companyIcon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 11px;
+  background: rgb(139 92 246 / 0.14);
+  color: #c69aff;
+}
+
+.company strong,
+.company span {
+  display: block;
+}
+
+.company strong {
+  font-size: 15px;
+}
+
+.company span,
+.details {
+  margin-top: 3px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.details strong {
+  color: var(--text-primary);
+}
+
+.actions {
+  display: grid;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.actions :global(.button) {
+  width: 100%;
+}
+
+.secondaryAction {
+  display: inline-flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  padding-inline: 16px;
+  border: 1px solid rgb(255 255 255 / 0.11);
+  border-radius: 10px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.secondaryAction:hover {
+  border-color: rgb(181 137 255 / 0.4);
+  background: rgb(139 92 246 / 0.07);
+}
+
+.accountMismatch {
+  display: grid;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid rgb(255 190 92 / 0.2);
+  border-radius: 11px;
+  background: rgb(115 69 8 / 0.12);
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.error {
+  color: #ff9eaa;
+  font-size: 13px;
+  line-height: 1.5;
+}

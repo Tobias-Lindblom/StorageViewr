@@ -5,6 +5,7 @@ import { InventoryCount, type InventoryCountRecord } from "@/models/inventory-co
 import { InventorySessionLocation } from "@/models/inventory-session-location";
 import { stockScopeSchema } from "@/validation/inventory";
 import type { StockData } from "./service";
+import { getInventoryHealthSummary } from "./inventory-health";
 
 type Count = InventoryCountRecord & { _id: Types.ObjectId };
 export type VerificationData = {
@@ -74,8 +75,24 @@ export async function getVerification(context: TenantContext, input: unknown, st
     sessionId = String(oldest.inventorySessionId);
   }
   const allCounted = matching.length === stock.items.length && (!productScope || stock.items.length > 0);
-  const state = !date ? "never" : !allCounted ? "partial" : !unchanged ? "changed" :
+  let state: VerificationData["state"] = !date ? "never" : !allCounted ? "partial" : !unchanged ? "changed" :
     Date.now() - date.getTime() >= 30 * 86400000 ? "old" : "verified";
+  // Product/location detail views consume the same ledger-based source of truth
+  // as Lagerhälsa. Empty locations retain their location-count fallback above.
+  if (stock.items.length) {
+    const health = await getInventoryHealthSummary(context);
+    const positions = health.positions.filter(row => productScope
+      ? row.productId === scope.productId
+      : row.locationId === scope.locationId);
+    if (positions.length) {
+      const checkedPositions = positions.filter(row => row.verifiedAt);
+      if (!checkedPositions.length) state = "never";
+      else if (checkedPositions.length !== positions.length) state = "partial";
+      else if (positions.some(row => ["OPEN_DISCREPANCY", "MANUAL_CORRECTION", "LEDGER_MISMATCH"].includes(row.reason))) state = "changed";
+      else if (positions.some(row => ["NEEDS_VERIFICATION", "STALE"].includes(row.reason))) state = "old";
+      else state = "verified";
+    }
+  }
   return { countedAt: date?.toISOString() ?? null, sessionId, state,
     checked: matching.length, total: stock.items.length,
     corrections: relevant.filter(row => row.difference !== 0).length, productScope };

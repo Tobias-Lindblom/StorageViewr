@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { AppIcon } from "@/components/app-icon";
 import { BottomSheet } from "@/components/bottom-sheet";
 
@@ -9,11 +9,10 @@ export type LocationFiltersValue = {
   occupancy: "all" | "occupied" | "empty";
   status: "active" | "inactive" | "all";
 };
-export function LocationFilters({ value, warehouses, admin, tools, onApply }: {
+export function LocationFilters({ value, warehouses, admin, onApply }: {
   value: LocationFiltersValue;
   warehouses: { id: string; name: string; active: boolean }[];
   admin: boolean;
-  tools?: ReactNode;
   onApply: (value: LocationFiltersValue) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -60,10 +59,6 @@ export function LocationFilters({ value, warehouses, admin, tools, onApply }: {
           onApply({ warehouseId: "", occupancy: "all", status: "active" }); close();
         }}>Rensa filter</button>
       </form>
-      {tools && <div className="location-filter-tools">
-        <h3>{value.warehouseId ? "För valt lager" : "För alla lager"}</h3>
-        {tools}
-      </div>}
     </BottomSheet>}
   </>;
 }

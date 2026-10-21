@@ -8,13 +8,13 @@ import { EmptyState } from "@/components/empty-state";
 import { LocationFilters, type LocationFiltersValue } from "./location-filters";
 import type { listLocations } from "./service";
 
-export function LocationOverview({ locations, warehouses, warehouseId, admin, createAction, tools }: {
+export function LocationOverview({ locations, warehouses, warehouseId, admin, createAction, toolbarAction }: {
   locations: Awaited<ReturnType<typeof listLocations>>;
   warehouses: { id: string; name: string; active: boolean }[];
   warehouseId?: string;
   admin: boolean;
   createAction?: ReactNode;
-  tools?: ReactNode;
+  toolbarAction?: ReactNode;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -56,7 +56,7 @@ export function LocationOverview({ locations, warehouses, warehouseId, admin, cr
           maxLength={100} placeholder="Sök lagerplats..." />
       </form>
       <LocationFilters value={{ warehouseId: warehouseId ?? "", occupancy, status }} warehouses={warehouses}
-        admin={admin} tools={tools} onApply={apply} />
+        admin={admin} onApply={apply} />
     </div>
     <nav aria-label="Filtrera lagerplatser efter beläggning" className="location-status-chips">
       {[
@@ -73,6 +73,7 @@ export function LocationOverview({ locations, warehouses, warehouseId, admin, cr
       <p role="status" className="sr-only">{pending ? "Hämtar lagerplatser…" :
         visible.length + (visible.length === 1 ? " lagerplats" : " lagerplatser")}</p>
       {filtered && <button type="button" onClick={reset} className="location-clear-filter">Rensa filter</button>}
+      {toolbarAction}
       {createAction}
     </div>
     <div aria-busy={pending} className={pending ? "opacity-60" : ""}>

@@ -3,7 +3,6 @@ import { AppShell } from "@/components/app-shell";
 import { AppIcon } from "@/components/app-icon";
 import { LocationOverview } from "@/features/locations/location-overview";
 import { listLocations } from "@/features/locations/service";
-import { DownloadLocationReport } from "@/features/locations/download-location-report";
 import { getWarehouse, listWarehouses } from "@/features/warehouses/service";
 import { pageTenant } from "@/lib/server/page-auth";
 import { pageResource } from "@/lib/server/page-resource";
@@ -31,11 +30,9 @@ export default async function LocationsPage({
         <LocationEditorSheet key="create-location" warehouses={activeWarehouses} warehouseId={warehouseId}
           label="+ Ny lagerplats" className="location-create" initialCount={1} />
       ) : !selectedWarehouse ? <WarehouseEditorSheet key="create-warehouse" label="+ Nytt lager" className="location-create" /> : undefined : undefined}
-      tools={locations.length ? <>
-        {locations.some(location => location.active) && <Link key="labels" className="location-tools-link" href={"/locations/labels" + scope}>
+      toolbarAction={locations.some(location => location.active) ?
+        <Link key="labels" className="location-toolbar-action" href={"/locations/labels" + scope}>
           <AppIcon name="qr" width={18} height={18} />QR-etiketter
-        </Link>}
-        <DownloadLocationReport key="report" warehouseId={warehouseId} className="location-tools-link" />
-      </> : undefined} />
+        </Link> : undefined} />
   </AppShell>;
 }

@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
+import { AppIcon } from "@/components/app-icon";
 import { PageHeading } from "@/components/page-heading";
 import { pageTenant } from "@/lib/server/page-auth";
 import { getOrganization } from "@/features/organizations/service";
@@ -10,9 +12,9 @@ export default async function OrganizationPage() {
   return (
     <AppShell context={context}>
       <PageHeading
-        eyebrow="Inställningar"
         title="Ditt företag"
         description={"Företagskod: " + organization.slug}
+        action={context.role === "admin" ? <Link href="/settings/organization/members" className="button"><AppIcon name="user" width={17} height={17} />Hantera medlemmar</Link> : undefined}
       />
       <section className="panel max-w-2xl">
         <h2>Företagsuppgifter</h2>

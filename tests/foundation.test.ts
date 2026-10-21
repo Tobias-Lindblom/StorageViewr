@@ -8,6 +8,7 @@ import { Organization } from "../src/models/organization";
 import { Membership } from "../src/models/membership";
 import { Session } from "../src/models/session";
 import { RateLimit } from "../src/models/rate-limit";
+import { OrganizationInvitation } from "../src/models/organization-invitation";
 import { register, login } from "../src/features/auth/service";
 import {
   assertRegistrationEnabled,
@@ -27,6 +28,13 @@ import { rateLimit } from "../src/lib/server/rate-limit";
 import { api, assertOrigin, readJson } from "../src/lib/server/api";
 import { registerSchema } from "../src/validation/auth";
 import {
+  acceptOrganizationInvitation,
+  createOrganizationInvitation,
+  getOrganizationInvitation,
+  listOrganizationMembers,
+  revokeOrganizationInvitation,
+} from "../src/features/organizations/members";
+import {
   objectIdSchema,
   quantitySchema,
   updateOrganizationSchema,
@@ -40,7 +48,7 @@ before(async () => {
   process.env.APP_URL = "http://localhost:3000";
   process.env.REGISTRATION_ENABLED = "true";
   await connectDb();
-  for (const model of [User, Organization, Membership, Session, RateLimit]) {
+  for (const model of [User, Organization, Membership, Session, RateLimit, OrganizationInvitation]) {
     await model.createCollection();
     await model.createIndexes();
   }
@@ -216,6 +224,63 @@ test("two tenants stay isolated; role and membership changes apply immediately",
     }),
     hasStatus(403),
   );
+});
+
+test("administrators invite members with a selected role and only the addressed account can accept", async () => {
+  const owner = await User.create({ email: "invite-owner@example.com", name: "Owner", passwordHash: "test-only" });
+  const recipient = await User.create({ email: "invite-worker@example.com", name: "Worker", passwordHash: "test-only" });
+  const stranger = await User.create({ email: "invite-stranger@example.com", name: "Stranger", passwordHash: "test-only" });
+  const ownerSession = await resolveSession((await createSession(owner._id)).token);
+  const organization = await createOrganization(ownerSession, { name: "Invite AB", slug: "invite-ab" });
+  const context = await tenantForSession(await resolveSession((await createSession(owner._id, new Types.ObjectId(organization.id))).token));
+
+  const created = await createOrganizationInvitation(context, { email: " INVITE-WORKER@example.com ", role: "warehouse" });
+  const token = new URL(created.inviteUrl).pathname.split("/").pop()!;
+  assert.equal(created.email, "invite-worker@example.com");
+  assert.equal((await getOrganizationInvitation(token)).organizationName, "Invite AB");
+  const overview = await listOrganizationMembers(context);
+  assert.equal(overview.members.length, 1);
+  assert.equal(overview.invitations[0]?.role, "warehouse");
+  assert.equal("inviteUrl" in overview.invitations[0], false);
+
+  const strangerSession = await resolveSession((await createSession(stranger._id)).token);
+  await assert.rejects(acceptOrganizationInvitation(strangerSession, token), hasStatus(403));
+  const recipientSession = await resolveSession((await createSession(recipient._id)).token);
+  await acceptOrganizationInvitation(recipientSession, token);
+  assert.equal((await Membership.findOne({ organizationId: organization.id, userId: recipient._id }))?.role, "warehouse");
+  assert.equal((await Session.findById(recipientSession._id))?.organizationId?.toString(), organization.id);
+  assert.equal(await OrganizationInvitation.countDocuments({ organizationId: organization.id }), 0);
+
+  const workerContext = await tenantForSession(await resolveSession((await createSession(recipient._id, new Types.ObjectId(organization.id))).token));
+  await assert.rejects(createOrganizationInvitation(workerContext, { email: "blocked@example.com", role: "admin" }), hasStatus(403));
+  await assert.rejects(listOrganizationMembers(workerContext), hasStatus(403));
+});
+
+test("a valid invitation permits account creation while public registration is closed and can be revoked", async () => {
+  const owner = await User.create({ email: "closed-owner@example.com", name: "Owner", passwordHash: "test-only" });
+  const organization = await Organization.create({ name: "Closed AB", slug: "closed-ab" });
+  await Membership.create({ organizationId: organization._id, userId: owner._id, role: "admin" });
+  const context = await tenantForSession(await resolveSession((await createSession(owner._id, organization._id)).token));
+  const created = await createOrganizationInvitation(context, { email: "new-admin@example.com", role: "admin" });
+  const token = new URL(created.inviteUrl).pathname.split("/").pop()!;
+  process.env.REGISTRATION_ENABLED = "false";
+  try {
+    const registered = await register({
+      email: "new-admin@example.com",
+      name: "New Admin",
+      password: "Ett-langt-testlosenord-2026",
+      inviteToken: token,
+    });
+    const session = await resolveSession(registered.token);
+    assert.equal(session.organizationId?.toString(), organization._id.toString());
+    assert.equal((await Membership.findOne({ organizationId: organization._id, userId: session.userId }))?.role, "admin");
+  } finally {
+    process.env.REGISTRATION_ENABLED = "true";
+  }
+
+  const revokable = await createOrganizationInvitation(context, { email: "revoke@example.com", role: "warehouse" });
+  await revokeOrganizationInvitation(context, revokable.id);
+  assert.equal(await OrganizationInvitation.countDocuments({ _id: revokable.id }), 0);
 });
 
 test("organization creation rolls back if its session is invalid and unique indexes reject duplicates", async () => {

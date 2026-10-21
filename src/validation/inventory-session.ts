@@ -20,4 +20,12 @@ export const saveCountSchema = z.object({
 export const finishInventorySchema = z.object({
   expectedRevision: quantitySchema,
   confirmed: z.literal(true, { error: "Bekräfta att avvikelserna har granskats." }),
+  resolutions: z.array(z.object({
+    productId: inventoryIdSchema,
+    locationId: inventoryIdSchema,
+    action: z.enum(["APPROVE", "INVESTIGATE"]),
+  }).strict()).max(500).default([]).refine(rows =>
+    new Set(rows.map(row => row.productId + ":" + row.locationId)).size === rows.length,
+    "En avvikelse får bara hanteras en gång.",
+  ),
 }).strict();

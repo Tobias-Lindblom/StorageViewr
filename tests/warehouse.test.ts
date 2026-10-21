@@ -392,17 +392,17 @@ test("concurrent warehouse deactivation and location creation cannot leave activ
 test("dashboard numbers reflect only real active data belonging to the current tenant", async () => {
   const a = tenant(),
     b = tenant();
-  assert.deepEqual(await getDashboard(a), {
-    activity: [],
-    insights: { health: { verifiedProducts: 0, needsCountingProducts: 0, oldProducts: 0 },
-      pendingDiscrepancies: 0, suggestedLocations: [] },
-    warehouseCount: 0,
-    locationCount: 0,
-    productCount: 0,
-    stockUnitCount: "0",
-    inventoryValueUnits: "0",
-    activeInventories: [],
-  });
+  const empty = await getDashboard(a);
+  assert.equal(empty.warehouseCount, 0);
+  assert.equal(empty.locationCount, 0);
+  assert.equal(empty.productCount, 0);
+  assert.equal(empty.stockUnitCount, "0");
+  assert.equal(empty.inventoryValueUnits, "0");
+  assert.equal(empty.insights.health.score, null);
+  assert.equal(empty.insights.health.totalPositions, 0);
+  assert.deepEqual(empty.insights.suggestedLocations, []);
+  assert.deepEqual(empty.activeInventories, []);
+  assert.deepEqual(empty.activity, []);
   const warehouse = await createWarehouse(a, warehouseInput);
   const ownLocations = await createLocationBatch(a, { ...batchInput, warehouseId: warehouse.id });
   const foreign = await createWarehouse(b, warehouseInput);

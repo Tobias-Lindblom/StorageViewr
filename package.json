@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "next typegen && tsc --noEmit",
-    "test": "node --conditions=react-server --import tsx --test tests/foundation.test.ts tests/warehouse.test.ts tests/product.test.ts tests/product-model.test.ts tests/inventory.test.ts tests/counting.test.ts tests/report.test.ts tests/pilot.test.ts",
+    "test": "node --conditions=react-server --import tsx --test tests/foundation.test.ts tests/warehouse.test.ts tests/product.test.ts tests/product-model.test.ts tests/inventory.test.ts tests/counting.test.ts tests/inventory-health.test.ts tests/report.test.ts tests/pilot.test.ts",
     "icons:generate": "node scripts/generate-brand-icons.mjs",
     "db:indexes": "node --conditions=react-server --import tsx --env-file=.env.local scripts/create-indexes.ts"
   },

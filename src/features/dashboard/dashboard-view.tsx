@@ -9,6 +9,9 @@ import { RecentActivity } from "./recent-activity";
 import { StartInventory } from "@/features/inventory/start-inventory";
 import { formatSek } from "@/lib/money";
 
+const SECONDS_PER_LOCATION = 30;
+const SECONDS_PER_POSITION = 15;
+
 function compactSek(units: string) {
   return formatSek(BigInt(units)).replace(",00\u00a0kr", "\u00a0kr");
 }
@@ -26,22 +29,36 @@ export function DashboardView({ dashboard, locations, warehouses, admin, account
   const suggestedIds = new Set(suggested.map(place => place.id));
   const selected = locations.filter(place => suggestedIds.has(place.id));
   const selectedIds = selected.map(place => place.id);
-  // A rough planning estimate: 30 seconds per place and 15 seconds per product.
-  const minutes = Math.max(1, Math.ceil((selected.length * 30 + selected.reduce((sum, place) => sum + place.productCount * 15, 0)) / 60));
-  const productsToCount = selected.reduce((sum, place) => sum + place.productCount, 0);
+  const positionsToCount = dashboard.insights.focus.positions;
+  const productsToCount = dashboard.insights.focus.products;
+  const minutes = Math.max(1, Math.ceil((selected.length * SECONDS_PER_LOCATION + positionsToCount * SECONDS_PER_POSITION) / 60));
   const noWarehouse = dashboard.warehouseCount === 0;
   const noLocation = dashboard.locationCount === 0;
+  const unplaced = dashboard.insights.health.productsWithoutInventory;
   const title = noWarehouse ? "Skapa ditt första lager" : noLocation ? "Skapa dina lagerplatser" :
     active ? active.counted >= active.total ? "Granska inventeringen" : "Inventera " + (active.total - active.counted) + " platser" :
-    selected.length ? "Inventera " + selected.length + (selected.length === 1 ? " plats" : " platser") : "Lagret är nyligen inventerat";
+    selected.length ? "Inventera " + selected.length + (selected.length === 1 ? " plats" : " platser") :
+    unplaced ? "Placera " + unplaced + (unplaced === 1 ? " produkt" : " produkter") : "Lagret är nyligen inventerat";
   const description = noWarehouse ? "Kom igång med fysisk lagerkontroll" : noLocation ? "Gör produkternas placering tydlig" :
     active ? active.counted + " av " + active.total + " platser räknade" :
-    selected.length ? "~" + minutes + " minuter · " + productsToCount.toLocaleString("sv-SE") + " produkter" : "Alla platser har räknats senaste 30 dagarna";
+    selected.length ? "~" + minutes + " minuter · " + productsToCount.toLocaleString("sv-SE") + " produkter" :
+    unplaced ? "Koppla produkterna till rätt fysisk lagerplats" : "Alla lagerpositioner är spårbara";
+  const focusReasons = [
+    [dashboard.insights.focus.openDiscrepancies, "öppna avvikelser"],
+    [dashboard.insights.focus.ledgerMismatches, "ledgerfel"],
+    [dashboard.insights.focus.neverCounted, "aldrig räknade"],
+    [dashboard.insights.focus.manualCorrections, "korrigerade saldon"],
+    [dashboard.insights.focus.stale, "gamla kontroller"],
+    [dashboard.insights.focus.needsVerification, "behöver verifieras"],
+    [dashboard.insights.focus.dueSoon, "behöver snart verifieras"],
+  ].filter(row => Number(row[0]) > 0).slice(0, 3);
   const choices = locations.map(place => ({ id: place.id, label: place.warehouseName + " · " + place.code }));
   const firstName = accountName.trim().split(/\s+/)[0] ?? "";
   const focusLabel: ReactNode = <>
     <span className="dashboard-focus-icon"><AppIcon name="layers" width={29} height={29} /></span>
-    <span className="dashboard-focus-copy"><strong>{title}</strong><span>{description}</span></span>
+    <span className="dashboard-focus-copy"><strong>{title}</strong><span>{description}</span>
+      {!active && selected.length > 0 && focusReasons.length > 0 && <small>{focusReasons.map(row => row[0] + " " + row[1]).join(" · ")}</small>}
+    </span>
     <AppIcon name="chevron" width={18} height={18} className="dashboard-focus-arrow" />
   </>;
   const focusAction = active
@@ -55,7 +72,7 @@ export function DashboardView({ dashboard, locations, warehouses, admin, account
               locations={locations.map(place => ({ id: place.id, warehouseId: place.warehouseId, code: place.code }))}
               initialWarehouseId={warehouseId} initialLocationIds={selectedIds}
               label={focusLabel} defaultName="Dagens inventering" className="dashboard-focus-action" />
-          : <Link className="dashboard-focus-action" href={selected.length ? "/locations" : "/inventories"}>{focusLabel}</Link>;
+          : <Link className="dashboard-focus-action" href={selected.length ? "/locations" : unplaced ? "/products" : "/inventories"}>{focusLabel}</Link>;
   const overview = [
     { href: "/products", value: dashboard.productCount.toLocaleString("sv-SE"), label: "Produkter", icon: "product" as const, tone: "cyan" },
     { href: "/products", value: BigInt(dashboard.stockUnitCount).toLocaleString("sv-SE"), label: "Enheter", icon: "units" as const, tone: "blue" },

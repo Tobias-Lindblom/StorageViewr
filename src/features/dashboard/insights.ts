@@ -1,68 +1,53 @@
 import "server-only";
 import type { TenantContext } from "@/lib/server/tenant";
-import { Product } from "@/models/product";
-import { Location } from "@/models/location";
-import { InventoryCount } from "@/models/inventory-count";
-import { productHealthStages } from "./product-health";
+import {
+  getInventoryHealthSummary,
+  INVENTORY_HEALTH_PRIORITY,
+  type InventoryPositionHealth,
+} from "@/features/inventory/inventory-health";
+
+function uniqueFocusLocations(items: InventoryPositionHealth[]) {
+  if (!items.length) return [];
+  const warehouseId = items[0].warehouseId;
+  const inWarehouse = items.filter(row => row.warehouseId === warehouseId)
+    .sort((a, b) => INVENTORY_HEALTH_PRIORITY[a.reason] - INVENTORY_HEALTH_PRIORITY[b.reason] ||
+      a.zone.localeCompare(b.zone, "sv", { numeric: true }) ||
+      a.locationCode.localeCompare(b.locationCode, "sv", { numeric: true }));
+  const locations = new Map<string, typeof inWarehouse[number]>();
+  for (const item of inWarehouse) {
+    if (!locations.has(item.locationId)) locations.set(item.locationId, item);
+    if (locations.size === 7) break;
+  }
+  return [...locations.values()];
+}
 
 export async function getDashboardInsights(context: TenantContext) {
-  const organizationId = context.organizationId;
-  const cutoff = new Date(Date.now() - 30 * 86400000);
-  const oldCutoff = new Date(Date.now() - 90 * 86400000);
-  const [stock, places, discrepancies] = await Promise.all([
-    Product.aggregate<{ verified: number; needsCounting: number; old: number }>([
-      { $match: { organizationId, active: true } }, ...productHealthStages(context),
-      { $group: { _id: null,
-        verified: { $sum: { $cond: [{ $and: ["$unchanged", { $gte: ["$verifiedAt", cutoff] }] }, 1, 0] } },
-        old: { $sum: { $cond: [{ $and: [{ $ne: ["$verifiedAt", null] }, { $lt: ["$verifiedAt", oldCutoff] }] }, 1, 0] } },
-        needsCounting: { $sum: { $cond: [
-          { $or: [
-            { $and: ["$unchanged", { $gte: ["$verifiedAt", cutoff] }] },
-            { $and: [{ $ne: ["$verifiedAt", null] }, { $lt: ["$verifiedAt", oldCutoff] }] },
-          ] }, 0, 1,
-        ] } },
-      } },
-    ]),
-    Location.aggregate<{
-      _id: { toString(): string }; code: string; warehouseId: { toString(): string }; countedAt: Date | null;
-    }>([
-      { $match: { organizationId, active: true } },
-      { $lookup: {
-        from: "inventorySessionLocations", let: { locationId: "$_id" },
-        pipeline: [
-          { $match: { organizationId, status: "counted", $expr: { $eq: ["$locationId", "$$locationId"] } } },
-          { $lookup: {
-            from: "inventorySessions", let: { sessionId: "$inventorySessionId" },
-            pipeline: [{ $match: { organizationId, status: "completed",
-              $expr: { $eq: ["$_id", "$$sessionId"] } } }], as: "session",
-          } },
-          { $unwind: "$session" },
-          { $sort: { "session.completedAt": -1, _id: -1 } }, { $limit: 1 },
-          { $project: { completedAt: 1 } },
-        ], as: "lastCount",
-      } },
-      { $set: { countedAt: { $ifNull: [{ $arrayElemAt: ["$lastCount.completedAt", 0] }, null] } } },
-      { $match: { $or: [{ countedAt: null }, { countedAt: { $lt: cutoff } }] } },
-      { $sort: { countedAt: 1, code: 1, _id: 1 } }, { $limit: 7 },
-      { $project: { code: 1, warehouseId: 1, countedAt: 1 } },
-    ]),
-    InventoryCount.aggregate<{ total: number }>([
-      { $match: { organizationId, difference: { $ne: 0 } } },
-      { $lookup: { from: "inventorySessions", let: { sessionId: "$inventorySessionId" },
-        pipeline: [{ $match: { organizationId, status: "active", $expr: { $eq: ["$_id", "$$sessionId"] } } }],
-        as: "session" } },
-      { $unwind: "$session" }, { $count: "total" },
-    ]),
-  ]);
+  const health = await getInventoryHealthSummary(context);
+  const focusLocations = uniqueFocusLocations(health.attentionItems);
+  const focusIds = new Set(focusLocations.map(row => row.locationId));
+  const focusItems = health.attentionItems.filter(row => focusIds.has(row.locationId));
   return {
-    health: {
-      verifiedProducts: stock[0]?.verified ?? 0,
-      needsCountingProducts: stock[0]?.needsCounting ?? 0,
-      oldProducts: stock[0]?.old ?? 0,
-    },
-    pendingDiscrepancies: discrepancies[0]?.total ?? 0,
-    suggestedLocations: places.map(row => ({
-      id: String(row._id), code: row.code, warehouseId: String(row.warehouseId), countedAt: row.countedAt?.toISOString() ?? null,
+    health: { ...health, positions: [], attentionItems: health.attentionItems.slice(0, 50) },
+    pendingDiscrepancies: health.openDiscrepancies,
+    suggestedLocations: focusLocations.map(row => ({
+      id: row.locationId,
+      code: row.locationCode,
+      zone: row.zone,
+      warehouseId: row.warehouseId,
+      warehouseName: row.warehouseName,
+      reason: row.reason,
+      countedAt: row.verifiedAt,
     })),
+    focus: {
+      positions: focusItems.length,
+      products: new Set(focusItems.map(row => row.productId)).size,
+      openDiscrepancies: focusItems.filter(row => row.reason === "OPEN_DISCREPANCY").length,
+      ledgerMismatches: focusItems.filter(row => row.reason === "LEDGER_MISMATCH").length,
+      neverCounted: focusItems.filter(row => row.reason === "NEVER_COUNTED").length,
+      manualCorrections: focusItems.filter(row => row.reason === "MANUAL_CORRECTION").length,
+      stale: focusItems.filter(row => row.reason === "STALE").length,
+      needsVerification: focusItems.filter(row => row.reason === "NEEDS_VERIFICATION").length,
+      dueSoon: focusItems.filter(row => row.reason === "DUE_SOON").length,
+    },
   };
 }

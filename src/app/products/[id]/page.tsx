@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ProductPhoto } from "@/components/product-photo";
+import { ProductPhotoLightbox } from "@/components/product-photo-lightbox";
 import { AppShell } from "@/components/app-shell";
 import { AppIcon } from "@/components/app-icon";
 import { StockPanel } from "@/features/inventory/stock-panel";
@@ -22,7 +22,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
       <StockPanel context={context} kind="product" id={id}
         label={product.name + " · " + product.sku} active={product.active} unitValue={product.unitValue}
         productHeader={count => <header className="product-detail-header">
-          {photo ? <ProductPhoto src={photo} alt={"Produktbild: " + product.name} eager className="product-detail-photo" /> :
+          {photo ? <ProductPhotoLightbox src={photo} alt={product.name} /> :
             <span className="product-detail-photo product-photo-placeholder"><AppIcon name="product" width={32} height={32} /></span>}
           <div className="product-detail-identity">
             <h1 id="product-heading">{product.name}</h1>
