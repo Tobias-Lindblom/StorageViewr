@@ -116,10 +116,13 @@ export async function getInventoryReport(context: TenantContext, id: string) {
   const rows = places.flatMap((place) => place.rows);
 
   // Exact totals even when multiple safe integer balances exceed JS's safe total.
-  const sum = (values: Array<number | string | bigint>) =>
-    values
-      .reduce((total, value) => total + BigInt(value), BigInt(0))
-      .toString();
+const sum = (values: Array<number | string | bigint>) =>
+  values
+    .reduce<bigint>(
+      (total, value) => total + BigInt(value),
+      BigInt(0),
+    )
+    .toString();
   const valuedRows = rows.filter(
     (
       row,

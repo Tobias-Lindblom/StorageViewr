@@ -444,15 +444,24 @@ export async function renderInventoryReport(
         y += 25;
       }
 
-      const tableRows = report.places.flatMap((place) =>
-        place.rows.length
-          ? place.rows.map((row) => ({ place, row }))
-          : [{ place, row: null }],
-      );
-      tableHeader();
+type ReportPlace = InventoryReport["places"][number];
+type ReportRow = ReportPlace["rows"][number];
 
-      for (const [rowIndex, entry] of tableRows.entries()) {
-        const { place, row } = entry;
+type TableRow = {
+  place: ReportPlace;
+  row: ReportRow | null;
+};
+
+const tableRows = report.places.flatMap<TableRow>((place) =>
+  place.rows.length
+    ? place.rows.map((row): TableRow => ({ place, row }))
+    : [{ place, row: null }],
+);
+
+tableHeader();
+
+for (const [rowIndex, entry] of tableRows.entries()) {
+  const { place, row } = entry;
         const rowHeight = row
           ? Math.max(
               25,
