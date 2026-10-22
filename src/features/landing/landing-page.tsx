@@ -264,7 +264,7 @@ export default function LandingPage() {
           <div className={styles.featureCopy}>
             <h2 id="changes-title">Varje lagerförändring går att följa</h2>
             <p>
-              Registrera inleveranser, uttag och flyttar direkt när de sker.
+              Registrera inleveranser direkt när varorna kommer in.
               Saldot uppdateras på rätt produkt och lagerplats utan extra
               kalkylblad eller dubbelarbete.
             </p>

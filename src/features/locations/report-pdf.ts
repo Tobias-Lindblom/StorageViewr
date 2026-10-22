@@ -170,12 +170,13 @@ export async function renderLocationStockReport(
       }
       function tableHeader() {
         doc.rect(left, y, width, 22).fill(colors.pale);
-        text("Lagerplats", left + 8, y + 7, 62, 6.6, true, colors.purple);
-        text("Produkt", left + 78, y + 7, 128, 6.6, true, colors.purple);
-        text("Art.nr", left + 214, y + 7, 68, 6.6, true, colors.purple);
-        text("Antal", left + 290, y + 7, 43, 6.6, true, colors.purple, "right");
-        text("Styckvärde", left + 341, y + 7, 75, 6.6, true, colors.purple, "right");
-        text("Totalt värde", left + 424, y + 7, 79, 6.6, true, colors.purple, "right");
+        text("Lagerplats", left + 8, y + 7, 55, 6.3, true, colors.purple);
+        text("Produkt", left + 71, y + 7, 110, 6.3, true, colors.purple);
+        text("Art.nr", left + 189, y + 7, 55, 6.3, true, colors.purple);
+        text("Antal", left + 252, y + 7, 38, 6.3, true, colors.purple, "right");
+        text("Styckvärde", left + 298, y + 7, 65, 6.3, true, colors.purple, "right");
+        text("Totalt värde", left + 371, y + 7, 67, 6.3, true, colors.purple, "right");
+        text("Verifierad", left + 446, y + 7, 57, 6.3, true, colors.purple, "right");
         y += 22;
       }
       function warehouseHeader(
@@ -209,12 +210,13 @@ export async function renderLocationStockReport(
       doc.addPage();
       header(true);
       metricCards([
-        ["Lagerplatser", amount(report.summary.locations)],
         ["Unika produkter", amount(report.summary.uniqueProducts)],
+        ["Totalt antal", amount(report.summary.totalQuantity)],
         [
           "Totalt lagervärde",
           formatSek(BigInt(report.summary.inventoryValueUnits)),
         ],
+        ["Saknar styckvärde", amount(report.summary.productsWithoutValue)],
       ]);
       y +=
         text(
@@ -283,15 +285,19 @@ export async function renderLocationStockReport(
             const totalValueLabel = row?.totalValueUnits
               ? formatSek(BigInt(row.totalValueUnits))
               : "–";
+            const verifiedLabel = row?.verifiedAt
+              ? new Date(row.verifiedAt).toLocaleDateString("sv-SE", { timeZone: "Europe/Stockholm", year: "2-digit", month: "2-digit", day: "2-digit" })
+              : "Ej verifierad";
             const height =
               Math.max(
                 24,
-                measure(locationLabel, 62, 7.5, true) + 12,
-                measure(productLabel, 128, 7.5, Boolean(row)) + 12,
-                row ? measure(row.sku, 68, 7.2, true) + 12 : 24,
-                row ? measure(amount(row.quantity) + " st", 43, 7.2, true) + 12 : 24,
-                row ? measure(unitValueLabel, 75, 7, Boolean(row.unitValue)) + 12 : 24,
-                row ? measure(totalValueLabel, 79, 7, Boolean(row.totalValueUnits)) + 12 : 24,
+                measure(locationLabel, 55, 7.2, true) + 12,
+                measure(productLabel, 110, 7.2, Boolean(row)) + 12,
+                row ? measure(row.sku, 55, 7, true) + 12 : 24,
+                row ? measure(amount(row.quantity) + " st", 38, 7, true) + 12 : 24,
+                row ? measure(unitValueLabel, 65, 6.8, Boolean(row.unitValue)) + 12 : 24,
+                row ? measure(totalValueLabel, 67, 6.8, Boolean(row.totalValueUnits)) + 12 : 24,
+                row ? measure(verifiedLabel, 57, 6.6, false) + 12 : 24,
               );
             if (y + height > bottom) {
               newPage();
@@ -303,58 +309,68 @@ export async function renderLocationStockReport(
               locationLabel,
               left + 8,
               y + 7,
-              62,
-              7.5,
+              55,
+              7.2,
               true,
               location.active ? colors.ink : colors.muted,
             );
             text(
               productLabel,
-              left + 78,
+              left + 71,
               y + 7,
-              128,
-              7.5,
+              110,
+              7.2,
               Boolean(row),
               row ? colors.ink : colors.green,
             );
             if (row)
               text(
                 row.sku,
-                left + 214,
+                left + 189,
                 y + 7,
-                68,
-                7.2,
+                55,
+                7,
                 true,
                 colors.ink,
               );
             text(
               row ? amount(row.quantity) + " st" : "–",
-              left + 290,
+              left + 252,
               y + 7,
-              43,
-              7.2,
+              38,
+              7,
               Boolean(row),
               row ? colors.ink : colors.muted,
               "right",
             );
             text(
               row ? unitValueLabel : "–",
-              left + 341,
+              left + 298,
               y + 7,
-              75,
-              7,
+              65,
+              6.8,
               Boolean(row?.unitValue),
               row?.unitValue ? colors.ink : colors.muted,
               "right",
             );
             text(
               row ? totalValueLabel : "–",
-              left + 424,
+              left + 371,
               y + 7,
-              79,
-              7,
+              67,
+              6.8,
               Boolean(row?.totalValueUnits),
               row?.totalValueUnits ? colors.ink : colors.muted,
+              "right",
+            );
+            text(
+              row ? verifiedLabel : "–",
+              left + 446,
+              y + 7,
+              57,
+              6.6,
+              false,
+              row?.verifiedAt ? colors.ink : colors.muted,
               "right",
             );
             y += height;

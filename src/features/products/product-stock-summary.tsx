@@ -6,9 +6,10 @@ import { formatSek, formatUnitValue, sekToUnits } from "@/lib/money";
 import { BottomSheet } from "@/components/bottom-sheet";
 import { InventoryVerification, verificationLabels } from "@/components/inventory-verification";
 import type { VerificationData } from "@/features/inventory/verification";
+import Link from "next/link";
 
-export function ProductStockSummary({ total, verification, unitValue }: {
-  total: string; verification: VerificationData; unitValue: string | null;
+export function ProductStockSummary({ total, verification, unitValue, admin }: {
+  total: string; verification: VerificationData; unitValue: string | null; admin: boolean;
 }) {
   const totalValueUnits = unitValue === null ? null : BigInt(total) * sekToUnits(unitValue);
   const [open, setOpen] = useState(false);
@@ -20,7 +21,9 @@ export function ProductStockSummary({ total, verification, unitValue }: {
     <div className="product-summary">
       <div className="product-total">
         <span className="product-summary-icon"><AppIcon name="layers" width={26} height={26} /></span>
-        <dl><dt>Totalt saldo</dt><dd className={total === "0" ? "is-empty" : ""}>{BigInt(total).toLocaleString("sv-SE")} st</dd></dl>
+        <dl><dt>Registrerat saldo</dt><dd className={total === "0" ? "is-empty" : ""}>{BigInt(total).toLocaleString("sv-SE")} st</dd>
+          <small className="text-muted">Senast verifierat: {verification.verifiedQuantity === null ? "Ej komplett" : BigInt(verification.verifiedQuantity).toLocaleString("sv-SE") + " st"}</small>
+        </dl>
       </div>
       <button type="button" className="product-last-count" aria-haspopup="dialog"
         aria-label={"Senast inventerad, " + dateLabel + ", " + labels[verification.state] + ". Visa inventeringsstatus"}
@@ -33,6 +36,8 @@ export function ProductStockSummary({ total, verification, unitValue }: {
             <span>{date.toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Stockholm" })}</span>
           </time> : <span className="product-count-none">Ej inventerad</span>}
           {date && verification.state !== "verified" && <span className="product-count-warning">{labels[verification.state]}</span>}
+          <span className="product-count-warning">Lagerhälsa {verification.healthScore === null ? "–" : verification.healthScore + "%"}</span>
+          {verification.openDiscrepancies > 0 && <span className="product-count-warning">{verification.openDiscrepancies} öppna avvikelser</span>}
         </span>
       </button>
       <div className="product-valuation" aria-label="Produktens lagervärde">
@@ -51,6 +56,9 @@ export function ProductStockSummary({ total, verification, unitValue }: {
           </dl>
         </div>
       </div>
+      {admin && verification.openDiscrepancies > 0 && <Link href="/discrepancies" className="button-secondary col-span-full">
+        Visa {verification.openDiscrepancies} öppna avvikelser
+      </Link>}
     </div>
     {open && <BottomSheet title="Inventeringsstatus" onClose={() => { setOpen(false); trigger.current?.focus(); }}>
       <InventoryVerification data={verification} />

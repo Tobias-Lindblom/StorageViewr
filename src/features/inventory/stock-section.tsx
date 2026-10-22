@@ -15,7 +15,6 @@ export function StockSection({
   data,
   scope,
   choices,
-  transferLocations,
   operable,
   admin,
   inventoryAction,
@@ -23,7 +22,6 @@ export function StockSection({
   data: StockData;
   scope: Scope;
   choices: Choice[];
-  transferLocations: Choice[];
   operable: boolean;
   admin: boolean;
   inventoryAction?: ReactNode;
@@ -111,8 +109,8 @@ export function StockSection({
         <EmptyState icon={scope.kind === "product" ? "location" : "product"}
           title={scope.kind === "product" ? "Inga lagerplatser" : "Inga produkter"}>
           {scope.kind === "product"
-            ? "Produkten är inte placerad på någon lagerplats."
-            : "Inga produkter är placerade på den här lagerplatsen."}
+            ? "Inga lagerpositioner ännu. Placera produkten på en lagerplats för att börja arbeta med saldot."
+            : "Inga lagerpositioner ännu. Placera produkter här för att börja arbeta med lagerplatsen."}
         </EmptyState>
       )}
       {operable && <div className={compact ? "product-quick-actions" : "location-quick-actions"}>
@@ -128,7 +126,7 @@ export function StockSection({
             <button
               type="submit"
               form="stock-editor-form"
-              className={"button w-full " + (stockAction.tone === "RECEIPT" ? "button-receipt" : stockAction.tone === "ISSUE" ? "button-issue" : "")}
+              className={"button w-full " + (stockAction.tone === "RECEIPT" ? "button-receipt" : "")}
               disabled={stockAction.disabled}
             >
               {stockAction.label}
@@ -139,7 +137,6 @@ export function StockSection({
             scope={scope}
             initialType={initialType}
             choices={choices}
-            transferLocations={transferLocations}
             initialChoice={selection}
             admin={admin}
             onActionStateChange={setStockAction}

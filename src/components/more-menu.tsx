@@ -11,6 +11,7 @@ const destinations = [
   { href: "/warehouses", label: "Lager", description: "Dina lager och lagerplatser", icon: "warehouse" },
   { href: "/inventories", label: "Inventering", description: "Pågående och genomförda inventeringar", icon: "inventory" },
   { href: "/reports", label: "Rapporter & dokument", description: "Lagervärde och inventeringsunderlag", icon: "document" },
+  { href: "/discrepancies", label: "Avvikelser", description: "Granska öppna inventeringsavvikelser", icon: "alert" },
 ] as const;
 
 export function MoreMenu({ admin }: { admin: boolean }) {
@@ -37,7 +38,7 @@ export function MoreMenu({ admin }: { admin: boolean }) {
     </button>
     {open && <BottomSheet id={id} title="Mer" variant="navigation" onClose={close}>
       <nav aria-label="Fler lagerfunktioner" className="more-navigation">
-        {destinations.map(item => {
+        {destinations.filter(item => admin || item.href !== "/discrepancies").map(item => {
           const selected = current?.href === item.href;
           return <Link key={item.href} href={item.href} className="more-navigation-row"
             aria-current={selected ? "page" : undefined} onClick={() => setPanel({ pathname, open: false })}>

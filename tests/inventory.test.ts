@@ -578,7 +578,7 @@ test("organization history keeps administrator authorization and tenant isolatio
   await assert.rejects(listMovements(f.context, { productId: f.product.id, locationId: f.location.id }));
 });
 
-test("history groups transfers before pagination and searches complete events within the tenant", async () => {
+test("core history omits legacy transfers while pagination and tenant search stay correct", async () => {
   const f = await fixture();
   const destination = await createLocation(f.context, { ...parts, position: "02", warehouseId: f.warehouse.id });
   await adjustStock(f.context, f.change(12));
@@ -596,23 +596,16 @@ test("history groups transfers before pagination and searches complete events wi
   const foreign = await fixture();
   await adjustStock(foreign.context, foreign.change(999));
   const first = await listHistory(f.context, {}), second = await listHistory(f.context, { page: 2 });
-  assert.equal(first.total, 23);
+  assert.equal(first.total, 22);
   assert.equal(first.items.length, 20);
-  assert.equal(second.items.length, 3);
-  assert.equal(new Set([...first.items, ...second.items].map(row => row.id)).size, 23);
-  const transfers = await listHistory(f.context, { kind: "transfer", q: destination.code });
-  assert.equal(transfers.total, 1);
-  assert.equal(transfers.items[0].type, "TRANSFER");
-  assert.equal(transfers.items[0].difference, 4);
-  assert.equal(transfers.items[0].balances.length, 2);
-  assert.equal(transfers.items[0].locationCode, f.location.code + " → " + destination.code);
-  const source = await listHistory(f.context, { kind: "transfer", locationId: f.location.id });
-  assert.equal(source.items[0].type, "TRANSFER_OUT");
-  assert.equal(source.items[0].difference, -4);
+  assert.equal(second.items.length, 2);
+  assert.equal(new Set([...first.items, ...second.items].map(row => row.id)).size, 22);
+  assert.ok([...first.items, ...second.items].every(row => !row.type.startsWith("TRANSFER")));
   assert.equal((await listHistory(f.context, { kind: "receipt", q: "sidprov", page: 2 })).items.length, 1);
-  assert.equal((await listHistory(f.context, { kind: "issue" })).total, 0);
+  await assert.rejects(listHistory(f.context, { kind: "issue" }));
+  await assert.rejects(listHistory(f.context, { kind: "transfer" }));
   assert.equal((await listHistory(f.context, { q: ".*" })).total, 0);
-  assert.equal((await listMovements(f.context, { kind: "transfer" })).total, 2);
+  await assert.rejects(listMovements(f.context, { kind: "transfer" }));
   assert.equal((await listMovements(f.context, { q: ".*" })).total, 0);
   assert.equal((await listHistory(f.context, { page: 999 })).page, 2);
   await assert.rejects(listHistory({ ...f.context, role: "warehouse" }, {}), status(403));

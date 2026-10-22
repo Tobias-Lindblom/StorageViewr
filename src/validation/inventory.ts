@@ -30,51 +30,54 @@ const singleMovementFields = {
   expectedVersion: expectedVersionSchema,
   reason: movementReasonSchema,
 };
-export const stockMovementSchema = z
-  .discriminatedUnion("type", [
-    z
+const receiptMovementSchema = z
       .object({
         type: z.literal("RECEIPT"),
         ...singleMovementFields,
         quantity: movementQuantitySchema,
       })
-      .strict(),
-    z
-      .object({
-        type: z.literal("ISSUE"),
-        ...singleMovementFields,
-        quantity: movementQuantitySchema,
-      })
-      .strict(),
-    z
+      .strict();
+const issueMovementSchema = z
+  .object({
+    type: z.literal("ISSUE"),
+    ...singleMovementFields,
+    quantity: movementQuantitySchema,
+  })
+  .strict();
+const correctionMovementSchema = z
       .object({
         type: z.literal("CORRECTION"),
         ...singleMovementFields,
         quantity: quantitySchema,
       })
-      .strict(),
-    z
-      .object({
-        type: z.literal("TRANSFER"),
-        productId: objectIdSchema,
-        sourceLocationId: objectIdSchema,
-        destinationLocationId: objectIdSchema,
-        quantity: movementQuantitySchema,
-        expectedSourceVersion: expectedVersionSchema,
-        expectedDestinationVersion: expectedVersionSchema,
-        reason: movementReasonSchema,
-      })
-      .strict(),
-  ])
-  .refine(
-    (value) =>
-      value.type !== "TRANSFER" ||
-      value.sourceLocationId !== value.destinationLocationId,
-    { message: "Välj en annan destinationsplats." },
-  );
+      .strict();
+const transferMovementSchema = z.object({
+  type: z.literal("TRANSFER"),
+  productId: objectIdSchema,
+  sourceLocationId: objectIdSchema,
+  destinationLocationId: objectIdSchema,
+  quantity: movementQuantitySchema,
+  expectedSourceVersion: expectedVersionSchema,
+  expectedDestinationVersion: expectedVersionSchema,
+  reason: movementReasonSchema,
+}).strict();
+
+// Public writes are deliberately limited to the fixed product scope. The
+// internal schema keeps old movement types readable by tests and migrations.
+export const stockMovementSchema = z.discriminatedUnion("type", [
+  receiptMovementSchema,
+  correctionMovementSchema,
+]);
+export const internalStockMovementSchema = z.discriminatedUnion("type", [
+  receiptMovementSchema,
+  issueMovementSchema,
+  correctionMovementSchema,
+  transferMovementSchema,
+]).refine(value => value.type !== "TRANSFER" || value.sourceLocationId !== value.destinationLocationId,
+  { message: "Välj en annan destinationsplats." });
 export const historyQuerySchema = z.object({
   productId: objectIdSchema.optional(), locationId: objectIdSchema.optional(),
   q: z.string().trim().max(100).default(""),
-  kind: z.enum(["all", "receipt", "issue", "transfer", "inventory", "correction"]).default("all"),
+  kind: z.enum(["all", "receipt", "inventory", "correction"]).default("all"),
   page: z.coerce.number().int().min(1).max(100000).default(1),
 }).strict().refine(value => !(value.productId && value.locationId), "Välj högst en produkt eller lagerplats.");

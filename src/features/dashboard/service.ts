@@ -64,6 +64,9 @@ export async function getDashboard(context: TenantContext) {
       ? sum
       : sum + BigInt(row.totalQuantity) * sekToUnits(unitValue);
   }, BigInt(0));
+  const productsWithoutValue = productStock.filter(row =>
+    (row.unitValue !== undefined ? row.unitValue : legacyOreToSek(row.unitValueOre ?? null)) === null,
+  ).length;
   return {
     insights,
     activity,
@@ -72,6 +75,7 @@ export async function getDashboard(context: TenantContext) {
     productCount: productStock.length,
     stockUnitCount: stockUnitCount.toString(),
     inventoryValueUnits: inventoryValueUnits.toString(),
+    productsWithoutValue,
     activeInventories: inventoryRecords.map((inventory) => {
       const places = scopes.filter((scope) =>
         scope.inventorySessionId.equals(inventory._id),

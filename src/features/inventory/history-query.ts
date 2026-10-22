@@ -1,7 +1,5 @@
 export const historyMovementTypes = {
   receipt: ["RECEIPT", "INITIAL"],
-  issue: ["ISSUE"],
-  transfer: ["TRANSFER_OUT", "TRANSFER_IN"],
   inventory: ["INVENTORY"],
   correction: ["CORRECTION", "ADJUSTMENT"],
 } as const;

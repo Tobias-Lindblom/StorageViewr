@@ -68,23 +68,20 @@ Första versionen ska hållas relativt liten.
 MVP:n ska innehålla:
 
 * organisation/företag
-* användare
-* lager
-* zoner
-* lagerplatser
+StorageViewrs fasta kärna är:
+
 * produkter
-* SKU
-* eventuellt EAN/streckkod
-* lagersaldo per fysisk lagerplats
-* möjlighet för samma produkt att finnas på flera platser
-* QR-koder för lagerplatser
-* mobil QR-skanning
-* inventeringssessioner
-* registrering av faktiskt antal
-* avvikelse mellan systemsaldo och räknat saldo
-* historik över lagerförändringar
-* enkel dashboard
-* CSV-import av produkter
+* lagerplatser
+* registrerat saldo per produkt och lagerplats
+* inventering på plats
+* avvikelser mellan registrerat och räknat saldo
+* Lagerhälsa som gemensam tillförlitlighetsmodell
+* lagervärde
+* rapporter för lagervärde, inventering, avvikelser och Lagerhälsa
+
+Historik och inleveranser stödjer kärnan. Användare, roller, lagerstruktur,
+QR-koder, mobil skanning och CSV-import finns för att göra dessa flöden
+användbara i det dagliga lagerarbetet.
 
 Vi ska INTE börja med:
 
@@ -98,7 +95,10 @@ Vi ska INTE börja med:
 * komplex WMS-logik
 * ekonomifunktioner
 
-Arkitekturen får gärna förberedas så att sådana funktioner kan läggas till senare, men de ska inte byggas nu.
+Koden ska vara ren för dagens behov. Lägg inte till modeller, gränssnitt,
+funktionsflaggor eller tomma flöden för framtida funktioner. Äldre tekniska
+poster för uttag och flytt får endast behållas för att historisk data ska kunna
+läsas; de ska inte kunna skapas eller visas som produktfunktioner.
 
 ---
 

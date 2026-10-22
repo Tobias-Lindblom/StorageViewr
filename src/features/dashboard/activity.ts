@@ -27,6 +27,7 @@ export async function getDashboardActivity(context: TenantContext, options: { lo
   ]);
   const sessions = new Set(counts.map(row => String(row.inventorySessionId) + ":" + row.locationCode));
   const stock: DashboardActivity[] = movements.items
+    .filter(row => ["RECEIPT", "INITIAL", "INVENTORY", "CORRECTION", "ADJUSTMENT"].includes(row.type))
     .filter(row => row.type !== "INVENTORY" || !sessions.has(row.inventorySessionId + ":" + row.locationCode))
     .map(row => ({
       id: row.id,

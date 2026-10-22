@@ -45,13 +45,13 @@ export async function StockPanel({
     operable ? listLocations({ ...context, role: "warehouse" }) : Promise.resolve([]),
     kind === "location" ? getDashboardActivity(context, { locationId: id, movements: movements?.items ?? [] }) : Promise.resolve(null),
   ]);
-  const transferLocations = locations.map((row) => ({
+  const locationChoices = locations.map((row) => ({
     id: row.id,
     label: row.warehouseName + " · " + row.code,
   }));
   const choices =
     kind === "product"
-      ? transferLocations
+      ? locationChoices
       : !operable
         ? []
         : (
@@ -69,16 +69,15 @@ export async function StockPanel({
   return (
     <>
     {productHeader?.(data.items.length)}
-    {kind === "product" ? <ProductStockSummary total={data.total} verification={verification} unitValue={unitValue} /> : <>
+    {kind === "product" ? <ProductStockSummary total={data.total} verification={verification} unitValue={unitValue} admin={context.role === "admin"} /> : <>
       <LocationStockSummary total={data.total} count={data.items.length} />
-      <LocationVerification data={verification} />
+      <LocationVerification data={verification} admin={context.role === "admin"} />
     </>}
     <div className={"grid items-start gap-x-7 " + (movements ? "xl:grid-cols-[minmax(0,1fr)_minmax(0,0.8fr)]" : "")}>
     <StockSection
       data={data}
       scope={{ kind, id, label }}
       choices={choices}
-      transferLocations={transferLocations}
       operable={operable}
       admin={context.role === "admin"}
       inventoryAction={inventoryAction}

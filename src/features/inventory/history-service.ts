@@ -33,6 +33,7 @@ export async function listHistory(context: TenantContext, input: unknown) {
   if (productId || locationId) await checkScope(context, { productId, locationId });
   const scope = {
     organizationId: context.organizationId,
+    type: { $in: ["RECEIPT", "INITIAL", "INVENTORY", "CORRECTION", "ADJUSTMENT"] },
     ...(productId ? { productId: new Types.ObjectId(productId) } : {}),
     ...(locationId ? { locationId: new Types.ObjectId(locationId) } : {}),
   };

@@ -17,11 +17,9 @@ export function AppNav({ admin, mobile = false }: { admin: boolean; mobile?: boo
     { href: "/dashboard", label: "Översikt", icon: "dashboard" as const },
     { href: "/products", label: "Produkter", icon: "product" as const },
     { href: "/locations", label: "Lagerplatser", icon: "location" as const },
-    { href: "/warehouses", label: "Lager", icon: "warehouse" as const },
-    { href: "/scanner", label: "Skanna", icon: "scan" as const },
     { href: "/inventories", label: "Inventering", icon: "inventory" as const },
+    { href: history, label: "Historik", icon: "history" as const },
     { href: "/reports", label: "Rapporter", icon: "document" as const },
-    ...(admin ? [{ href: history, label: "Historik", icon: "history" as const }] : []),
   ];
   return <nav aria-label="Huvudnavigation" className={mobile ? "mobile-nav grid h-full grid-cols-4" : "desktop-nav"}>
     {items.map(item => {

@@ -80,8 +80,7 @@ export async function getInventoryReport(context: TenantContext, id: string) {
       rows: (byLocation.get(String(scope.locationId)) ?? [])
         .map((row) => {
           const unitValue = row.unitValue ?? null;
-          const valueUnits =
-            unitValue === null ? null : sekToUnits(unitValue);
+          const valueUnits = unitValue === null ? null : sekToUnits(unitValue);
           return {
             productId: String(row.productId),
             name: row.productName,
@@ -116,13 +115,10 @@ export async function getInventoryReport(context: TenantContext, id: string) {
   const rows = places.flatMap((place) => place.rows);
 
   // Exact totals even when multiple safe integer balances exceed JS's safe total.
-const sum = (values: Array<number | string | bigint>) =>
-  values
-    .reduce<bigint>(
-      (total, value) => total + BigInt(value),
-      BigInt(0),
-    )
-    .toString();
+  const sum = (values: Array<number | string | bigint>) =>
+    values
+      .reduce<bigint>((total, value) => total + BigInt(value), BigInt(0))
+      .toString();
   const valuedRows = rows.filter(
     (
       row,
@@ -167,9 +163,7 @@ const sum = (values: Array<number | string | bigint>) =>
           .filter((row) => row.unitValue === null)
           .map((row) => row.productId),
       ).size,
-      expectedValueUnits: sum(
-        valuedRows.map((row) => row.expectedValueUnits),
-      ),
+      expectedValueUnits: sum(valuedRows.map((row) => row.expectedValueUnits)),
       countedValueUnits: sum(valuedRows.map((row) => row.countedValueUnits)),
       valueDifferenceUnits: sum(
         valuedRows.map((row) => row.valueDifferenceUnits),

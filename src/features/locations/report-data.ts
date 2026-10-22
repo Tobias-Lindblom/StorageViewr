@@ -9,6 +9,7 @@ import { Warehouse } from "@/models/warehouse";
 import { objectIdSchema } from "@/validation/organization";
 import { organizationDocumentDetails } from "@/features/organizations/document-profile";
 import { legacyOreToSek, sekToUnits } from "@/lib/money";
+import { getInventoryHealthSummary } from "@/features/inventory/inventory-health";
 
 export async function getLocationStockReport(
   context: TenantContext,
@@ -69,6 +70,8 @@ export async function getLocationStockReport(
   const locationMap = new Map(
     locations.map((location) => [String(location._id), location]),
   );
+  const health = await getInventoryHealthSummary(context);
+  const verifiedAtByPosition = new Map(health.positions.map(row => [row.productId + ":" + row.locationId, row.verifiedAt]));
   const rowsByLocation = new Map<
     string,
     Array<{
@@ -78,6 +81,7 @@ export async function getLocationStockReport(
       quantity: number;
       unitValue: string | null;
       totalValueUnits: string | null;
+      verifiedAt: string | null;
       active: boolean;
     }>
   >();
@@ -106,6 +110,7 @@ export async function getLocationStockReport(
         unitValue === null
           ? null
           : (BigInt(level.quantity) * sekToUnits(unitValue)).toString(),
+      verifiedAt: verifiedAtByPosition.get(String(product._id) + ":" + String(location._id)) ?? null,
       active: product.active,
     });
     rowsByLocation.set(key, rows);
@@ -170,6 +175,7 @@ export async function getLocationStockReport(
       emptyLocations: locationRows.filter((location) => !location.rows.length)
         .length,
       uniqueProducts: new Set(productRows.map((row) => row.productId)).size,
+      totalQuantity: productRows.reduce((sum, row) => sum + BigInt(row.quantity), BigInt(0)).toString(),
       productsWithoutValue,
       inventoryValueUnits,
     },

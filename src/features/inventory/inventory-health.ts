@@ -24,13 +24,13 @@ export type InventoryHealthReason =
 
 export const INVENTORY_HEALTH_PRIORITY: Record<InventoryHealthReason, number> = {
   OPEN_DISCREPANCY: 1,
-  LEDGER_MISMATCH: 2,
-  NEVER_COUNTED: 3,
+  NEVER_COUNTED: 2,
+  STALE: 3,
+  LEDGER_MISMATCH: 4,
   MANUAL_CORRECTION: 4,
-  STALE: 5,
-  NEEDS_VERIFICATION: 6,
-  DUE_SOON: 7,
-  VERIFIED: 8,
+  NEEDS_VERIFICATION: 4,
+  DUE_SOON: 5,
+  VERIFIED: 6,
 };
 
 export type HealthMovement = {

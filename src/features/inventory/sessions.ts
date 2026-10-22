@@ -262,23 +262,38 @@ export async function saveLocationCount(
     const resolvedAt = new Date();
     await InventoryDiscrepancy.updateMany(
       { ...scopeFilter, status: "OPEN" },
-      { $set: { status: "RECOUNTED", resolution: "RECOUNTED", resolvedAt,
-        resolvedBy: context.userId, resolutionNote: "Lagerplatsen räknades om." } },
+      {
+        $set: {
+          status: "RECOUNTED",
+          resolution: "RECOUNTED",
+          resolvedAt,
+          resolvedBy: context.userId,
+          resolutionNote: "Lagerplatsen räknades om.",
+        },
+      },
       { session },
     );
     await InventoryCount.deleteMany(scopeFilter, { session });
     if (counts.length) await InventoryCount.insertMany(counts, { session });
-    const discrepancies = counts.filter(row => row.difference !== 0).map(row => ({
-      organizationId: context.organizationId,
-      inventorySessionId: inventory._id,
-      productId: row.productId,
-      locationId: row.locationId,
-      expectedQuantity: row.expectedQuantity,
-      countedQuantity: row.countedQuantity,
-      difference: row.difference,
-      status: "OPEN" as const,
-    }));
-    if (discrepancies.length) await InventoryDiscrepancy.insertMany(discrepancies, { session });
+    const discrepancies = counts
+      .filter((row) => row.difference !== 0)
+      .map((row) => ({
+        organizationId: context.organizationId,
+        inventorySessionId: inventory._id,
+        productId: row.productId,
+        locationId: row.locationId,
+        productName: row.productName,
+        sku: row.sku,
+        locationCode: location.code,
+        warehouseName: inventory.warehouseName,
+        unitValue: row.unitValue,
+        expectedQuantity: row.expectedQuantity,
+        countedQuantity: row.countedQuantity,
+        difference: row.difference,
+        status: "OPEN" as const,
+      }));
+    if (discrepancies.length)
+      await InventoryDiscrepancy.insertMany(discrepancies, { session });
     await InventorySessionLocation.updateOne(
       scopeFilter,
       {
@@ -391,13 +406,28 @@ export async function finishInventory(
       .select("name")
       .session(session)
       .lean();
-    const discrepancyKeys = new Set(counts.filter(row => row.difference !== 0)
-      .map(row => key(row.productId, row.locationId)));
-    const decisions = new Map(data.resolutions.map(row => [key(row.productId, row.locationId), row.action]));
-    if (data.resolutions.length && (decisions.size !== discrepancyKeys.size ||
-      [...decisions.keys()].some(row => !discrepancyKeys.has(row))))
-      throw new AppError(400, "INVALID_RESOLUTIONS", "Välj hur varje avvikelse ska hanteras.");
-    const actionFor = (count: typeof counts[number]) =>
+    const discrepancyKeys = new Set(
+      counts
+        .filter((row) => row.difference !== 0)
+        .map((row) => key(row.productId, row.locationId)),
+    );
+    const decisions = new Map(
+      data.resolutions.map((row) => [
+        key(row.productId, row.locationId),
+        row.action,
+      ]),
+    );
+    if (
+      data.resolutions.length &&
+      (decisions.size !== discrepancyKeys.size ||
+        [...decisions.keys()].some((row) => !discrepancyKeys.has(row)))
+    )
+      throw new AppError(
+        400,
+        "INVALID_RESOLUTIONS",
+        "Välj hur varje avvikelse ska hanteras.",
+      );
+    const actionFor = (count: (typeof counts)[number]) =>
       decisions.get(key(count.productId, count.locationId)) ?? "APPROVE";
     for (const count of counts) {
       if (count.difference === 0) continue;
@@ -456,25 +486,51 @@ export async function finishInventory(
     }
     const completedAt = new Date();
     for (const count of counts) {
-      const pair = { organizationId: context.organizationId, productId: count.productId, locationId: count.locationId };
+      const pair = {
+        organizationId: context.organizationId,
+        productId: count.productId,
+        locationId: count.locationId,
+      };
       if (count.difference === 0) {
         await InventoryDiscrepancy.updateMany(
-          { ...pair, status: "OPEN", inventorySessionId: { $ne: inventory._id } },
-          { $set: { status: "RECOUNTED", resolution: "RECOUNTED", resolvedAt: completedAt,
-            resolvedBy: context.userId, resolutionNote: "Ny fysisk kontroll utan avvikelse." } }, { session },
+          {
+            ...pair,
+            status: "OPEN",
+            inventorySessionId: { $ne: inventory._id },
+          },
+          {
+            $set: {
+              status: "RECOUNTED",
+              resolution: "RECOUNTED",
+              resolvedAt: completedAt,
+              resolvedBy: context.userId,
+              resolutionNote: "Ny fysisk kontroll utan avvikelse.",
+            },
+          },
+          { session },
         );
         continue;
       }
       if (actionFor(count) === "APPROVE") {
         await InventoryDiscrepancy.updateMany(
           { ...pair, status: "OPEN" },
-          { $set: { status: "RESOLVED", resolution: "APPROVED", resolvedAt: completedAt,
-            resolvedBy: context.userId, resolutionNote: "Räknat saldo godkändes vid slutförandet." } }, { session },
+          {
+            $set: {
+              status: "RESOLVED",
+              resolution: "APPROVED",
+              resolvedAt: completedAt,
+              resolvedBy: context.userId,
+              resolutionNote: "Räknat saldo godkändes vid slutförandet.",
+            },
+          },
+          { session },
         );
       }
     }
     const organization = await Organization.findById(context.organizationId)
-      .select("name organizationNumber addressLine1 addressLine2 postalCode city country contactEmail phone website")
+      .select(
+        "name organizationNumber addressLine1 addressLine2 postalCode city country contactEmail phone website",
+      )
       .session(session)
       .lean();
     await InventorySession.updateOne(

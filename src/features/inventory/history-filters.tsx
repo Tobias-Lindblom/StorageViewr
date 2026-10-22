@@ -29,8 +29,7 @@ export function HistoryFilters({ q, kind, productId, locationId }: {
         {locationId && <input type="hidden" name="locationId" value={locationId} />}
         <label>Händelsetyp<select name="kind" defaultValue={kind}>
           <option value="all">Alla händelser</option>
-          <option value="receipt">Inleverans</option><option value="issue">Uttag</option>
-          <option value="transfer">Flytt</option><option value="inventory">Inventering</option>
+          <option value="receipt">Inleverans</option><option value="inventory">Inventering</option>
           <option value="correction">Korrigering</option>
         </select></label>
         <Link href={"/inventory/history" + (scope.size ? "?" + scope : "")}

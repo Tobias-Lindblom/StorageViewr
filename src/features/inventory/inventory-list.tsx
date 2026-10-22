@@ -45,7 +45,7 @@ export function InventoryList({
       </li>)}
     </ol> : <EmptyState icon={completed ? "history" : "inventory"}
       title={completed ? "Inga genomförda inventeringar" : "Inga pågående inventeringar"}>
-        {completed ? "Avslutade inventeringar och rapporter visas här." : admin
+        {completed ? "Ingen inventering har genomförts ännu. Starta er första inventering för att verifiera lagret." : admin
           ? "Starta en inventering och välj platser att räkna."
           : "Inventeringar visas här när en administratör har startat dem."}
     </EmptyState>}

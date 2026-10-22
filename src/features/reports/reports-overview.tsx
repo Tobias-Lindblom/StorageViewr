@@ -7,14 +7,18 @@ import type { listInventories } from "@/features/inventory/session-queries";
 import type { LocationStockReport } from "@/features/locations/report-data";
 import { formatSek } from "@/lib/money";
 import styles from "./reports.module.css";
+import { DownloadOperationalReport } from "./download-operational-report";
+import type { DiscrepancyReport, HealthReport } from "./operational-report-data";
 
 type WarehouseOption = { id: string; name: string; active: boolean };
 
-export function ReportsOverview({ warehouses, warehouseId, valuation, inventories }: {
+export function ReportsOverview({ warehouses, warehouseId, valuation, inventories, discrepancies, health }: {
   warehouses: WarehouseOption[];
   warehouseId?: string;
   valuation: LocationStockReport;
   inventories: Awaited<ReturnType<typeof listInventories>>;
+  discrepancies: DiscrepancyReport | null;
+  health: HealthReport | null;
 }) {
   const reportQuery = warehouseId ? "&warehouseId=" + encodeURIComponent(warehouseId) : "";
   return <div className={styles.layout}>
@@ -27,7 +31,7 @@ export function ReportsOverview({ warehouses, warehouseId, valuation, inventorie
         <div><span>Totalt lagervärde</span><strong>{formatSek(BigInt(valuation.summary.inventoryValueUnits))}</strong><small>{valuation.scopeName}</small></div>
         <dl>
           <div><dt>Produkter</dt><dd>{valuation.summary.uniqueProducts.toLocaleString("sv-SE")}</dd></div>
-          <div><dt>Lagerplatser</dt><dd>{valuation.summary.locations.toLocaleString("sv-SE")}</dd></div>
+          <div><dt>Totalt antal</dt><dd>{BigInt(valuation.summary.totalQuantity).toLocaleString("sv-SE")}</dd></div>
           <div><dt>Saknar värde</dt><dd>{valuation.summary.productsWithoutValue.toLocaleString("sv-SE")}</dd></div>
         </dl>
       </div>
@@ -45,6 +49,33 @@ export function ReportsOverview({ warehouses, warehouseId, valuation, inventorie
         <AppIcon name="info" width={16} height={16} /> {valuation.summary.productsWithoutValue} {valuation.summary.productsWithoutValue === 1 ? "produkt saknar" : "produkter saknar"} styckvärde och räknas därför som 0 kr.
       </p>}
     </section>
+
+    {discrepancies && health && <div className={styles.operationalGrid}>
+      <section className={styles.operationalCard} aria-labelledby="discrepancy-report-heading">
+        <div className={styles.valueHeading}>
+          <span className={styles.valueIcon}><AppIcon name="alert" width={24} height={24} /></span>
+          <div><h2 id="discrepancy-report-heading">Avvikelserapport</h2><p>Registrerat och räknat saldo, värdeavvikelse, status och kommentar.</p></div>
+        </div>
+        <dl className={styles.operationalMetrics}>
+          <div><dt>Öppna</dt><dd>{discrepancies.summary.open.toLocaleString("sv-SE")}</dd></div>
+          <div><dt>Totalt</dt><dd>{discrepancies.summary.total.toLocaleString("sv-SE")}</dd></div>
+          <div><dt>Öppen värdeavvikelse</dt><dd>{formatSek(BigInt(discrepancies.summary.openValueDifferenceUnits))}</dd></div>
+        </dl>
+        <div className={styles.operationalActions}><Link href="/discrepancies">Hantera avvikelser</Link><DownloadOperationalReport kind="discrepancies" /></div>
+      </section>
+      <section className={styles.operationalCard} aria-labelledby="health-report-heading">
+        <div className={styles.valueHeading}>
+          <span className={styles.valueIcon}><AppIcon name="heart" width={24} height={24} /></span>
+          <div><h2 id="health-report-heading">Lagerhälsorapport</h2><p>Verifieringsgrad, gamla kontroller och lagerpositioner som behöver uppmärksamhet.</p></div>
+        </div>
+        <dl className={styles.operationalMetrics}>
+          <div><dt>Lagerhälsa</dt><dd>{health.health.score === null ? "–" : health.health.score + "%"}</dd></div>
+          <div><dt>Verifierade</dt><dd>{health.health.trustedPositions.toLocaleString("sv-SE")} / {health.health.totalPositions.toLocaleString("sv-SE")}</dd></div>
+          <div><dt>Behöver åtgärd</dt><dd>{health.health.attentionItems.length.toLocaleString("sv-SE")}</dd></div>
+        </dl>
+        <div className={styles.operationalActions}><Link href="/dashboard">Visa Lagerhälsa</Link><DownloadOperationalReport kind="health" /></div>
+      </section>
+    </div>}
 
     <section className={styles.inventorySection} aria-labelledby="inventory-reports-heading">
       <div className={styles.sectionHeading}>

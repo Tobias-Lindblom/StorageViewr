@@ -5,8 +5,9 @@ import { AppIcon } from "@/components/app-icon";
 import { BottomSheet } from "@/components/bottom-sheet";
 import { InventoryVerification, verificationLabels } from "@/components/inventory-verification";
 import type { VerificationData } from "@/features/inventory/verification";
+import Link from "next/link";
 
-export function LocationVerification({ data }: { data: VerificationData }) {
+export function LocationVerification({ data, admin }: { data: VerificationData; admin: boolean }) {
   const [open, setOpen] = useState(false);
   const trigger = useRef<HTMLButtonElement>(null);
   const date = data.countedAt ? new Date(data.countedAt) : null;
@@ -18,6 +19,8 @@ export function LocationVerification({ data }: { data: VerificationData }) {
     date ? data.checked + (data.checked === 1 ? " produkt räknades" : " produkter räknades") +
       " · " + (data.corrections ? data.corrections + " avvikelser korrigerades" : "Ingen avvikelse") :
     "Inventera platsen för att kontrollera lagret.";
+  const health = data.healthScore === null ? "Lagerhälsa kan ännu inte beräknas." :
+    "Lagerhälsa " + data.healthScore + "%" + (data.openDiscrepancies ? " · " + data.openDiscrepancies + " öppna avvikelser" : "");
   return <>
     <button type="button" ref={trigger} className="location-verification" aria-haspopup="dialog"
       aria-label={"Senast inventerad, " + dateLabel + ", " + label + ". Visa inventeringsstatus"}
@@ -29,11 +32,15 @@ export function LocationVerification({ data }: { data: VerificationData }) {
         </span>
         {date ? <time dateTime={data.countedAt ?? undefined}>{dateLabel}</time> : <span className="location-verification-none">Ej inventerad</span>}
         <span className="location-verification-note">{note}</span>
+        <span className="location-verification-note">{health}</span>
       </span>
       <AppIcon name="chevron" width={15} height={15} className="shrink-0 text-muted" />
     </button>
     {open && <BottomSheet title="Inventeringsstatus" onClose={() => { setOpen(false); trigger.current?.focus(); }}>
       <InventoryVerification data={data} />
+      {admin && data.openDiscrepancies > 0 && <Link href="/discrepancies" className="button-secondary mt-4 w-full">
+        Visa {data.openDiscrepancies} öppna avvikelser
+      </Link>}
     </BottomSheet>}
   </>;
 }

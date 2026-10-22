@@ -8,7 +8,7 @@ import { movementLabel } from "@/features/inventory/movement-label";
 import type { HistoryItem } from "./history-service";
 
 function label(item: HistoryItem) {
-  return item.type === "TRANSFER" ? "Flytt" : movementLabel(item.type);
+  return movementLabel(item.type);
 }
 function time(value: string) {
   return new Date(value).toLocaleString("sv-SE", {
@@ -25,19 +25,18 @@ export function HistoryList({ items }: { items: HistoryItem[] }) {
   return <>
     <ol className="history-list">
       {items.map(item => {
-        const transfer = item.type.startsWith("TRANSFER");
         const inventory = item.type === "INVENTORY";
         const correction = item.type === "CORRECTION" || item.type === "ADJUSTMENT";
-        const tone = transfer ? "neutral" : inventory || (item.difference ?? 0) < 0 ? "danger" : "success";
+        const tone = inventory || (item.difference ?? 0) < 0 ? "danger" : "success";
         const amount = item.difference === null ? "" :
-          (item.difference > 0 && !transfer ? "+" : "") + item.difference.toLocaleString("sv-SE");
-        const title = transfer || inventory || correction ? label(item) : item.productName;
+          (item.difference > 0 ? "+" : "") + item.difference.toLocaleString("sv-SE");
+        const title = inventory || correction ? label(item) : item.productName;
         return <li key={item.id}>
           <button type="button" className="history-row" aria-haspopup="dialog"
             onClick={event => { trigger.current = event.currentTarget; setSelected(item); }}>
             <span className={"history-marker is-" + tone} aria-hidden="true">
               {inventory || amount.length > 6
-                ? <AppIcon name={inventory ? "inventory" : transfer ? "transfer" : (item.difference ?? 0) < 0 ? "minus" : "plus"} width={23} height={23} />
+                ? <AppIcon name={inventory ? "inventory" : (item.difference ?? 0) < 0 ? "minus" : "plus"} width={23} height={23} />
                 : <span className={amount.length > 4 ? "history-small-amount" : ""}>{amount}</span>}
             </span>
             <span className="history-identity">
@@ -64,8 +63,8 @@ export function HistoryList({ items }: { items: HistoryItem[] }) {
           <div><dt>Lager</dt><dd>{selected.warehouseName}</dd></div>
           <div><dt>Tid</dt><dd><time dateTime={selected.createdAt}>{time(selected.createdAt)}</time></dd></div>
           <div><dt>Utförare</dt><dd>{selected.performedByName}</dd></div>
-          {selected.difference !== null && <div><dt>{selected.type === "TRANSFER" ? "Flyttat antal" : "Saldoändring"}</dt>
-            <dd>{selected.difference > 0 && selected.type !== "TRANSFER" ? "+" : ""}
+          {selected.difference !== null && <div><dt>Saldoändring</dt>
+            <dd>{selected.difference > 0 ? "+" : ""}
               {selected.difference.toLocaleString("sv-SE")} st</dd></div>}
         </dl>
         <section><h3>{selected.type === "INVENTORY" && !selected.productName ? "Inventering" : "Orsak"}</h3>

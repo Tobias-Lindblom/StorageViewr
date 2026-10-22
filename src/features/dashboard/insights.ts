@@ -46,7 +46,7 @@ export async function getDashboardInsights(context: TenantContext) {
       neverCounted: focusItems.filter(row => row.reason === "NEVER_COUNTED").length,
       manualCorrections: focusItems.filter(row => row.reason === "MANUAL_CORRECTION").length,
       stale: focusItems.filter(row => row.reason === "STALE").length,
-      needsVerification: focusItems.filter(row => row.reason === "NEEDS_VERIFICATION").length,
+      needsVerification: focusItems.filter(row => ["NEEDS_VERIFICATION", "LEDGER_MISMATCH", "MANUAL_CORRECTION"].includes(row.reason)).length,
       dueSoon: focusItems.filter(row => row.reason === "DUE_SOON").length,
     },
   };

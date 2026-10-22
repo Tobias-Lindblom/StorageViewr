@@ -94,8 +94,7 @@ schema.index({
 export type InventoryCountRecord = InferSchemaType<typeof schema>;
 
 const cachedInventoryCount = models.InventoryCount as
-  | Model<InventoryCountRecord>
-  | undefined;
+  Model<InventoryCountRecord> | undefined;
 if (cachedInventoryCount && !cachedInventoryCount.schema.path("unitValue"))
   deleteModel("InventoryCount");
 export const InventoryCount: Model<InventoryCountRecord> =

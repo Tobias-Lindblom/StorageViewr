@@ -45,9 +45,7 @@ export function DashboardView({ dashboard, locations, warehouses, admin, account
     unplaced ? "Koppla produkterna till rätt fysisk lagerplats" : "Alla lagerpositioner är spårbara";
   const focusReasons = [
     [dashboard.insights.focus.openDiscrepancies, "öppna avvikelser"],
-    [dashboard.insights.focus.ledgerMismatches, "ledgerfel"],
     [dashboard.insights.focus.neverCounted, "aldrig räknade"],
-    [dashboard.insights.focus.manualCorrections, "korrigerade saldon"],
     [dashboard.insights.focus.stale, "gamla kontroller"],
     [dashboard.insights.focus.needsVerification, "behöver verifieras"],
     [dashboard.insights.focus.dueSoon, "behöver snart verifieras"],
@@ -75,8 +73,10 @@ export function DashboardView({ dashboard, locations, warehouses, admin, account
           : <Link className="dashboard-focus-action" href={selected.length ? "/locations" : unplaced ? "/products" : "/inventories"}>{focusLabel}</Link>;
   const overview = [
     { href: "/products", value: dashboard.productCount.toLocaleString("sv-SE"), label: "Produkter", icon: "product" as const, tone: "cyan" },
-    { href: "/products", value: BigInt(dashboard.stockUnitCount).toLocaleString("sv-SE"), label: "Enheter", icon: "units" as const, tone: "blue" },
-    { href: "/products", value: compactSek(dashboard.inventoryValueUnits), label: "Lagervärde", icon: "coins" as const, tone: "violet" },
+    { href: "/locations", value: dashboard.locationCount.toLocaleString("sv-SE"), label: "Lagerplatser", icon: "location" as const, tone: "blue" },
+    { href: "/products", value: BigInt(dashboard.stockUnitCount).toLocaleString("sv-SE"), label: "Registrerat antal", icon: "units" as const, tone: "blue" },
+    { href: "/reports", value: compactSek(dashboard.inventoryValueUnits), label: "Lagervärde", icon: "coins" as const, tone: "violet",
+      note: dashboard.productsWithoutValue ? dashboard.productsWithoutValue + " saknar styckvärde" : undefined },
   ];
   return (
     <div className="warehouse-dashboard">
@@ -97,7 +97,7 @@ export function DashboardView({ dashboard, locations, warehouses, admin, account
           <div className="dashboard-overview-grid dashboard-overview-block">
             {overview.map(item => <Link key={item.label} href={item.href} className="dashboard-overview-card">
               <span className={"dashboard-overview-icon is-" + item.tone}><AppIcon name={item.icon} width={23} height={23} /></span>
-              <span><strong>{item.value}</strong><small>{item.label}</small></span>
+              <span><strong>{item.value}</strong><small>{item.label}</small>{item.note && <small className="text-warning">{item.note}</small>}</span>
             </Link>)}
           </div>
         </section>

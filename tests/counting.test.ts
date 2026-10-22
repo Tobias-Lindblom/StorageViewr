@@ -25,6 +25,7 @@ import { getDashboard } from "../src/features/dashboard/service";
 import { getDashboardActivity } from "../src/features/dashboard/activity";
 import { getVerification } from "../src/features/inventory/verification";
 import { getInventoryHealthSummary } from "../src/features/inventory/inventory-health";
+import { listDiscrepancies, updateDiscrepancy } from "../src/features/inventory/discrepancies";
 import { getInventory, listInventories } from "../src/features/inventory/session-queries";
 import { startInventorySchema, saveCountSchema } from "../src/validation/inventory-session";
 
@@ -491,6 +492,16 @@ test("investigated discrepancies stay open and do not change the current balance
   const health = await getInventoryHealthSummary(f.context);
   assert.equal(health.openDiscrepancies, 1);
   assert.equal(health.attentionItems[0].reason, "OPEN_DISCREPANCY");
+  const listed = await listDiscrepancies(f.context);
+  assert.equal(listed.length, 1);
+  assert.equal(listed[0].productName, f.product.name);
+  assert.equal(listed[0].locationCode, f.location.code);
+  await updateDiscrepancy(f.context, listed[0].id, { action: "INVESTIGATE", comment: "Kontrollera leveransen" });
+  assert.equal((await listDiscrepancies(f.context))[0].comment, "Kontrollera leveransen");
+  await assert.rejects(updateDiscrepancy(tenant(), listed[0].id, { action: "APPROVE", comment: "" }), status(404));
+  await updateDiscrepancy(f.context, listed[0].id, { action: "APPROVE", comment: "Fysisk räkning bekräftad" });
+  assert.equal((await getStockPair(f.context, f.pair)).quantity, 8);
+  assert.equal((await InventoryDiscrepancy.findById(listed[0].id).lean())?.status, "RESOLVED");
 });
 
 test("approved discrepancies update stock, create audit history and become a new baseline", async () => {

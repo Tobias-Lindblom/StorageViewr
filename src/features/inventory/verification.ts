@@ -16,6 +16,9 @@ export type VerificationData = {
   total: number;
   corrections: number;
   productScope: boolean;
+  verifiedQuantity: string | null;
+  healthScore: number | null;
+  openDiscrepancies: number;
 };
 export const completedSession = (context: TenantContext) => ({
   $lookup: {
@@ -75,6 +78,8 @@ export async function getVerification(context: TenantContext, input: unknown, st
     sessionId = String(oldest.inventorySessionId);
   }
   const allCounted = matching.length === stock.items.length && (!productScope || stock.items.length > 0);
+  let healthScore: number | null = null;
+  let openDiscrepancies = 0;
   let state: VerificationData["state"] = !date ? "never" : !allCounted ? "partial" : !unchanged ? "changed" :
     Date.now() - date.getTime() >= 30 * 86400000 ? "old" : "verified";
   // Product/location detail views consume the same ledger-based source of truth
@@ -85,6 +90,8 @@ export async function getVerification(context: TenantContext, input: unknown, st
       ? row.productId === scope.productId
       : row.locationId === scope.locationId);
     if (positions.length) {
+      healthScore = Math.round(positions.filter(row => row.trusted).length / positions.length * 100);
+      openDiscrepancies = positions.filter(row => row.reason === "OPEN_DISCREPANCY").length;
       const checkedPositions = positions.filter(row => row.verifiedAt);
       if (!checkedPositions.length) state = "never";
       else if (checkedPositions.length !== positions.length) state = "partial";
@@ -93,7 +100,11 @@ export async function getVerification(context: TenantContext, input: unknown, st
       else state = "verified";
     }
   }
+  const verifiedQuantity = allCounted
+    ? relevant.reduce((sum, row) => sum + BigInt(row.countedQuantity), BigInt(0)).toString()
+    : null;
   return { countedAt: date?.toISOString() ?? null, sessionId, state,
     checked: matching.length, total: stock.items.length,
-    corrections: relevant.filter(row => row.difference !== 0).length, productScope };
+    corrections: relevant.filter(row => row.difference !== 0).length, productScope,
+    verifiedQuantity, healthScore, openDiscrepancies };
 }

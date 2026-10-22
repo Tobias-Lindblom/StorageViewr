@@ -14,7 +14,7 @@ import {
   stockScopeSchema,
   stockPairSchema,
   stockAdjustmentSchema,
-  stockMovementSchema,
+  internalStockMovementSchema,
   historyQuerySchema,
 } from "@/validation/inventory";
 
@@ -384,7 +384,7 @@ export async function registerStockMovement(
   context: TenantContext,
   input: unknown,
 ) {
-  const data = stockMovementSchema.parse(input);
+  const data = internalStockMovementSchema.parse(input);
   if (data.type === "CORRECTION") requireAdmin(context);
   const db = await connectDb();
   try {

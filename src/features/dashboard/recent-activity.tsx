@@ -37,7 +37,7 @@ export function RecentActivity({ items, admin, compactLocation = false, href, ov
             </Link>
           </li>
         ))}
-      </ol> : overview ? null : <div className="dashboard-activity-empty"><p>Ingen aktivitet ännu</p><span>Lagerhändelser och inventeringar visas här.</span></div>}
+      </ol> : overview ? null : <div className="dashboard-activity-empty"><p>Ingen aktivitet registrerad ännu.</p><span>Inleveranser, inventeringar och saldokorrigeringar visas här.</span></div>}
     </section>
   );
 }

@@ -49,8 +49,8 @@ export default async function StockHistoryPage({
         </form>
         <nav className="history-chips" aria-label="Filtrera historik efter händelse">
           {([
-            ["all", "Alla"], ["receipt", "Inleverans"], ["issue", "Uttag"],
-            ["transfer", "Flytt"], ["inventory", "Inventering"],
+            ["all", "Alla"], ["receipt", "Inleverans"],
+            ["inventory", "Inventering"], ["correction", "Korrigering"],
           ] as const).map(([kind, title]) => <Link key={kind} href={link(kind)}
             aria-current={query.kind === kind ? "page" : undefined}
             className={"product-stock-chip" + (query.kind === kind ? " is-active" : "")}>{title}</Link>)}
@@ -61,7 +61,7 @@ export default async function StockHistoryPage({
         {result.items.length ? <HistoryList items={result.items} /> : <EmptyState icon="history"
           title={filtered ? "Inga händelser matchar" : "Ingen historik ännu"}
           action={filtered && <Link href={link("all", 1, "")} className="button-secondary">Rensa filter</Link>}>
-          {filtered ? "Prova en annan sökning eller ändra filtren." : "Inleveranser, uttag, flyttar och slutförda inventeringar visas här."}
+          {filtered ? "Prova en annan sökning eller ändra filtren." : "Inleveranser, korrigeringar och slutförda inventeringar visas här."}
         </EmptyState>}
         {result.pages > 1 && <nav aria-label="Historiksidor" className="product-pagination">
           {result.page > 1 ? <Link href={link(query.kind, result.page - 1)} className="product-page-control product-page-prev">

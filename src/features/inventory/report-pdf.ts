@@ -292,10 +292,7 @@ export async function renderInventoryReport(
       metricCards([
         ["Förväntat antal", amount(report.summary.expected) + " st"],
         ["Räknat antal", amount(report.summary.counted) + " st"],
-        [
-          "Räknat värde",
-          formatSek(BigInt(report.summary.countedValueUnits)),
-        ],
+        ["Räknat värde", formatSek(BigInt(report.summary.countedValueUnits))],
         [
           "Värdedifferens",
           formatSignedSek(report.summary.valueDifferenceUnits),
@@ -389,11 +386,12 @@ export async function renderInventoryReport(
       );
 
       const colWidths = [55, 86, 55, 52, 52, 62, 73, 76.28];
-      const colX = colWidths.map((_, index) =>
-        left +
-        colWidths
-          .slice(0, index)
-          .reduce((total, columnWidth) => total + columnWidth, 0),
+      const colX = colWidths.map(
+        (_, index) =>
+          left +
+          colWidths
+            .slice(0, index)
+            .reduce((total, columnWidth) => total + columnWidth, 0),
       );
       const headers = [
         "Lagerplats",
@@ -444,24 +442,24 @@ export async function renderInventoryReport(
         y += 25;
       }
 
-type ReportPlace = InventoryReport["places"][number];
-type ReportRow = ReportPlace["rows"][number];
+      type ReportPlace = InventoryReport["places"][number];
+      type ReportRow = ReportPlace["rows"][number];
 
-type TableRow = {
-  place: ReportPlace;
-  row: ReportRow | null;
-};
+      type TableRow = {
+        place: ReportPlace;
+        row: ReportRow | null;
+      };
 
-const tableRows = report.places.flatMap<TableRow>((place) =>
-  place.rows.length
-    ? place.rows.map((row): TableRow => ({ place, row }))
-    : [{ place, row: null }],
-);
+      const tableRows = report.places.flatMap<TableRow>((place) =>
+        place.rows.length
+          ? place.rows.map((row): TableRow => ({ place, row }))
+          : [{ place, row: null }],
+      );
 
-tableHeader();
+      tableHeader();
 
-for (const [rowIndex, entry] of tableRows.entries()) {
-  const { place, row } = entry;
+      for (const [rowIndex, entry] of tableRows.entries()) {
+        const { place, row } = entry;
         const rowHeight = row
           ? Math.max(
               25,
@@ -482,14 +480,7 @@ for (const [rowIndex, entry] of tableRows.entries()) {
             .fill(row.difference < 0 ? colors.red : colors.green);
         }
 
-        text(
-          place.code,
-          colX[0] + 6,
-          y + 7,
-          colWidths[0] - 12,
-          6.4,
-          true,
-        );
+        text(place.code, colX[0] + 6, y + 7, colWidths[0] - 12, 6.4, true);
         text(
           row?.name ?? "Tom lagerplats",
           colX[1] + 6,
@@ -500,14 +491,7 @@ for (const [rowIndex, entry] of tableRows.entries()) {
           row ? colors.ink : colors.green,
         );
         if (row) {
-          text(
-            row.sku,
-            colX[2] + 6,
-            y + 7,
-            colWidths[2] - 12,
-            5.8,
-            true,
-          );
+          text(row.sku, colX[2] + 6, y + 7, colWidths[2] - 12, 5.8, true);
         }
 
         const values = row

@@ -24,7 +24,7 @@ export function DashboardInsights({ dashboard }: { dashboard: Awaited<ReturnType
   const progress = Math.min(100, Math.max(0, health.score ?? 0));
   const attention = Math.max(0, health.totalPositions - health.trustedPositions);
   const metrics = [
-    { count: health.fullyVerifiedProducts, text: "Fullt verifierade produkter", icon: "product" as const, tone: "success" },
+    { count: health.trustedPositions, text: "Verifierade positioner", icon: "product" as const, tone: "success" },
     { count: health.openDiscrepancies, text: "Öppna avvikelser", icon: "alert" as const, tone: "danger" },
     { count: health.stale, text: "Gamla kontroller", icon: "history" as const, tone: "warning" },
   ];
@@ -46,7 +46,7 @@ export function DashboardInsights({ dashboard }: { dashboard: Awaited<ReturnType
         </div>
         {health.score === null
           ? <p>Inventera era första lagerplatser för att skapa en verifierad baslinje.</p>
-          : <p>{health.trustedPositions.toLocaleString("sv-SE")} av {health.totalPositions.toLocaleString("sv-SE")} lagerpositioner är spårbara</p>}
+          : <p>{health.trustedPositions.toLocaleString("sv-SE")} av {health.totalPositions.toLocaleString("sv-SE")} lagerpositioner är verifierade</p>}
         <p className="health-attention"><AppIcon name="alert" width={15} height={15} />
           {attention.toLocaleString("sv-SE")} behöver uppmärksamhet</p>
       </button>
@@ -65,6 +65,9 @@ export function DashboardInsights({ dashboard }: { dashboard: Awaited<ReturnType
         <div><p>{health.trustedPositions.toLocaleString("sv-SE")} av {health.totalPositions.toLocaleString("sv-SE")} positioner är betrodda</p>
           <span>Fysisk kontroll och obruten lagerhistorik avgör resultatet.</span></div>
       </div>
+      {health.openDiscrepancies > 0 && <Link href="/discrepancies" className="button-secondary mb-4 w-full" onClick={() => setOpen(false)}>
+        Visa {health.openDiscrepancies.toLocaleString("sv-SE")} öppna avvikelser
+      </Link>}
       {health.attentionItems.length ? <section className="health-details-attention" aria-labelledby="health-attention-heading">
         <h3 id="health-attention-heading">Behöver uppmärksamhet</h3>
         <ul>{health.attentionItems.map(item => <li key={item.productId + ":" + item.locationId}>
