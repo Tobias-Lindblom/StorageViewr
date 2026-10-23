@@ -27,14 +27,13 @@ export async function getDashboardActivity(context: TenantContext, options: { lo
   ]);
   const sessions = new Set(counts.map(row => String(row.inventorySessionId) + ":" + row.locationCode));
   const stock: DashboardActivity[] = movements.items
-    .filter(row => ["RECEIPT", "INITIAL", "INVENTORY", "CORRECTION", "ADJUSTMENT"].includes(row.type))
     .filter(row => row.type !== "INVENTORY" || !sessions.has(row.inventorySessionId + ":" + row.locationCode))
     .map(row => ({
       id: row.id,
       amount: (row.difference > 0 ? "+" : "") + row.difference.toLocaleString("sv-SE"),
       label: row.productName, locationCode: row.locationCode, createdAt: row.createdAt,
       href: "/inventory/history" + (locationId ? "?locationId=" + locationId : ""),
-      tone: row.type.startsWith("TRANSFER") ? "neutral" : row.difference < 0 ? "danger" : "success",
+      tone: row.difference < 0 ? "danger" : "success",
     }));
   const physical: DashboardActivity[] = counts.map(row => ({
     id: "count-" + row._id, amount: "INV", label: "Inventerad plats",

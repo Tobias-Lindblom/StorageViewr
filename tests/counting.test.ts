@@ -19,7 +19,9 @@ import { InventoryDiscrepancy } from "../src/models/inventory-discrepancy";
 import { createProduct, updateProduct, getProduct } from "../src/features/products/service";
 import { createWarehouse } from "../src/features/warehouses/service";
 import { createLocation, updateLocation, getLocation } from "../src/features/locations/service";
-import { listStock, adjustStock, getStockPair, listMovements, registerStockMovement } from "../src/features/inventory/service";
+import { listStock, getStockPair, listMovements, registerStockMovement } from "../src/features/inventory/service";
+import { correctStockForTest as correctStock } from "./helpers/stock";
+import { testInventorySignature } from "./helpers/inventory-signature";
 import { startInventory, saveLocationCount, finishInventory } from "../src/features/inventory/sessions";
 import { getDashboard } from "../src/features/dashboard/service";
 import { getDashboardActivity } from "../src/features/dashboard/activity";
@@ -27,7 +29,7 @@ import { getVerification } from "../src/features/inventory/verification";
 import { getInventoryHealthSummary } from "../src/features/inventory/inventory-health";
 import { listDiscrepancies, updateDiscrepancy } from "../src/features/inventory/discrepancies";
 import { getInventory, listInventories } from "../src/features/inventory/session-queries";
-import { startInventorySchema, saveCountSchema } from "../src/validation/inventory-session";
+import { startInventorySchema, saveCountSchema, finishInventorySchema } from "../src/validation/inventory-session";
 
 let replica: MongoMemoryReplSet;
 before(async () => {
@@ -51,7 +53,7 @@ async function fixture(quantity?: number) {
   const location = await createLocation(context, { ...parts, warehouseId: warehouse.id });
   const empty = await createLocation(context, { ...parts, position: "02", warehouseId: warehouse.id });
   const pair = { productId: product.id, locationId: location.id };
-  if (quantity !== undefined) await adjustStock(context, { ...pair, quantity, expectedVersion: null, reason: "Inleverans" });
+  if (quantity !== undefined) await correctStock(context, { ...pair, quantity, expectedVersion: null, reason: "Inleverans" });
   const inventory = await startInventory(context, { name: "September", warehouseId: warehouse.id, locationIds: [location.id, empty.id] });
   const count = (countedQuantity: number, expectedVersion: number | null = quantity === undefined ? null : 1, expectedRevision = 0) =>
     ({ expectedRevision, confirmComplete: true, confirmReplace: expectedRevision > 0, rows: [{ productId: product.id, expectedVersion, countedQuantity }] });
@@ -60,7 +62,11 @@ async function fixture(quantity?: number) {
 }
 async function finish(f: Awaited<ReturnType<typeof fixture>>) {
   const detail = await getInventory(f.context, f.inventory.id);
-  return finishInventory(f.context, f.inventory.id, { expectedRevision: detail.revision, confirmed: true });
+  return finishInventory(f.context, f.inventory.id, {
+    expectedRevision: detail.revision,
+    confirmed: true,
+    ...testInventorySignature,
+  });
 }
 
 test("counting freezes location scope, tracks empty places, preserves stock until completion and saves snapshots", async () => {
@@ -77,6 +83,9 @@ test("counting freezes location scope, tracks empty places, preserves stock unti
   assert.equal(reviewed.discrepancies[0].expectedQuantity, 10);
   await finish(f);
   assert.equal((await getStockPair(f.context, f.pair)).quantity, 8);
+  const completed = await getInventory(f.context, f.inventory.id);
+  assert.equal(completed.completionSignerName, "Anna Lager");
+  assert.ok(completed.completionSignedAt);
   assert.equal((await getStockPair(f.context, f.pair)).version, 2);
   const history = await InventoryMovement.findOne({ inventorySessionId: f.inventory.id }).lean();
   assert.equal(history?.type, "INVENTORY"); assert.equal(history?.performedByName, "Anna Lager");
@@ -95,7 +104,7 @@ test("organization and warehouse references remain isolated for all inventory op
   await assert.rejects(saveLocationCount(a.context, b.inventory.id, b.location.id, b.count(1)), status(404));
   await assert.rejects(saveLocationCount(a.context, a.inventory.id, b.location.id, b.blank), status(404));
   await assert.rejects(saveLocationCount(a.context, a.inventory.id, a.location.id, { ...a.count(1), rows: [{ productId: b.product.id, expectedVersion: null, countedQuantity: 1 }] }), status(400));
-  await assert.rejects(finishInventory(a.context, b.inventory.id, { expectedRevision: 0, confirmed: true }), status(404));
+  await assert.rejects(finishInventory(a.context, b.inventory.id, { expectedRevision: 0, confirmed: true, ...testInventorySignature }), status(404));
   const otherWarehouse = await createWarehouse(a.context, { name: "Annat", code: "OTHER" });
   const otherPlace = await createLocation(a.context, { ...parts, warehouseId: otherWarehouse.id });
   await assert.rejects(startInventory(a.context, { name: "Fel omfattning", warehouseId: a.warehouse.id, locationIds: [otherPlace.id] }), status(400));
@@ -108,14 +117,14 @@ test("warehouse users can count but only administrators can start and finish", a
   await saveLocationCount(worker, f.inventory.id, f.location.id, f.count(3));
   await saveLocationCount(worker, f.inventory.id, f.empty.id, f.blank);
   assert.equal((await getInventory(worker, f.inventory.id)).counted, 2);
-  await assert.rejects(finishInventory(worker, f.inventory.id, { expectedRevision: 2, confirmed: true }), status(403));
+  await assert.rejects(finishInventory(worker, f.inventory.id, { expectedRevision: 2, confirmed: true, ...testInventorySignature }), status(403));
   await finish(f);
   assert.equal(await InventoryMovement.countDocuments({ inventorySessionId: f.inventory.id }), 0);
 });
 
 test("stale versions reject counting and recount requires explicit confirmation and its own revision", async () => {
   const f = await fixture(10);
-  await adjustStock(f.context, { ...f.pair, quantity: 11, expectedVersion: 1, reason: "Leverans" });
+  await correctStock(f.context, { ...f.pair, quantity: 11, expectedVersion: 1, reason: "Leverans" });
   await assert.rejects(saveLocationCount(f.context, f.inventory.id, f.location.id, f.count(8)), status(409));
   assert.equal(await InventoryCount.countDocuments({ inventorySessionId: f.inventory.id }), 0);
   await saveLocationCount(f.context, f.inventory.id, f.location.id, f.count(8, 2));
@@ -135,12 +144,12 @@ test("changes after review block completion until recounted, including new produ
   await saveLocationCount(f.context, f.inventory.id, f.empty.id, f.blank);
   const review = await getInventory(f.context, f.inventory.id);
   await saveLocationCount(f.context, f.inventory.id, f.location.id, f.count(9, 1, 1));
-  await assert.rejects(finishInventory(f.context, f.inventory.id, { expectedRevision: review.revision, confirmed: true }), status(409));
-  await adjustStock(f.context, { ...f.pair, quantity: 12, expectedVersion: 1, reason: "Leverans" });
+  await assert.rejects(finishInventory(f.context, f.inventory.id, { expectedRevision: review.revision, confirmed: true, ...testInventorySignature }), status(409));
+  await correctStock(f.context, { ...f.pair, quantity: 12, expectedVersion: 1, reason: "Leverans" });
   await assert.rejects(finish(f), status(409));
   assert.equal((await getInventory(f.context, f.inventory.id)).places[0].stale, true);
   await saveLocationCount(f.context, f.inventory.id, f.location.id, f.count(9, 2, 2));
-  await adjustStock(f.context, { ...f.pair, locationId: f.empty.id, quantity: 4, expectedVersion: null, reason: "Ny placering" });
+  await correctStock(f.context, { ...f.pair, locationId: f.empty.id, quantity: 4, expectedVersion: null, reason: "Ny placering" });
   await assert.rejects(finish(f), status(409));
   assert.equal((await getInventory(f.context, f.inventory.id)).places[1].stale, true);
   await saveLocationCount(f.context, f.inventory.id, f.empty.id, { ...f.count(4, 1, 1) });
@@ -152,7 +161,7 @@ test("concurrent and repeated completion creates each movement once, including a
   await saveLocationCount(f.context, f.inventory.id, f.location.id, f.count(0));
   await saveLocationCount(f.context, f.inventory.id, f.empty.id, f.blank);
   const review = await getInventory(f.context, f.inventory.id);
-  const input = { expectedRevision: review.revision, confirmed: true };
+  const input = { expectedRevision: review.revision, confirmed: true, ...testInventorySignature };
   await Promise.all([finishInventory(f.context, f.inventory.id, input), finishInventory(f.context, f.inventory.id, input)]);
   await updateProduct(f.context, f.product.id, { ...productInput, active: false });
   await updateLocation(f.context, f.location.id, { ...parts, active: false });
@@ -205,12 +214,12 @@ test("counting versus product deactivation never leaves an inactive product in a
   assert.equal((await getLocation(f.context, f.location.id)).active, true);
 });
 
-test("completion racing a stock adjustment either commits consistently or rejects the stale writer", async () => {
+test("completion racing a stock correction either commits consistently or rejects the stale writer", async () => {
   const f = await fixture(10);
   await saveLocationCount(f.context, f.inventory.id, f.location.id, f.count(8));
   await saveLocationCount(f.context, f.inventory.id, f.empty.id, f.blank);
   const outcomes = await Promise.allSettled([
-    finish(f), adjustStock(f.context, { ...f.pair, quantity: 15, expectedVersion: 1, reason: "Samtidig ändring" }),
+    finish(f), correctStock(f.context, { ...f.pair, quantity: 15, expectedVersion: 1, reason: "Samtidig ändring" }),
   ]);
   assert.equal(outcomes.filter(row => row.status === "fulfilled").length, 1);
   const inventory = await getInventory(f.context, f.inventory.id);
@@ -228,6 +237,8 @@ test("validation rejects duplicate scope, duplicate products, unsafe counts and 
   assert.equal(saveCountSchema.safeParse({ ...input, rows: [row, row] }).success, false);
   assert.equal(saveCountSchema.safeParse({ ...input, confirmComplete: false }).success, false);
   assert.equal(saveCountSchema.safeParse({ ...input, organizationId: id }).success, false);
+  assert.equal(finishInventorySchema.safeParse({ expectedRevision: 1, confirmed: true }).success, false);
+  assert.equal(finishInventorySchema.safeParse({ expectedRevision: 1, confirmed: true, signerName: "A", signatureDataUrl: "data:image/png;base64,AAAA" }).success, false);
 });
 
 test("scope creation racing location deactivation cannot freeze an inactive place", async () => {
@@ -377,7 +388,7 @@ test("verification derives completed physical counts, corrected versions, empty 
   assert.equal(product.corrections, 1);
   assert.equal((await verify({ locationId: f.empty.id })).state, "verified");
   assert.equal((await verify({ locationId: f.location.id })).state, "verified");
-  await adjustStock(f.context, { ...f.pair, quantity: 8, expectedVersion: 2, reason: "Efter kontroll" });
+  await correctStock(f.context, { ...f.pair, quantity: 8, expectedVersion: 2, reason: "Efter kontroll" });
   assert.equal((await verify({ productId: f.product.id })).state, "changed");
   assert.equal((await verify({ locationId: f.location.id })).state, "changed");
   const foreign = tenant();
@@ -394,7 +405,7 @@ test("product verification requires every current placement and marks old unchan
   await InventoryCount.collection.updateMany({ organizationId: f.context.organizationId }, { $set: { countedAt: oldDate } });
   const scope = { productId: f.product.id };
   assert.equal((await getVerification(f.context, scope, await listStock(f.context, scope))).state, "old");
-  await adjustStock(f.context, { productId: f.product.id, locationId: f.empty.id,
+  await correctStock(f.context, { productId: f.product.id, locationId: f.empty.id,
     quantity: 3, expectedVersion: null, reason: "Ny placering" });
   const partial = await getVerification(f.context, scope, await listStock(f.context, scope));
   assert.equal(partial.state, "partial");
@@ -455,7 +466,7 @@ test("dashboard health verifies every placement, ignores active counts and separ
   assert.deepEqual(worker.insights.health, dashboard.insights.health);
   assert.ok(worker.activity.every(row => row.amount === "INV"));
 
-  await adjustStock(f.context, { ...f.pair, quantity: 11, expectedVersion: 1, reason: "Senare ändring" });
+  await correctStock(f.context, { ...f.pair, quantity: 11, expectedVersion: 1, reason: "Senare ändring" });
   dashboard = await getDashboard(f.context);
   assert.equal(dashboard.insights.health.score, 0);
   assert.equal(dashboard.insights.health.manualCorrections, 1);
@@ -463,13 +474,13 @@ test("dashboard health verifies every placement, ignores active counts and separ
   await saveLocationCount(f.context, recount.id, f.location.id, {
     expectedRevision: 0, confirmComplete: true, rows: [{ productId: f.product.id, expectedVersion: 2, countedQuantity: 11 }],
   });
-  await finishInventory(f.context, recount.id, { confirmed: true, expectedRevision: (await getInventory(f.context, recount.id)).revision });
+  await finishInventory(f.context, recount.id, { confirmed: true, expectedRevision: (await getInventory(f.context, recount.id)).revision, ...testInventorySignature });
   await InventoryCount.collection.updateMany({ organizationId: f.context.organizationId, inventorySessionId: new Types.ObjectId(recount.id) },
     { $set: { countedAt: new Date(Date.now() - 91 * 86400000) } });
   dashboard = await getDashboard(f.context);
   assert.equal(dashboard.insights.health.score, 0);
   assert.equal(dashboard.insights.health.stale, 1);
-  await adjustStock(f.context, { productId: f.product.id, locationId: f.empty.id, quantity: 3, expectedVersion: null, reason: "Ny placering" });
+  await correctStock(f.context, { productId: f.product.id, locationId: f.empty.id, quantity: 3, expectedVersion: null, reason: "Ny placering" });
   dashboard = await getDashboard(f.context);
   assert.equal(dashboard.insights.health.score, 0);
   assert.equal(dashboard.insights.health.stale, 1);
@@ -484,6 +495,7 @@ test("investigated discrepancies stay open and do not change the current balance
   await finishInventory(f.context, f.inventory.id, {
     confirmed: true,
     expectedRevision: detail.revision,
+    ...testInventorySignature,
     resolutions: [{ productId: f.product.id, locationId: f.location.id, action: "INVESTIGATE" }],
   });
   assert.equal((await getStockPair(f.context, f.pair)).quantity, 10);
@@ -512,6 +524,7 @@ test("approved discrepancies update stock, create audit history and become a new
   await finishInventory(f.context, f.inventory.id, {
     confirmed: true,
     expectedRevision: detail.revision,
+    ...testInventorySignature,
     resolutions: [{ productId: f.product.id, locationId: f.location.id, action: "APPROVE" }],
   });
   assert.equal((await getStockPair(f.context, f.pair)).quantity, 8);
@@ -522,33 +535,23 @@ test("approved discrepancies update stock, create audit history and become a new
   assert.equal(health.verified, 1);
 });
 
-test("registered receipts, issues and complete transfers preserve real position trust", async () => {
+test("registered receipts preserve real position trust", async () => {
   const context = tenant();
   const product = await createProduct(context, productInput);
   const warehouse = await createWarehouse(context, { name: "Spårbart lager", code: "TRACE" });
-  const source = await createLocation(context, { ...parts, warehouseId: warehouse.id });
-  const destination = await createLocation(context, { ...parts, position: "02", warehouseId: warehouse.id });
-  await adjustStock(context, { productId: product.id, locationId: source.id, quantity: 20, expectedVersion: null, reason: "Startsaldo" });
-  await adjustStock(context, { productId: product.id, locationId: destination.id, quantity: 7, expectedVersion: null, reason: "Startsaldo" });
-  const inventory = await startInventory(context, { name: "Baslinje", warehouseId: warehouse.id, locationIds: [source.id, destination.id] });
-  await saveLocationCount(context, inventory.id, source.id, { expectedRevision: 0, confirmComplete: true,
+  const location = await createLocation(context, { ...parts, warehouseId: warehouse.id });
+  await correctStock(context, { productId: product.id, locationId: location.id, quantity: 20, expectedVersion: null, reason: "Startsaldo" });
+  const inventory = await startInventory(context, { name: "Baslinje", warehouseId: warehouse.id, locationIds: [location.id] });
+  await saveLocationCount(context, inventory.id, location.id, { expectedRevision: 0, confirmComplete: true,
     rows: [{ productId: product.id, expectedVersion: 1, countedQuantity: 20 }] });
-  await saveLocationCount(context, inventory.id, destination.id, { expectedRevision: 0, confirmComplete: true,
-    rows: [{ productId: product.id, expectedVersion: 1, countedQuantity: 7 }] });
-  await finishInventory(context, inventory.id, { confirmed: true, expectedRevision: (await getInventory(context, inventory.id)).revision });
-  await registerStockMovement(context, { type: "RECEIPT", productId: product.id, locationId: source.id,
+  await finishInventory(context, inventory.id, { confirmed: true, expectedRevision: (await getInventory(context, inventory.id)).revision, ...testInventorySignature });
+  await registerStockMovement(context, { type: "RECEIPT", productId: product.id, locationId: location.id,
     quantity: 5, expectedVersion: 1, reason: "Leverans" });
-  await registerStockMovement(context, { type: "ISSUE", productId: product.id, locationId: source.id,
-    quantity: 2, expectedVersion: 2, reason: "Uttag" });
-  await registerStockMovement(context, { type: "TRANSFER", productId: product.id,
-    sourceLocationId: source.id, destinationLocationId: destination.id, quantity: 3,
-    expectedSourceVersion: 3, expectedDestinationVersion: 1, reason: "Intern flytt" });
   const health = await getInventoryHealthSummary(context);
   assert.equal(health.score, 100);
-  assert.equal(health.trustedPositions, 2);
+  assert.equal(health.trustedPositions, 1);
   assert.ok(health.positions.every(row => row.reason === "VERIFIED"));
 });
-
 test("location activity scopes physical counts and stock history without duplicates or worker history access", async () => {
   const f = await fixture(10), foreign = await fixture(99);
   await saveLocationCount(f.context, f.inventory.id, f.location.id, f.count(12));

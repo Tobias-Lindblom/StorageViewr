@@ -7,7 +7,7 @@ const movementActions = [
 ] as const;
 
 export function QuickActions({ admin, onAction }: { admin: boolean; onAction: (type: MovementType) => void }) {
-  return <div className={"grid gap-2 " + (admin ? "grid-cols-4" : "grid-cols-3")}>
+  return <div className={"grid gap-2 " + (admin ? "grid-cols-2" : "grid-cols-1")}>
     {movementActions.filter(item => admin || item.type !== "CORRECTION").map(item =>
       <button key={item.type} type="button" onClick={() => onAction(item.type)}
         className={"quick-action quick-action-" + item.tone} aria-haspopup="dialog">

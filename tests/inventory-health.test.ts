@@ -34,10 +34,6 @@ test("a traceable receipt preserves trust", () => {
   assert.equal(evaluate(25, [movement()]).reason, "VERIFIED");
 });
 
-test("a traceable issue preserves trust", () => {
-  assert.equal(evaluate(15, [movement({ type: "ISSUE", newQuantity: 15, difference: -5 })]).reason, "VERIFIED");
-});
-
 test("a current level that differs from the ledger is a mismatch", () => {
   const result = evaluate(24, [movement()]);
   assert.equal(result.reason, "LEDGER_MISMATCH");
@@ -66,22 +62,6 @@ test("an open discrepancy takes precedence over an otherwise valid ledger", () =
 test("a manual correction requires a new physical verification", () => {
   const result = evaluate(18, [movement({ type: "CORRECTION", newQuantity: 18, difference: -2 })]);
   assert.equal(result.reason, "MANUAL_CORRECTION");
-});
-
-test("a complete transfer preserves both ledger chains", () => {
-  const source = evaluate(15, [movement({ type: "TRANSFER_OUT", newQuantity: 15, difference: -5, transferId: "t1", transferComplete: true })]);
-  const destination = getInventoryHealthReason({
-    quantity: 12,
-    baseline: baseline(0, 7),
-    movements: [movement({ type: "TRANSFER_IN", previousQuantity: 7, newQuantity: 12, difference: 5, transferId: "t1", transferComplete: true })],
-    now,
-  });
-  assert.equal(source.reason, "VERIFIED");
-  assert.equal(destination.reason, "VERIFIED");
-});
-
-test("an incomplete transfer breaks ledger continuity", () => {
-  assert.equal(evaluate(15, [movement({ type: "TRANSFER_OUT", newQuantity: 15, difference: -5, transferId: "t1", transferComplete: false })]).reason, "LEDGER_MISMATCH");
 });
 
 const position = (overrides: Partial<InventoryPositionHealth> = {}): InventoryPositionHealth => ({

@@ -23,13 +23,16 @@ export function DashboardInsights({ dashboard }: { dashboard: Awaited<ReturnType
   const trigger = useRef<HTMLButtonElement>(null);
   const progress = Math.min(100, Math.max(0, health.score ?? 0));
   const attention = Math.max(0, health.totalPositions - health.trustedPositions);
+  const healthTone = health.score === null ? "empty" :
+    health.openDiscrepancies > 0 || progress < 60 ? "critical" :
+      progress < 90 ? "attention" : "healthy";
   const metrics = [
     { count: health.trustedPositions, text: "Verifierade positioner", icon: "product" as const, tone: "success" },
     { count: health.openDiscrepancies, text: "Öppna avvikelser", icon: "alert" as const, tone: "danger" },
     { count: health.stale, text: "Gamla kontroller", icon: "history" as const, tone: "warning" },
   ];
   return <>
-    <section className="dashboard-health dashboard-card" aria-labelledby="warehouse-health-heading">
+    <section className={"dashboard-health dashboard-card health-tone-" + healthTone} aria-labelledby="warehouse-health-heading">
       <button type="button" className="dashboard-card-heading dashboard-health-heading" ref={trigger} onClick={() => setOpen(true)}>
         <h2 id="warehouse-health-heading"><AppIcon name="heart" width={21} height={21} />Lagerhälsa</h2>
         <AppIcon name="chevron" width={17} height={17} />
@@ -60,7 +63,7 @@ export function DashboardInsights({ dashboard }: { dashboard: Awaited<ReturnType
       </ul>
     </section>
     {open && <BottomSheet title="Lagerhälsa" onClose={() => { setOpen(false); trigger.current?.focus(); }}>
-      <div className="health-details-summary">
+      <div className={"health-details-summary health-tone-" + healthTone}>
         <strong>{health.score === null ? "—" : health.score + "%"}</strong>
         <div><p>{health.trustedPositions.toLocaleString("sv-SE")} av {health.totalPositions.toLocaleString("sv-SE")} positioner är betrodda</p>
           <span>Fysisk kontroll och obruten lagerhistorik avgör resultatet.</span></div>

@@ -7,6 +7,7 @@ import { clientApi } from "@/lib/client-api";
 import type { InventoryDetail } from "./session-queries";
 import { DownloadInventoryReport } from "./download-report";
 import { CountPlace } from "./count-place";
+import { InventorySignature } from "./inventory-signature";
 
 const number = (value: number) => value.toLocaleString("sv-SE");
 const date = (value: string) => new Date(value).toLocaleDateString("sv-SE", { timeZone: "Europe/Stockholm", day: "numeric", month: "short", year: "numeric" });
@@ -31,6 +32,8 @@ export function InventoryWorkspace({
   );
   const [review, setReview] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
+  const [signerName, setSignerName] = useState("");
+  const [signatureDataUrl, setSignatureDataUrl] = useState<string | null>(null);
   const [resolutions, setResolutions] = useState<Record<string, "APPROVE" | "INVESTIGATE">>({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -80,7 +83,7 @@ export function InventoryWorkspace({
       await clientApi(
         "/api/inventory/sessions/" + data.id + "/complete",
         "POST",
-        { expectedRevision: data.revision, confirmed,
+        { expectedRevision: data.revision, confirmed, signerName, signatureDataUrl,
           resolutions: data.discrepancies.map(row => ({
             productId: row.productId, locationId: row.locationId,
             action: resolutions[discrepancyKey(row.productId, row.locationId)],
@@ -91,6 +94,8 @@ export function InventoryWorkspace({
       setNotice(
         "Inventeringen är genomförd. Saldon och historik har uppdaterats.",
       );
+      setSignerName("");
+      setSignatureDataUrl(null);
     } catch (error) {
       setError(
         error instanceof Error
@@ -147,6 +152,14 @@ export function InventoryWorkspace({
       {!completed && <p className="inventory-detail-note">
         Lagersaldot uppdateras när inventeringen genomförs.
       </p>}
+      {completed && data.completionSignerName && data.completionSignedAt && (
+        <p className="inventory-detail-signed">
+          <AppIcon name="check" width={17} height={17} />
+          Signerad av <strong>{data.completionSignerName}</strong>
+          <span>·</span>
+          <time dateTime={data.completionSignedAt}>{date(data.completionSignedAt)}</time>
+        </p>
+      )}
       {!completed && data.places.some(row => row.stale) && <p className="inventory-detail-stale-note">
         Saldot har ändrats på en räknad plats. Räkna om markerade platser före slutförande.
       </p>}
@@ -211,13 +224,14 @@ export function InventoryWorkspace({
           </button>}
       </div>}
       {place && !completed && (
-        <BottomSheet title={"Räkna " + place.code} onClose={close}>
+        <BottomSheet title={(verifiedPlaceId === place.id ? "Räkna " : "Skanna ") + place.code} onClose={close}>
           <CountPlace
             key={place.id + ":" + place.revision + ":" + refresh}
             inventoryId={data.id}
             place={place}
             verified={verifiedPlaceId === place.id}
             onVerified={() => setVerifiedPlaceId(place.id)}
+            onCancel={close}
             reload={reload}
             onSaved={async () => {
               await reload();
@@ -236,8 +250,10 @@ export function InventoryWorkspace({
               catch { setError("Kunde inte läsa in inventeringen. Försök igen."); }
             }}>Läs in inventeringen igen</button>
           </div>}
-          <button type="button" className="button w-full" disabled={!ready || !confirmed || !allDiscrepanciesHandled || busy} onClick={finish}>
-            {busy ? "Genomför…" : "Genomför och uppdatera saldo"}
+          <button type="button" className="button w-full"
+            disabled={!ready || !confirmed || !allDiscrepanciesHandled || !signatureDataUrl || signerName.trim().length < 2 || busy}
+            onClick={finish}>
+            {busy ? "Genomför…" : "Signera och genomför"}
           </button>
         </> : undefined}>
         <div className="inventory-review-summary">
@@ -281,8 +297,16 @@ export function InventoryWorkspace({
           <AppIcon name="verified" width={23} height={23} />
           <div><p>Inga avvikelser</p><span>De sparade räkningarna har inga saldoavvikelser.</span></div>
         </div>}
+        {admin && ready && allDiscrepanciesHandled && (
+          <InventorySignature
+            signerName={signerName}
+            onSignerNameChange={setSignerName}
+            onSignatureChange={setSignatureDataUrl}
+            disabled={busy}
+          />
+        )}
         {admin && <label className="inventory-review-confirm">
-          <input type="checkbox" className="m-0! mt-1! h-4! min-h-0! w-4! shrink-0 px-0! accent-violet-500"
+          <input type="checkbox" className="m-0! mt-1! h-4! min-h-0! w-4! shrink-0 px-0! accent-accent"
             checked={confirmed} disabled={!ready || !allDiscrepanciesHandled || busy} onChange={event => setConfirmed(event.target.checked)} />
           <span>Jag har granskat räkningarna och valt hur varje avvikelse ska hanteras. Godkända saldon uppdateras när inventeringen slutförs.</span>
         </label>}

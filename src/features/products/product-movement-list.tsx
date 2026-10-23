@@ -1,12 +1,9 @@
 import Link from "next/link";
 import type { MovementData } from "@/features/inventory/service";
-import { movementPreview } from "@/features/inventory/movement-preview";
 import { movementLabel } from "@/features/inventory/movement-label";
 
 export function ProductMovementList({ items, href }: { items: MovementData["items"]; href: string }) {
-  const rows = movementPreview(items)
-    .filter(item => ["RECEIPT", "INITIAL", "INVENTORY", "CORRECTION", "ADJUSTMENT"].includes(item.type))
-    .slice(0, 4);
+  const rows = items.slice(0, 4);
   return <section className="product-recent-movements" aria-labelledby="product-movements-heading">
     <div className="product-section-heading">
       <h2 id="product-movements-heading">Senaste händelser</h2><Link href={href}>Visa alla</Link>

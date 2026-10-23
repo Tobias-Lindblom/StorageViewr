@@ -1,7 +1,8 @@
 export const historyMovementTypes = {
-  receipt: ["RECEIPT", "INITIAL"],
+  all: ["RECEIPT", "INVENTORY", "CORRECTION"],
+  receipt: ["RECEIPT"],
   inventory: ["INVENTORY"],
-  correction: ["CORRECTION", "ADJUSTMENT"],
+  correction: ["CORRECTION"],
 } as const;
 export function historySearch(q: string, prefix = "") {
   const regex = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");

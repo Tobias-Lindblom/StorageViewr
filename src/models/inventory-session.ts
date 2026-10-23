@@ -48,6 +48,9 @@ const schema = new Schema(
     organizationDetails: organizationDetailsSchema,
     startedByName: { type: String, immutable: true },
     completedByName: String,
+    completionSignerName: String,
+    completionSignatureImage: Buffer,
+    completionSignedAt: Date,
     revision: { type: Number, required: true, default: 0 },
   },
   { collection: "inventorySessions", timestamps: true },
@@ -55,7 +58,11 @@ const schema = new Schema(
 schema.index({ organizationId: 1, warehouseId: 1, status: 1 });
 type InventorySessionRecord = InferSchemaType<typeof schema>;
 const cachedInventorySession = models.InventorySession as Model<InventorySessionRecord> | undefined;
-if (cachedInventorySession && !cachedInventorySession.schema.path("organizationDetails"))
+if (
+  cachedInventorySession &&
+  (!cachedInventorySession.schema.path("organizationDetails") ||
+    !cachedInventorySession.schema.path("completionSignatureImage"))
+)
   deleteModel("InventorySession");
 export const InventorySession: Model<InventorySessionRecord> =
   (models.InventorySession as Model<InventorySessionRecord> | undefined) ??

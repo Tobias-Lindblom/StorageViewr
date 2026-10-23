@@ -75,7 +75,7 @@ export function DashboardView({ dashboard, locations, warehouses, admin, account
     { href: "/products", value: dashboard.productCount.toLocaleString("sv-SE"), label: "Produkter", icon: "product" as const, tone: "cyan" },
     { href: "/locations", value: dashboard.locationCount.toLocaleString("sv-SE"), label: "Lagerplatser", icon: "location" as const, tone: "blue" },
     { href: "/products", value: BigInt(dashboard.stockUnitCount).toLocaleString("sv-SE"), label: "Registrerat antal", icon: "units" as const, tone: "blue" },
-    { href: "/reports", value: compactSek(dashboard.inventoryValueUnits), label: "Lagervärde", icon: "coins" as const, tone: "violet",
+    { href: "/reports", value: compactSek(dashboard.inventoryValueUnits), label: "Lagervärde", icon: "coins" as const, tone: "neutral",
       note: dashboard.productsWithoutValue ? dashboard.productsWithoutValue + " saknar styckvärde" : undefined },
   ];
   return (

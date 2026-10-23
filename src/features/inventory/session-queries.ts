@@ -176,6 +176,8 @@ export async function getInventory(context: TenantContext, id: string) {
       revision: inventory.revision,
       startedAt: inventory.startedAt.toISOString(),
       completedAt: inventory.completedAt?.toISOString() ?? null,
+      completionSignerName: inventory.completionSignerName ?? null,
+      completionSignedAt: inventory.completionSignedAt?.toISOString() ?? null,
       counted: places.filter((row) => row.status === "counted").length,
       places,
       discrepancies: places.flatMap((place) =>

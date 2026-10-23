@@ -21,7 +21,8 @@ import { InventoryDiscrepancy } from "../src/models/inventory-discrepancy";
 import { createProduct } from "../src/features/products/service";
 import { createWarehouse } from "../src/features/warehouses/service";
 import { createLocation } from "../src/features/locations/service";
-import { adjustStock } from "../src/features/inventory/service";
+import { correctStockForTest as correctStock } from "./helpers/stock";
+import { testInventorySignature } from "./helpers/inventory-signature";
 import {
   startInventory,
   saveLocationCount,
@@ -143,7 +144,7 @@ async function fixture(quantity = 10) {
     position: "02",
   });
   const pair = { productId: product.id, locationId: location.id };
-  await adjustStock(context, {
+  await correctStock(context, {
     ...pair,
     quantity,
     expectedVersion: null,
@@ -171,6 +172,7 @@ async function fixture(quantity = 10) {
     await finishInventory(context, inventory.id, {
       expectedRevision: detail.revision,
       confirmed: true,
+      ...testInventorySignature,
     });
   }
   return {
@@ -198,6 +200,9 @@ test("reports require completion and tenant ownership and use immutable counting
   assert.equal(original.companyDetails.city, "Stockholm");
   assert.equal(original.startedBy, "Tobias Åström");
   assert.equal(original.completedBy, "Tobias Åström");
+  assert.equal(original.signature?.signerName, "Anna Lager");
+  assert.ok(original.signature?.signedAt);
+  assert.equal(original.signature?.image.subarray(0, 8).toString("hex"), "89504e470d0a1a0a");
   assert.equal(original.summary.discrepancies, 1);
   assert.equal(original.summary.emptyPlaces, 1);
   assert.equal(original.summary.expected, "10");
@@ -212,7 +217,7 @@ test("reports require completion and tenant ownership and use immutable counting
   assert.equal(original.summary.countedValueUnits, "67608");
   assert.equal(original.summary.valueDifferenceUnits, "-16902");
   assert.equal(original.summary.productsWithoutValue, 0);
-  await adjustStock(f.context, {
+  await correctStock(f.context, {
     ...f.pair,
     quantity: 777,
     expectedVersion: 2,
@@ -367,7 +372,7 @@ test("reports retain unchanged rows, empty places and exact totals beyond safe i
     name: "Skruv M8",
     sku: "SKRUV-01",
   });
-  await adjustStock(f.context, {
+  await correctStock(f.context, {
     productId: extra.id,
     locationId: f.location.id,
     quantity: Number.MAX_SAFE_INTEGER,
@@ -392,6 +397,7 @@ test("reports retain unchanged rows, empty places and exact totals beyond safe i
   await finishInventory(f.context, f.inventory.id, {
     expectedRevision: detail.revision,
     confirmed: true,
+    ...testInventorySignature,
   });
   const report = await getInventoryReport(f.context, f.inventory.id);
   assert.equal(
@@ -423,6 +429,9 @@ test("legacy sessions remain downloadable without inventing missing historical n
         organizationDetails: "",
         startedByName: "",
         completedByName: "",
+        completionSignerName: "",
+        completionSignatureImage: "",
+        completionSignedAt: "",
       },
     },
   );
@@ -431,6 +440,7 @@ test("legacy sessions remain downloadable without inventing missing historical n
   assert.equal(report.currentCompanyName, true);
   assert.equal(report.startedBy, "Ej sparat");
   assert.equal(report.completedBy, "Ej sparat");
+  assert.equal(report.signature, null);
   const bytes = await renderInventoryReport(report);
   assert.equal(bytes.subarray(0, 5).toString(), "%PDF-");
   await writeFile(path.join(folder, "legacy.pdf"), bytes);

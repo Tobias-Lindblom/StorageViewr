@@ -1,6 +1,5 @@
 import {
   Schema,
-  deleteModel,
   model,
   models,
   type InferSchemaType,
@@ -15,12 +14,7 @@ const schema = new Schema({
   type: {
     type: String,
     enum: [
-      "INITIAL",
-      "ADJUSTMENT",
       "RECEIPT",
-      "ISSUE",
-      "TRANSFER_OUT",
-      "TRANSFER_IN",
       "CORRECTION",
       "INVENTORY",
     ],
@@ -28,7 +22,6 @@ const schema = new Schema({
     immutable: true,
   },
   inventorySessionId: { type: Schema.Types.ObjectId, immutable: true },
-  transferId: { type: Schema.Types.ObjectId, immutable: true },
   previousQuantity: { ...amount, immutable: true },
   newQuantity: { ...amount, immutable: true },
   difference: { type: Number, required: true, validate: Number.isSafeInteger, immutable: true },
@@ -44,23 +37,8 @@ const schema = new Schema({
 schema.index({ organizationId: 1, createdAt: -1, _id: -1 });
 schema.index({ organizationId: 1, productId: 1, createdAt: -1, _id: -1 });
 schema.index({ organizationId: 1, locationId: 1, createdAt: -1, _id: -1 });
-schema.index({ organizationId: 1, transferId: 1 });
 schema.index({ organizationId: 1, inventorySessionId: 1, productId: 1, locationId: 1 }, { unique: true, partialFilterExpression: { type: "INVENTORY" } });
 type InventoryMovementRecord = InferSchemaType<typeof schema>;
-let cached = models.InventoryMovement as
-  | Model<InventoryMovementRecord>
-  | undefined;
-
-// Next.js keeps compiled Mongoose models during development. Recompile this model
-// when an older hot-reloaded schema predates linked stock transfers.
-if (
-  process.env.NODE_ENV === "development" &&
-  cached &&
-  !cached.schema.path("transferId")
-) {
-  deleteModel("InventoryMovement");
-  cached = undefined;
-}
-
 export const InventoryMovement: Model<InventoryMovementRecord> =
-  cached ?? model<InventoryMovementRecord>("InventoryMovement", schema);
+  (models.InventoryMovement as Model<InventoryMovementRecord> | undefined) ??
+  model<InventoryMovementRecord>("InventoryMovement", schema);

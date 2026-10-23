@@ -537,6 +537,97 @@ export async function renderInventoryReport(
         line(y);
       }
       y += 14;
+
+      heading(
+        "Signering",
+        "Inventeringen signerades i samband med att den genomfördes.",
+      );
+      if (report.signature) {
+        ensure(112);
+        const panelTop = y;
+        const panelHeight = 98;
+        const signatureWidth = 230;
+        doc
+          .roundedRect(left, panelTop, width, panelHeight, 7)
+          .fillAndStroke(colors.soft, colors.line);
+        doc.image(report.signature.image, left + 15, panelTop + 12, {
+          fit: [signatureWidth - 30, 52],
+          align: "center",
+          valign: "center",
+        });
+        doc
+          .moveTo(left + 15, panelTop + 69)
+          .lineTo(left + signatureWidth - 15, panelTop + 69)
+          .lineWidth(0.5)
+          .strokeColor(colors.line)
+          .stroke();
+        text(
+          "Signatur",
+          left + 15,
+          panelTop + 76,
+          signatureWidth - 30,
+          7,
+          false,
+          colors.muted,
+        );
+        doc
+          .moveTo(left + signatureWidth, panelTop + 12)
+          .lineTo(left + signatureWidth, panelTop + panelHeight - 12)
+          .lineWidth(0.5)
+          .strokeColor(colors.line)
+          .stroke();
+        text(
+          "Namnförtydligande",
+          left + signatureWidth + 16,
+          panelTop + 17,
+          width - signatureWidth - 32,
+          7,
+          false,
+          colors.muted,
+        );
+        text(
+          report.signature.signerName,
+          left + signatureWidth + 16,
+          panelTop + 32,
+          width - signatureWidth - 32,
+          10,
+          true,
+        );
+        text(
+          "Signerad",
+          left + signatureWidth + 16,
+          panelTop + 57,
+          width - signatureWidth - 32,
+          7,
+          false,
+          colors.muted,
+        );
+        text(
+          date(report.signature.signedAt),
+          left + signatureWidth + 16,
+          panelTop + 72,
+          width - signatureWidth - 32,
+          8.5,
+          true,
+        );
+        y += panelHeight + 14;
+      } else {
+        ensure(54);
+        doc
+          .roundedRect(left, y, width, 42, 7)
+          .fillAndStroke(colors.soft, colors.line);
+        text(
+          "Digital signatur saknas i underlaget för denna äldre inventering.",
+          left + 13,
+          y + 14,
+          width - 26,
+          8,
+          false,
+          colors.muted,
+        );
+        y += 54;
+      }
+
       const details = report.companyDetails;
       const footerRows = [
         report.companyName,

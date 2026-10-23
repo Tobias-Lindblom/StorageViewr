@@ -14,7 +14,7 @@ export async function POST(
     return finishInventory(
       context,
       (await params).id,
-      await readJson(request, finishInventorySchema),
+      await readJson(request, finishInventorySchema, 450_000),
     );
   });
 }

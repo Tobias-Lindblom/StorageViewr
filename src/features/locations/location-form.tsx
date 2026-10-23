@@ -235,7 +235,7 @@ export function LocationForm({
               <div className="mt-5 border-t border-line/60 pt-5">
                 <label className="flex min-h-11 items-center gap-3">
                   <input
-                    className="m-0! h-5! min-h-0! w-5! accent-violet-500"
+                    className="m-0! h-5! min-h-0! w-5! accent-accent"
                     type="checkbox"
                     name="active"
                     defaultChecked={initial.active}

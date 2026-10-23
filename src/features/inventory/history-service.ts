@@ -13,7 +13,7 @@ type EventRow = {
   locationCode: string; warehouseName: string; reason: string;
   performedByName: string; createdAt: Date; difference?: number;
   previousQuantity?: number; newQuantity?: number;
-  transferId?: Types.ObjectId; inventorySessionId?: Types.ObjectId;
+  inventorySessionId?: Types.ObjectId;
   physical?: boolean;
 };
 type EventGroup = { _id: string; createdAt: Date; rows: EventRow[] };
@@ -26,29 +26,26 @@ export type HistoryItem = {
     warehouseName: string; previousQuantity: number; newQuantity: number; reason: string }[];
 };
 
-// Group complete events before search and pagination so a transfer cannot split across pages.
 export async function listHistory(context: TenantContext, input: unknown) {
   requireAdmin(context);
   const { page: requestedPage, q, kind, productId, locationId } = historyQuerySchema.parse(input);
   if (productId || locationId) await checkScope(context, { productId, locationId });
   const scope = {
     organizationId: context.organizationId,
-    type: { $in: ["RECEIPT", "INITIAL", "INVENTORY", "CORRECTION", "ADJUSTMENT"] },
+    type: { $in: historyMovementTypes.all },
     ...(productId ? { productId: new Types.ObjectId(productId) } : {}),
     ...(locationId ? { locationId: new Types.ObjectId(locationId) } : {}),
   };
   const inventoryKey = { $concat: ["inventory:", { $toString: "$inventorySessionId" }, ":", { $toString: "$locationId" }] };
+  const eventId = productId ? { $toString: "$_id" } : { $cond: [
+    { $and: [{ $eq: ["$type", "INVENTORY"] },
+      { $ne: [{ $ifNull: ["$inventorySessionId", null] }, null] }] },
+    inventoryKey,
+    { $toString: "$_id" },
+  ] };
   const pipeline: PipelineStage[] = [
     { $match: scope },
-    { $set: { eventId: { $switch: {
-      branches: [
-        ...(!locationId ? [{ case: { $ne: [{ $ifNull: ["$transferId", null] }, null] },
-          then: { $concat: ["transfer:", { $toString: "$transferId" }] } }] : []),
-        ...(!productId ? [{ case: { $and: [{ $eq: ["$type", "INVENTORY"] },
-          { $ne: [{ $ifNull: ["$inventorySessionId", null] }, null] }] }, then: inventoryKey }] : []),
-      ],
-      default: { $toString: "$_id" },
-    } } } },
+    { $set: { eventId } },
   ];
   if (!productId) {
     pipeline.push({ $unionWith: {
@@ -88,21 +85,14 @@ export async function listHistory(context: TenantContext, input: unknown) {
     await InventoryMovement.aggregate<EventGroup>([...pipeline, sort, { $skip: (page - 1) * 20 }, { $limit: 20 }]);
   const items: HistoryItem[] = records.map(group => {
     const physical = group.rows.find(row => row.physical);
-    const outgoing = group.rows.find(row => row.type === "TRANSFER_OUT");
-    const incoming = group.rows.find(row => row.type === "TRANSFER_IN");
-    const transfer = outgoing && incoming;
-    const row = physical ?? outgoing ?? group.rows[0];
-    const code = transfer ? outgoing.warehouseName === incoming.warehouseName
-      ? outgoing.locationCode + " → " + incoming.locationCode
-      : outgoing.warehouseName + " · " + outgoing.locationCode + " → " + incoming.warehouseName + " · " + incoming.locationCode
-      : row.locationCode;
+    const row = physical ?? group.rows[0];
     return {
-      id: group._id, type: transfer ? "TRANSFER" : row.type,
+      id: group._id, type: row.type,
       productName: row.productName, sku: row.sku,
-      locationCode: code, warehouseName: row.warehouseName, reason: row.reason,
+      locationCode: row.locationCode, warehouseName: row.warehouseName, reason: row.reason,
       performedByName: row.performedByName || "Användare",
       createdAt: group.createdAt.toISOString(),
-      difference: physical ? null : transfer ? Math.abs(outgoing.difference ?? 0) : row.difference ?? 0,
+      difference: physical ? null : row.difference ?? 0,
       inventorySessionId: row.inventorySessionId ? String(row.inventorySessionId) : null,
       balances: group.rows.filter(row => !row.physical).map(row => ({
         id: String(row._id), productName: row.productName, sku: row.sku,

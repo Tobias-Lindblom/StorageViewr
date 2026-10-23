@@ -85,7 +85,7 @@ Request bodies begränsas till 16 KiB, utom platsräkning (100 000 byte), produk
 - GET/PATCH /api/products/[id]
 - GET /api/products/[id]/photo (kräver företagsbehörighet)
 - POST /api/products/import (mode: preview eller commit)
-- GET/POST /api/inventory
+- GET /api/inventory
 - GET /api/inventory/level (productId och locationId)
 - GET /api/inventory/history (admin; valfritt productId eller locationId, page)
 - GET/POST /api/inventory/sessions
@@ -114,7 +114,7 @@ Konto- och globala databasgränser bör kompletteras med IP-begränsning vid bet
 1. Öppna en produkt och välj Inleverans bland snabbåtgärderna.
 2. Välj lagerplats, ange mottaget antal och en orsak.
 3. Öppna lagerplatsen för att se produkterna som finns där.
-4. Använd Uttag eller Flytta för nästa lagerhändelse. Admin kan också korrigera saldot.
+4. Registrera inleveranser eller inventera platsen. Admin kan även korrigera saldot.
 5. Öppna Historik för tidigare antal, ändring, orsak och utförare.
 
 Vid en samtidig ändring: välj Läs in aktuellt saldo, kontrollera antalet och spara igen.

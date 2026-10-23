@@ -1,14 +1,14 @@
 .layout { display: grid; max-width: 840px; gap: 18px; }
 .valueCard, .inventorySection { overflow: hidden; border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); background: var(--surface-1); box-shadow: var(--shadow-card); }
-.valueCard { padding: clamp(18px, 4vw, 26px); background: radial-gradient(circle at 92% 0%, color-mix(in srgb, var(--color-accent) 10%, transparent), transparent 38%), var(--surface-1); }
+.valueCard { padding: clamp(18px, 4vw, 26px); background: var(--surface-1); }
 .valueHeading { display: flex; align-items: flex-start; gap: 13px; }
-.valueIcon, .reportIcon { display: grid; flex-shrink: 0; place-items: center; color: var(--color-accent); background: color-mix(in srgb, var(--color-accent) 11%, var(--surface-3)); }
-.valueIcon { width: 44px; height: 44px; border: 1px solid color-mix(in srgb, var(--color-accent) 22%, transparent); border-radius: 12px; }
+.valueIcon, .reportIcon { display: grid; flex-shrink: 0; place-items: center; color: var(--icon-default); background: var(--surface-3); }
+.valueIcon { width: 44px; height: 44px; border: 1px solid var(--border-subtle); border-radius: 12px; }
 .valueHeading h2, .sectionHeading h2 { margin: 0; font-size: 16px; }
 .valueHeading p, .sectionHeading p { margin-top: 4px; color: var(--text-secondary); font-size: 11px; line-height: 1.5; }
 .valueSummary { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(280px, .9fr); align-items: end; gap: 20px; margin-top: 24px; padding: 18px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); background: var(--surface-2); }
 .valueSummary > div > span, .valueSummary > div > small { display: block; color: var(--text-secondary); font-size: 10px; }
-.valueSummary > div > strong { display: block; margin: 6px 0 5px; color: var(--color-accent); font-size: clamp(26px, 5vw, 36px); line-height: 1; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
+.valueSummary > div > strong { display: block; margin: 6px 0 5px; color: var(--text-primary); font-size: clamp(26px, 5vw, 36px); line-height: 1; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
 .valueSummary dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .valueSummary dl > div { padding-left: 10px; border-left: 1px solid var(--border-subtle); }
 .valueSummary dt { color: var(--text-secondary); font-size: 9px; line-height: 1.3; }
@@ -19,7 +19,7 @@
 .scopeForm > div { display: flex; gap: 7px; margin-top: 7px; }
 .scopeForm select { min-width: 0; min-height: 46px; margin: 0; }
 .scopeForm button, .primaryDownload, .reportDownload { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 46px; padding: 0 14px; border: 1px solid var(--border-default); border-radius: var(--radius-sm); background: var(--surface-3); color: var(--text-primary); font-size: 11px; font-weight: 650; white-space: nowrap; }
-.primaryDownload { border-color: color-mix(in srgb, var(--color-accent) 48%, var(--border-default)); background: linear-gradient(180deg, #9363df, #7740cd); color: white; }
+.primaryDownload { border-color: color-mix(in srgb, var(--brand) 48%, var(--border-default)); background: var(--brand-gradient); color: white; }
 .valueNotice { display: flex; align-items: flex-start; gap: 7px; margin-top: 13px; color: var(--color-warning); font-size: 10px; line-height: 1.5; }
 .valueNotice svg { flex-shrink: 0; margin-top: 1px; }
 .inventorySection { padding-bottom: 4px; }

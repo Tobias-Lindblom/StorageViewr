@@ -20,6 +20,7 @@ export function CountPlace({
   place,
   verified,
   onVerified,
+  onCancel,
   reload,
   onSaved,
 }: {
@@ -27,6 +28,7 @@ export function CountPlace({
   place: InventoryPlace;
   verified: boolean;
   onVerified: () => void;
+  onCancel: () => void;
   reload: () => Promise<unknown>;
   onSaved: () => Promise<void>;
 }) {
@@ -37,7 +39,7 @@ export function CountPlace({
     })),
   );
   const [snapshot, setSnapshot] = useState(place);
-  const [scanning, setScanning] = useState(false);
+  const [scanning, setScanning] = useState(() => !verified);
   const [confirmed, setConfirmed] = useState(false);
   const [replace, setReplace] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -147,40 +149,12 @@ export function CountPlace({
   }
   return (
     <>
-      {!verified && !scanning && (
-        <section aria-labelledby="verify-location-heading">
-          <div className="form-card flex items-start gap-3">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-violet-400/10 text-accent">
-              <AppIcon name="qr" />
-            </span>
-            <div className="min-w-0">
-              <h3 id="verify-location-heading" className="mb-1! text-base!">
-                Verifiera lagerplatsen
-              </h3>
-              <p className="text-sm leading-6 text-muted">
-                Skanna etiketten på <strong className="font-medium text-foreground">{place.code}</strong>. Produkterna visas när platsen har verifierats.
-              </p>
-            </div>
-          </div>
-          <button
-            type="button"
-            className="button mt-5 w-full"
-            onClick={() => setScanning(true)}
-          >
-            <AppIcon name="qr" />
-            Skanna platsens QR-kod
-          </button>
-          <p className="mt-3 text-center text-xs leading-5 text-muted">
-            Kameran öppnas i nästa steg. Platskoden kan även anges manuellt.
-          </p>
-        </section>
-      )}
       {scanning && (
         <div className="space-y-4">
           <button
             type="button"
             className="inline-flex min-h-11 items-center gap-2 text-sm text-accent"
-            onClick={() => setScanning(false)}
+            onClick={() => verified ? setScanning(false) : onCancel()}
           >
             <MaterialArrow name="back" />
             {verified ? "Tillbaka till räkningen" : "Tillbaka"}

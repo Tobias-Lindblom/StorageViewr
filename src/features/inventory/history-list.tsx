@@ -26,7 +26,7 @@ export function HistoryList({ items }: { items: HistoryItem[] }) {
     <ol className="history-list">
       {items.map(item => {
         const inventory = item.type === "INVENTORY";
-        const correction = item.type === "CORRECTION" || item.type === "ADJUSTMENT";
+        const correction = item.type === "CORRECTION";
         const tone = inventory || (item.difference ?? 0) < 0 ? "danger" : "success";
         const amount = item.difference === null ? "" :
           (item.difference > 0 ? "+" : "") + item.difference.toLocaleString("sv-SE");

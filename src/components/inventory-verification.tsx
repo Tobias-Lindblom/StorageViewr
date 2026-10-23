@@ -10,7 +10,7 @@ export function InventoryVerification({ data }: { data: VerificationData }) {
   const labels = verificationLabels;
   return <section aria-label="Inventeringsstatus" className="stock-card mt-3 gap-1! p-3! sm:p-5!">
     <div className="flex flex-wrap items-center justify-between gap-2">
-      <span className="inline-flex items-center gap-2 text-sm"><AppIcon name="inventory" width={17} height={17} className="text-accent" />Senast inventerad</span>
+      <span className="inline-flex items-center gap-2 text-sm"><AppIcon name="inventory" width={17} height={17} className="text-muted" />Senast inventerad</span>
       <StatusBadge tone={data.state === "verified" ? "success" : data.state === "never" ? "neutral" : "warning"}>{labels[data.state]}</StatusBadge>
     </div>
     {data.countedAt ? <div className="flex flex-wrap items-center justify-between gap-x-3">

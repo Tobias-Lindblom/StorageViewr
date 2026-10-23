@@ -207,7 +207,7 @@ export function StartInventory({
                             key={row.id}
                             className={
                               "flex min-h-12 cursor-pointer items-center gap-3 border-b border-line/50 px-4 transition last:border-0 " +
-                              (checked ? "bg-violet-500/10" : "hover:bg-surface-raised")
+                              (checked ? "bg-accent/10" : "hover:bg-surface-raised")
                             }
                           >
                             <input

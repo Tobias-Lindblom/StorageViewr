@@ -96,9 +96,8 @@ Vi ska INTE börja med:
 * ekonomifunktioner
 
 Koden ska vara ren för dagens behov. Lägg inte till modeller, gränssnitt,
-funktionsflaggor eller tomma flöden för framtida funktioner. Äldre tekniska
-poster för uttag och flytt får endast behållas för att historisk data ska kunna
-läsas; de ska inte kunna skapas eller visas som produktfunktioner.
+funktionsflaggor eller tomma flöden för framtida funktioner. Uttag och flyttar
+ingår inte i produktmodellen och ska därför inte finnas i kod eller gränssnitt.
 
 ---
 
@@ -445,11 +444,9 @@ Exempel:
 Exempel på `type`:
 
 ```text
-INITIAL_STOCK
-INVENTORY_ADJUSTMENT
-MANUAL_ADJUSTMENT
-MOVE_IN
-MOVE_OUT
+RECEIPT
+INVENTORY
+CORRECTION
 ```
 
 Detta ska senare göra det möjligt att visa:
@@ -466,7 +463,7 @@ Utfört av:
 Anna
 
 Orsak:
-Inventory adjustment
+Inventerat antal
 ```
 
 Spårbarhet ska vara en viktig princip i StorageViewr.

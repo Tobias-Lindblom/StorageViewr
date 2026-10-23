@@ -10,6 +10,24 @@ import { Organization } from "@/models/organization";
 import { Warehouse } from "@/models/warehouse";
 import { organizationDocumentDetails } from "@/features/organizations/document-profile";
 
+function reportImageBuffer(value: unknown) {
+  if (Buffer.isBuffer(value)) return Buffer.from(value);
+  if (
+    value &&
+    typeof value === "object" &&
+    "value" in value &&
+    typeof value.value === "function"
+  ) {
+    const bytes = value.value(true) as unknown;
+    if (bytes instanceof Uint8Array) return Buffer.from(bytes);
+  }
+  throw new AppError(
+    409,
+    "INVENTORY_SIGNATURE_INVALID",
+    "Inventeringens signatur kunde inte läsas. Kontakta administratören.",
+  );
+}
+
 export async function getInventoryReport(context: TenantContext, id: string) {
   const inventory = await InventorySession.findOne({
     _id: objectIdSchema.parse(id),
@@ -142,6 +160,16 @@ export async function getInventoryReport(context: TenantContext, id: string) {
     completedAt: inventory.completedAt.toISOString(),
     startedBy: inventory.startedByName ?? "Ej sparat",
     completedBy: inventory.completedByName ?? "Ej sparat",
+    signature:
+      inventory.completionSignatureImage &&
+      inventory.completionSignerName &&
+      inventory.completionSignedAt
+        ? {
+            image: reportImageBuffer(inventory.completionSignatureImage),
+            signerName: inventory.completionSignerName,
+            signedAt: inventory.completionSignedAt.toISOString(),
+          }
+        : null,
     places,
     summary: {
       places: places.length,

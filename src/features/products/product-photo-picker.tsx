@@ -34,7 +34,7 @@ export function ProductPhotoPicker({ existing, value, onChange, onBusy, disabled
           </div>
         ) : (
           <div className="flex items-center gap-4 form-card-body">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-surface-raised text-accent">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-line/60 bg-surface-raised text-muted">
               <AppIcon name="camera" />
             </span>
             <div className="min-w-0">

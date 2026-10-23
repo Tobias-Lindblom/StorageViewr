@@ -20,6 +20,13 @@ export const saveCountSchema = z.object({
 export const finishInventorySchema = z.object({
   expectedRevision: quantitySchema,
   confirmed: z.literal(true, { error: "Bekräfta att avvikelserna har granskats." }),
+  signerName: z.string().trim().min(2, "Ange namnförtydligande.").max(120),
+  signatureDataUrl: z.string()
+    .max(400_000, "Signaturen är för stor.")
+    .regex(
+      /^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/,
+      "Signaturen har ett ogiltigt format.",
+    ),
   resolutions: z.array(z.object({
     productId: inventoryIdSchema,
     locationId: inventoryIdSchema,

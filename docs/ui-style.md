@@ -27,7 +27,7 @@ samma komponenter med mer utrymme, inte ett separat formspråk.
   Sidor, formulär, dropdown-menyer och portaler ärver samma Roboto.
 - Färgerna i `@theme` i `globals.css` är gemensamma. Lila används för
   navigation och åtgärder, grönt för verifiering/inleverans, rött för fel
-  och uttag, gult för varningar, cyan för saldon.
+  och fel, gult för varningar, cyan för saldon.
 - `PageHeading` använder 22 px på mobil och 28 px på desktop.
   Formulärsektioner använder `form-section-heading` på 14 px.
 - `button`, `button-secondary` och vanliga formulärfält har minst

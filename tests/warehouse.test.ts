@@ -344,7 +344,7 @@ test("only unused locations can be deleted by an admin", async () => {
     warehouseId: warehouse.id,
     productId: new Types.ObjectId(),
     locationId: historical.id,
-    type: "INITIAL",
+    type: "CORRECTION",
     previousQuantity: 0,
     newQuantity: 0,
     difference: 0,

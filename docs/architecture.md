@@ -48,7 +48,7 @@ inte ett dolt Mongoose-plugin. Admin kontrolleras på servern före mutationer.
 | products                  | organizationId, sku, name, barcode?, description?, imageUrl?, hasPhoto, active                                                                  | (organizationId,sku) unikt                                                                             |
 | productPhotos             | organizationId, productId, data (WebP), timestamps                                                                                              | (organizationId,productId) unikt                                                                       |
 | inventoryLevels           | organizationId, warehouseId, productId, locationId, quantity, version                                                                           | (organizationId,productId,locationId) unikt; (organizationId,locationId); (organizationId,warehouseId) |
-| inventoryMovements        | organizationId, productId, locationId, type, previousQuantity, newQuantity, difference, performedBy, inventorySessionId?, transferId?, reason?, createdAt | (organizationId,productId,createdAt); (organizationId,locationId,createdAt); (organizationId,transferId) |
+| inventoryMovements        | organizationId, productId, locationId, type, previousQuantity, newQuantity, difference, performedBy, inventorySessionId?, reason, createdAt | (organizationId,productId,createdAt); (organizationId,locationId,createdAt) |
 | inventorySessions         | organizationId, warehouseId, warehouseName, organizationName?, name, status, revision, startedBy/Name, startedAt, completedBy/Name?, completedAt? | (organizationId,warehouseId,status)                                                                  |
 | inventorySessionLocations | organizationId, inventorySessionId, locationId, locationCode, status, revision, completedBy/Name?, completedAt?                                  | (organizationId,inventorySessionId,locationId) unikt                                                 |
 | inventoryCounts           | organizationId, inventorySessionId, productId, productName, sku, locationId, expectedQuantity/version, countedQuantity, difference, countedBy/Name, countedAt | (organizationId,inventorySessionId,productId,locationId) unikt                              |
@@ -70,9 +70,8 @@ progress även för tomma platser. Antal är icke-negativa säkra heltal i förs
    skapar InventoryMovement och markerar sessionen avslutad. Konflikt avbryter hela operationen.
 7. Avslutad session är skrivskyddad. Återupprepat avslut får inte skapa dubbla rörelser.
 
-Saldo och rörelse skrivs alltid i samma transaction. En flytt skapar TRANSFER_OUT och
-TRANSFER_IN atomärt med ett gemensamt transferId. Aktiva referenser får inte tas bort;
-verksamhetsobjekt inaktiveras.
+Saldo och revisionspost skrivs alltid i samma transaction. Aktiva referenser får inte
+tas bort; verksamhetsobjekt inaktiveras.
 MongoDB måste köras som replica set, exempelvis Atlas. Fristående mongod räcker inte för transaktioner.
 Index skapas genom ett explicit installationskommando före trafik; inga syncIndexes som raderar index.
 
@@ -95,8 +94,8 @@ Dubbletter i filen och befintliga SKU valideras och en sammanfattning visas inna
    i webbläsartest; kontroll på fysisk telefon med utskriven QR-etikett återstår.
 7. Dashboard: klar. Faktiska tenant-avgränsade aggregat och inventeringsprogress från den
    färdiga kärnan visas på översikten.
-8. Lagerhändelser: klar. Inleverans, uttag, atomisk flytt och administratörskorrigering
-   registreras med orsak, versionskontroll och full historik.
+8. Lagerhändelser: klar. Inleverans och administratörskorrigering registreras med
+   orsak, versionskontroll och full historik.
 
 Etapp 1–8 är funktionellt implementerade. Fas 6 har ingen kvarvarande programmeringspunkt,
 men dess fysiska kontrollpunkt måste genomföras före publik lansering.
@@ -220,7 +219,8 @@ Gränssnittet kräver omläsning och ny bekräftelse efter konflikt; det skriver
 automatiskt över med ett tidigare inmatat antal. Oförändrat antal skapar ingen ny rörelse.
 
 Saldoändring och InventoryMovement skapas i samma transaction. Historiken innehåller
-INITIAL eller ADJUSTMENT, tidigare/nytt antal, differens, orsak, utförare och tidpunkt.
+inleverans, inventering eller administratörskorrigering samt tidigare/nytt antal,
+differens, orsak, utförare och tidpunkt.
 Namn, SKU, platskod, lagernamn och utförarens namn sparas vid ändringstillfället så att
 senare namnändringar inte skriver om historiken. Historik är läsbar för administratörer,
 har sidindelning och saknar API för ändring eller radering.
@@ -235,8 +235,7 @@ API:
 
 - GET /api/inventory?productId=... eller locationId=... (saldo och placeringar)
 - GET /api/inventory/level?productId=...&locationId=... (antal och aktuell version)
-- POST /api/inventory (productId, locationId, quantity, expectedVersion, reason)
-- POST /api/inventory/movements (inleverans, uttag, flytt eller korrigering)
+- POST /api/inventory/movements (inleverans eller administratörskorrigering)
 - GET /api/inventory/history?productId=... eller locationId=... samt page (admin)
 
 Integrationstester verifierar isolering, roller, unikt index, flera placeringar,
@@ -364,21 +363,11 @@ exempelvärden eller klientberäknade ersättningsvärden används.
 
 ## Genomförd fas 8 – Lagerhändelser
 
-Produkt- och lagerplatsvyerna använder Registrera lagerhändelse i stället för en generell
-Ändra antal-funktion. Admin och lagerarbetare kan registrera inleverans och uttag med antal
-och obligatorisk anledning. Servern räknar fram det nya saldot och avvisar uttag som överstiger
-det aktuella saldot. Endast administratörer kan korrigera ett saldo till ett angivet faktiskt
-antal; korrigeringen kräver också en anledning och visas som en egen händelsetyp i historiken.
+Produkter placeras på lagerplatser och får därefter saldo genom inleverans eller inventering.
+Lagerpersonal kan registrera inleveranser med antal och obligatorisk kommentar. Endast
+administratörer kan korrigera ett registrerat saldo direkt; korrigeringen kräver en kommentar,
+skapar en revisionspost och gör att positionen behöver verifieras igen.
 
-Flytt väljer en annan aktiv lagerplats inom samma företag. Käll- och destinationssaldo läses
-med separata versionsnummer och uppdateras i samma MongoDB-transaction. Historiken får en
-TRANSFER_OUT- och en TRANSFER_IN-rad med samma transferId. Ett fel eller en versionskonflikt
-rullar tillbaka båda saldona och båda historikraderna, så totalsaldot för produkten bevaras.
-
-Gränssnittet visar nuvarande saldo, rätt antalsetikett för vald händelse och, vid flytt,
-destinationsplatsens saldo. Vid samtidig ändring måste aktuella saldon läsas in innan ett nytt
-försök kan göras. Historiken visar de nya händelsetyperna med svenska namn.
-
-Integrationstester verifierar roller, inleverans, uttag, administratörskorrigering,
-otillräckligt saldo, tenant-isolering, versionskonflikt, länkade flyttrader och full rollback.
-Kör npm run db:indexes för transferId-indexet innan funktionen används i en befintlig miljö.
+Vid samtidig ändring måste det aktuella saldot läsas in före ett nytt försök. Saldo och
+historikpost sparas i samma transaktion. Integrationstester verifierar roller, tenant-isolering,
+versionskonflikter och rollback vid misslyckad historikskrivning.

@@ -40,8 +40,6 @@ export type HealthMovement = {
   newQuantity: number;
   difference: number;
   createdAt: Date;
-  transferId?: string | null;
-  transferComplete?: boolean;
 };
 
 export type InventoryPositionHealth = {
@@ -130,14 +128,13 @@ export function getInventoryHealthReason(input: PositionHealthInput): {
 
   for (const movement of movements) {
     const arithmeticMatches = movement.newQuantity === movement.previousQuantity + movement.difference;
-    const transferMatches = !movement.type.startsWith("TRANSFER_") || movement.transferComplete === true;
-    if (movement.previousQuantity !== expected || !arithmeticMatches || !transferMatches) {
+    if (movement.previousQuantity !== expected || !arithmeticMatches) {
       ledgerMismatch = true;
       break;
     }
     expected = movement.newQuantity;
-    if (movement.type === "CORRECTION" || movement.type === "ADJUSTMENT") manualCorrection = true;
-    else if (!["RECEIPT", "ISSUE", "TRANSFER_IN", "TRANSFER_OUT"].includes(movement.type)) {
+    if (movement.type === "CORRECTION") manualCorrection = true;
+    else if (movement.type !== "RECEIPT") {
       ledgerMismatch = true;
       break;
     }
@@ -223,31 +220,6 @@ export function summarizeInventoryHealthPositions(
   };
 }
 
-function transferCompleteness(movements: Array<{
-  transferId?: Types.ObjectId | null;
-  productId: Types.ObjectId;
-  type: string;
-  difference: number;
-}>) {
-  const groups = new Map<string, typeof movements>();
-  for (const movement of movements) {
-    if (!movement.transferId) continue;
-    const key = String(movement.transferId);
-    const rows = groups.get(key) ?? [];
-    rows.push(movement);
-    groups.set(key, rows);
-  }
-  const complete = new Map<string, boolean>();
-  for (const [id, rows] of groups) {
-    const outgoing = rows.find(row => row.type === "TRANSFER_OUT");
-    const incoming = rows.find(row => row.type === "TRANSFER_IN");
-    complete.set(id, rows.length === 2 && Boolean(outgoing && incoming) &&
-      String(outgoing?.productId) === String(incoming?.productId) &&
-      outgoing?.difference === -(incoming?.difference ?? Number.NaN));
-  }
-  return complete;
-}
-
 export async function getInventoryHealthSummary(
   context: TenantContext,
   options: { now?: Date } = {},
@@ -319,9 +291,10 @@ export async function getInventoryHealthSummary(
   const earliest = relevantBaselines.reduce<Date | null>((date, row) =>
     !date || row.completedAt < date ? row.completedAt : date, null);
   const movementRows = earliest ? await InventoryMovement.find({
-    organizationId, createdAt: { $gt: earliest },
+    organizationId,
+    createdAt: { $gt: earliest },
+    type: { $in: ["RECEIPT", "CORRECTION", "INVENTORY"] },
   }).sort({ createdAt: 1, _id: 1 }).lean() : [];
-  const completeTransfers = transferCompleteness(movementRows);
   const movementsByPair = new Map<string, HealthMovement[]>();
   for (const movement of movementRows) {
     const key = pairKey(movement.productId, movement.locationId);
@@ -331,8 +304,6 @@ export async function getInventoryHealthSummary(
       id: String(movement._id), type: movement.type,
       previousQuantity: movement.previousQuantity, newQuantity: movement.newQuantity,
       difference: movement.difference, createdAt: movement.createdAt,
-      transferId: movement.transferId ? String(movement.transferId) : null,
-      transferComplete: movement.transferId ? completeTransfers.get(String(movement.transferId)) === true : undefined,
     });
     movementsByPair.set(key, rows);
   }

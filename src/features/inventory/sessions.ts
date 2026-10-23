@@ -16,6 +16,7 @@ import { User } from "@/models/user";
 import { Organization } from "@/models/organization";
 import { organizationDocumentDetails } from "@/features/organizations/document-profile";
 import { legacyOreToSek } from "@/lib/money";
+import { normalizeInventorySignature } from "./signature";
 import { objectIdSchema } from "@/validation/organization";
 import {
   startInventorySchema,
@@ -318,6 +319,9 @@ export async function finishInventory(
 ) {
   requireAdmin(context);
   const data = finishInventorySchema.parse(input);
+  const signatureImage = await normalizeInventorySignature(
+    data.signatureDataUrl,
+  );
   const db = await connectDb();
   return db.connection.transaction(async (session) => {
     const inventory = await lockInventory(context, id, session);
@@ -541,6 +545,9 @@ export async function finishInventory(
           completedAt,
           completedBy: context.userId,
           completedByName: actor?.name ?? "Ej sparat",
+          completionSignerName: data.signerName,
+          completionSignatureImage: signatureImage,
+          completionSignedAt: completedAt,
           organizationName: organization?.name,
           organizationDetails: organization
             ? organizationDocumentDetails(organization)

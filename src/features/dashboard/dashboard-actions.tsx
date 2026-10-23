@@ -26,7 +26,7 @@ export function DashboardActions({ locations }: { locations: Choice[]; admin: bo
 
   return <section className="dashboard-actions-section" aria-label="Snabbåtgärder">
     <div className="dashboard-actions">
-      <Link href="/inventories" className="dashboard-action action-neutral">
+      <Link href="/inventories" className="dashboard-action action-primary">
         <AppIcon name="inventory" width={22} height={22} /><span>Inventera</span>
       </Link>
       <button type="button" aria-haspopup="dialog" className="dashboard-action action-success"

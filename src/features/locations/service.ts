@@ -281,6 +281,7 @@ export async function deleteLocation(context: TenantContext, id: string) {
     const hasMovementHistory = await InventoryMovement.exists({
       organizationId: context.organizationId,
       locationId,
+      type: { $in: ["RECEIPT", "CORRECTION", "INVENTORY"] },
     }).session(session);
     const hasInventoryHistory =
       (await InventorySessionLocation.exists({

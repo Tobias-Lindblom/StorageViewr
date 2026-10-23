@@ -8,9 +8,9 @@
   align-items: center;
   gap: 13px;
   padding: 15px;
-  border: 1px solid rgb(181 137 255 / 0.16);
+  border: 1px solid var(--border-subtle);
   border-radius: 13px;
-  background: rgb(139 92 246 / 0.065);
+  background: var(--surface-1);
 }
 
 .companyIcon {
@@ -20,8 +20,8 @@
   flex-shrink: 0;
   place-items: center;
   border-radius: 11px;
-  background: rgb(139 92 246 / 0.14);
-  color: #c69aff;
+  background: var(--surface-3);
+  color: var(--icon-default);
 }
 
 .company strong,
@@ -69,8 +69,8 @@
 }
 
 .secondaryAction:hover {
-  border-color: rgb(181 137 255 / 0.4);
-  background: rgb(139 92 246 / 0.07);
+  border-color: var(--border-strong);
+  background: var(--surface-2);
 }
 
 .accountMismatch {

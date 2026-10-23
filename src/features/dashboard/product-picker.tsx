@@ -36,7 +36,7 @@ export function ProductPicker({ onSelect }: { onSelect: (product: PickedProduct)
         products.length ? <div className="divide-y divide-line/60 overflow-hidden rounded-xl border border-line">
           {products.slice(0, 8).map(product => (
             <button key={product.id} type="button" onClick={() => onSelect(product)} className="flex min-h-14 w-full items-center gap-3 bg-canvas px-4 py-3 text-left hover:bg-surface-raised">
-              <AppIcon name="product" className="shrink-0 text-accent" />
+              <AppIcon name="product" className="shrink-0 text-cyan" />
               <span className="min-w-0"><span className="block wrap-break-word text-sm font-medium">{product.name}</span><span className="mt-1 block text-xs text-muted">SKU {product.sku}</span></span>
             </button>
           ))}

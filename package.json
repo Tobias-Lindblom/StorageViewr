@@ -21,6 +21,7 @@
     "qrcode": "^1.5.4",
     "react": "latest",
     "react-dom": "latest",
+    "react-signature-canvas": "^1.1.0-alpha.2",
     "server-only": "^0.0.1",
     "sharp": "^0.35.4",
     "zod": "^4"
