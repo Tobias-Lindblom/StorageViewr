@@ -6,10 +6,12 @@ import type { TenantContext } from "@/lib/server/tenant";
 import { InventorySession } from "@/models/inventory-session";
 import { InventorySessionLocation } from "@/models/inventory-session-location";
 import { InventoryCount } from "@/models/inventory-count";
+import { InventoryDiscrepancy } from "@/models/inventory-discrepancy";
 import { InventoryLevel } from "@/models/inventory-level";
 import { Product } from "@/models/product";
 import { Warehouse } from "@/models/warehouse";
 import { objectIdSchema } from "@/validation/organization";
+import { sekToUnits } from "@/lib/money";
 
 export async function listInventories(
   context: TenantContext,
@@ -83,6 +85,7 @@ export async function getInventory(context: TenantContext, id: string) {
         "Inventeringen kunde inte hittas.",
       );
     }
+    const establishesBaseline = Boolean(inventory.establishesBaseline);
     const scopes = await InventorySessionLocation.find(filter)
       .session(session)
       .lean();
@@ -167,12 +170,48 @@ export async function getInventory(context: TenantContext, id: string) {
         };
       })
       .sort((a, b) => a.code.localeCompare(b.code, "sv", { numeric: true }));
+    const baselineSummary =
+      inventory.status === "completed" && establishesBaseline
+        ? {
+            products: new Set(counts.map((row) => String(row.productId))).size,
+            positions: counts.length,
+            places: scopes.length,
+            countedUnits: counts
+              .reduce(
+                (sum, row) => sum + BigInt(row.countedQuantity),
+                BigInt(0),
+              )
+              .toString(),
+            inventoryValueUnits: counts
+              .reduce(
+                (sum, row) =>
+                  row.unitValue == null
+                    ? sum
+                    : sum +
+                      BigInt(row.countedQuantity) * sekToUnits(row.unitValue),
+                BigInt(0),
+              )
+              .toString(),
+            productsWithoutValue: new Set(
+              counts
+                .filter((row) => row.unitValue == null)
+                .map((row) => String(row.productId)),
+            ).size,
+            openDiscrepancies: await InventoryDiscrepancy.countDocuments({
+              organizationId: context.organizationId,
+              inventorySessionId: inventory._id,
+              status: "OPEN",
+            }).session(session),
+          }
+        : null;
     return {
       id: String(inventory._id),
       name: inventory.name,
       warehouseName: inventory.warehouseName,
       warehouseId: String(inventory.warehouseId),
       status: inventory.status,
+      establishesBaseline,
+      baselineSummary,
       revision: inventory.revision,
       startedAt: inventory.startedAt.toISOString(),
       completedAt: inventory.completedAt?.toISOString() ?? null,
@@ -182,7 +221,12 @@ export async function getInventory(context: TenantContext, id: string) {
       places,
       discrepancies: places.flatMap((place) =>
         place.rows
-          .filter((row) => row.difference !== null && row.difference !== 0)
+          .filter(
+            (row) =>
+              row.difference !== null &&
+              row.difference !== 0 &&
+              !(establishesBaseline && row.expectedQuantity === 0),
+          )
           .map((row) => ({
             ...row,
             locationId: place.id,

@@ -115,6 +115,212 @@ test("products can be placed with zero balance before the first receipt", async 
   );
 });
 
+test("warehouse users move zero placements, partial balances and full balances atomically", async () => {
+  const f = await fixture();
+  const worker: TenantContext = { ...f.context, role: "warehouse" };
+  const second = await createLocation(f.context, {
+    ...parts,
+    position: "02",
+    warehouseId: f.warehouse.id,
+  });
+  const third = await createLocation(f.context, {
+    ...parts,
+    position: "03",
+    warehouseId: f.warehouse.id,
+  });
+
+  await placeProduct(worker, {
+    productId: f.product.id,
+    locationId: f.location.id,
+  });
+  const zeroMove = await registerStockMovement(worker, {
+    type: "TRANSFER",
+    productId: f.product.id,
+    sourceLocationId: f.location.id,
+    destinationLocationId: second.id,
+    expectedSourceVersion: 1,
+    expectedDestinationVersion: null,
+    quantity: 0,
+    reason: "Ny lagerstruktur",
+  });
+  if (zeroMove.type !== "TRANSFER") assert.fail("Flytten gav fel svarstyp.");
+  assert.equal(zeroMove.source.removed, true);
+  assert.equal(zeroMove.source.version, null);
+  assert.deepEqual(
+    await getStockPair(worker, {
+      productId: f.product.id,
+      locationId: f.location.id,
+    }),
+    {
+      productId: f.product.id,
+      locationId: f.location.id,
+      quantity: 0,
+      version: null,
+    },
+  );
+  assert.deepEqual(
+    await getStockPair(worker, {
+      productId: f.product.id,
+      locationId: second.id,
+    }),
+    {
+      productId: f.product.id,
+      locationId: second.id,
+      quantity: 0,
+      version: 1,
+    },
+  );
+
+  await registerStockMovement(worker, {
+    type: "RECEIPT",
+    productId: f.product.id,
+    locationId: second.id,
+    expectedVersion: 1,
+    quantity: 5,
+    reason: "Inleverans",
+  });
+  await assert.rejects(
+    registerStockMovement(worker, {
+      type: "TRANSFER",
+      productId: f.product.id,
+      sourceLocationId: second.id,
+      destinationLocationId: third.id,
+      expectedSourceVersion: 2,
+      expectedDestinationVersion: null,
+      quantity: 0,
+      reason: "Ogiltig nollflytt",
+    }),
+    status(400),
+  );
+  await registerStockMovement(worker, {
+    type: "TRANSFER",
+    productId: f.product.id,
+    sourceLocationId: second.id,
+    destinationLocationId: third.id,
+    expectedSourceVersion: 2,
+    expectedDestinationVersion: null,
+    quantity: 2,
+    reason: "Fördela material",
+  });
+  assert.equal(
+    (
+      await getStockPair(worker, {
+        productId: f.product.id,
+        locationId: second.id,
+      })
+    ).quantity,
+    3,
+  );
+  assert.equal(
+    (
+      await getStockPair(worker, {
+        productId: f.product.id,
+        locationId: third.id,
+      })
+    ).quantity,
+    2,
+  );
+
+  await registerStockMovement(worker, {
+    type: "TRANSFER",
+    productId: f.product.id,
+    sourceLocationId: second.id,
+    destinationLocationId: third.id,
+    expectedSourceVersion: 3,
+    expectedDestinationVersion: 1,
+    quantity: 3,
+    reason: "Samla material",
+  });
+  assert.equal(
+    (
+      await getStockPair(worker, {
+        productId: f.product.id,
+        locationId: second.id,
+      })
+    ).version,
+    null,
+  );
+  assert.equal(
+    (
+      await getStockPair(worker, {
+        productId: f.product.id,
+        locationId: third.id,
+      })
+    ).quantity,
+    5,
+  );
+  assert.equal(
+    (await listStock(worker, { productId: f.product.id })).items.length,
+    1,
+  );
+
+  const movementRows = await listMovements(f.context, {
+    productId: f.product.id,
+  });
+  assert.equal(
+    movementRows.items.filter((row) => row.type === "TRANSFER").length,
+    6,
+  );
+  const history = await listHistory(f.context, {
+    productId: f.product.id,
+    kind: "transfer",
+  });
+  assert.equal(history.total, 3);
+  assert.ok(history.items.every((row) => row.balances.length === 2));
+  assert.ok(history.items.every((row) => row.difference === null));
+});
+
+test("failed zero-placement transfers roll back both placement changes", async () => {
+  const f = await fixture();
+  const second = await createLocation(f.context, {
+    ...parts,
+    position: "02",
+    warehouseId: f.warehouse.id,
+  });
+  await placeProduct(f.context, {
+    productId: f.product.id,
+    locationId: f.location.id,
+  });
+  const failure = mock.method(InventoryMovement, "create", async () => {
+    throw new Error("Injected transfer failure");
+  });
+  try {
+    await assert.rejects(
+      registerStockMovement(f.context, {
+        type: "TRANSFER",
+        productId: f.product.id,
+        sourceLocationId: f.location.id,
+        destinationLocationId: second.id,
+        expectedSourceVersion: 1,
+        expectedDestinationVersion: null,
+        quantity: 0,
+        reason: "Flytt som ska återställas",
+      }),
+      /Injected transfer failure/,
+    );
+  } finally {
+    failure.mock.restore();
+  }
+  assert.equal(
+    (
+      await getStockPair(f.context, {
+        productId: f.product.id,
+        locationId: f.location.id,
+      })
+    ).version,
+    1,
+  );
+  assert.equal(
+    (
+      await getStockPair(f.context, {
+        productId: f.product.id,
+        locationId: second.id,
+      })
+    ).version,
+    null,
+  );
+});
+
 test("balances and movements isolate all product, location and warehouse references by tenant", async () => {
   const a = await fixture(), b = await fixture();
   await correctStock(a.context, a.change(5));
@@ -124,6 +330,19 @@ test("balances and movements isolate all product, location and warehouse referen
   await assert.rejects(getStockPair(a.context, { productId: a.product.id, locationId: b.location.id }), status(404));
   await assert.rejects(listStock(a.context, { productId: b.product.id }), status(404));
   await assert.rejects(listMovements(a.context, { locationId: b.location.id }), status(404));
+  await assert.rejects(
+    registerStockMovement(a.context, {
+      type: "TRANSFER",
+      productId: a.product.id,
+      sourceLocationId: a.location.id,
+      destinationLocationId: b.location.id,
+      expectedSourceVersion: 1,
+      expectedDestinationVersion: null,
+      quantity: 5,
+      reason: "Otillåten företagsöverskridande flytt",
+    }),
+    status(404),
+  );
   assert.equal((await listStock(a.context, { productId: a.product.id })).total, "5");
   assert.equal((await listMovements(a.context, { productId: a.product.id })).total, 1);
 });
@@ -303,6 +522,28 @@ test("input rejects unsafe quantities, missing versions, foreign tenant fields a
   ])
     assert.equal(
       stockMovementSchema.safeParse({ ...receipt, ...bad }).success,
+      false,
+    );
+
+  const transfer = {
+    type: "TRANSFER",
+    productId: f.product.id,
+    sourceLocationId: f.location.id,
+    destinationLocationId: new Types.ObjectId().toString(),
+    expectedSourceVersion: 1,
+    expectedDestinationVersion: null,
+    quantity: 0,
+    reason: "Flytta placering",
+  } as const;
+  assert.equal(stockMovementSchema.safeParse(transfer).success, true);
+  for (const bad of [
+    { quantity: -1 },
+    { quantity: 0.5 },
+    { expectedSourceVersion: null },
+    { destinationLocationId: f.location.id },
+  ])
+    assert.equal(
+      stockMovementSchema.safeParse({ ...transfer, ...bad }).success,
       false,
     );
 

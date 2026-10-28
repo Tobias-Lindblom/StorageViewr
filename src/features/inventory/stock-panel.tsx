@@ -78,6 +78,7 @@ export async function StockPanel({
       data={data}
       scope={{ kind, id, label }}
       choices={choices}
+      locationChoices={locationChoices}
       operable={operable}
       admin={context.role === "admin"}
       inventoryAction={inventoryAction}

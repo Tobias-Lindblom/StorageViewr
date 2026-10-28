@@ -6,6 +6,7 @@ import { InventoryDiscrepancy } from "@/models/inventory-discrepancy";
 import { InventoryLevel } from "@/models/inventory-level";
 import { InventoryMovement } from "@/models/inventory-movement";
 import { Product } from "@/models/product";
+import { getWarehouseSetupState } from "@/features/dashboard/setup-state";
 
 export const VERIFIED_MAX_DAYS = 20;
 export const DUE_SOON_MAX_DAYS = 30;
@@ -134,7 +135,7 @@ export function getInventoryHealthReason(input: PositionHealthInput): {
     }
     expected = movement.newQuantity;
     if (movement.type === "CORRECTION") manualCorrection = true;
-    else if (movement.type !== "RECEIPT") {
+    else if (!["RECEIPT", "TRANSFER"].includes(movement.type)) {
       ledgerMismatch = true;
       break;
     }
@@ -222,10 +223,10 @@ export function summarizeInventoryHealthPositions(
 
 export async function getInventoryHealthSummary(
   context: TenantContext,
-  options: { now?: Date } = {},
+  options: { now?: Date; baselineEstablished?: boolean } = {},
 ): Promise<InventoryHealthSummary> {
   const organizationId = context.organizationId;
-  const [positions, activeProductCount] = await Promise.all([
+  const [positions, activeProductCount, setup] = await Promise.all([
     InventoryLevel.aggregate<PositionRow>([
       { $match: { organizationId } },
       { $lookup: { from: "products", localField: "productId", foreignField: "_id", as: "product" } },
@@ -244,6 +245,9 @@ export async function getInventoryHealthSummary(
       } },
     ]),
     Product.countDocuments({ organizationId, active: true }),
+    options.baselineEstablished === undefined
+      ? getWarehouseSetupState(context)
+      : Promise.resolve(null),
   ]);
 
   if (!positions.length) {
@@ -293,7 +297,7 @@ export async function getInventoryHealthSummary(
   const movementRows = earliest ? await InventoryMovement.find({
     organizationId,
     createdAt: { $gt: earliest },
-    type: { $in: ["RECEIPT", "CORRECTION", "INVENTORY"] },
+    type: { $in: ["RECEIPT", "TRANSFER", "CORRECTION", "INVENTORY"] },
   }).sort({ createdAt: 1, _id: 1 }).lean() : [];
   const movementsByPair = new Map<string, HealthMovement[]>();
   for (const movement of movementRows) {
@@ -338,5 +342,11 @@ export async function getInventoryHealthSummary(
     } satisfies InventoryPositionHealth;
   });
 
-  return summarizeInventoryHealthPositions(healthPositions, activeProductCount);
+  const summary = summarizeInventoryHealthPositions(
+    healthPositions,
+    activeProductCount,
+  );
+  const baselineEstablished =
+    options.baselineEstablished ?? setup?.baselineEstablished ?? false;
+  return baselineEstablished ? summary : { ...summary, score: null };
 }

@@ -74,6 +74,7 @@ StorageViewrs fasta kärna är:
 * lagerplatser
 * registrerat saldo per produkt och lagerplats
 * inventering på plats
+* kontrollerad flytt mellan lagerplatser
 * avvikelser mellan registrerat och räknat saldo
 * Lagerhälsa som gemensam tillförlitlighetsmodell
 * lagervärde
@@ -96,8 +97,10 @@ Vi ska INTE börja med:
 * ekonomifunktioner
 
 Koden ska vara ren för dagens behov. Lägg inte till modeller, gränssnitt,
-funktionsflaggor eller tomma flöden för framtida funktioner. Uttag och flyttar
-ingår inte i produktmodellen och ska därför inte finnas i kod eller gränssnitt.
+funktionsflaggor eller tomma flöden för framtida funktioner. Uttag ingår inte i
+produktmodellen. Material kan däremot flyttas mellan två aktiva lagerplatser.
+Flytten ska uppdatera båda placeringarna atomärt och sparas som en sammanhållen
+händelse i historiken.
 
 ---
 
@@ -576,6 +579,28 @@ Avvikelse:
 
 Vi ska kunna se alla avvikelser efter inventeringen.
 
+## Första lagerstart och baseline
+
+Ett nytt företag ska ledas genom samma kärnflöde som används i den dagliga driften:
+
+1. skapa lager
+2. skapa lagerplatser
+3. skapa eller importera produkter
+4. placera produkterna på rätt lagerplatser
+5. genomföra en första inventering av lagrets samtliga aktiva platser
+
+Den första fullständiga inventeringen i ett lager etablerar lagrets baseline och sätter
+startsaldona när inventeringen slutförs. Användaren ska inte behöva registrera fiktiva
+inleveranser för att skapa ett ingående saldo. Ett första räknat antal från ett förväntat
+nollsaldo är därför ett startsaldo, inte en lageravvikelse. Om ett registrerat saldo redan
+finns ska en verklig skillnad fortfarande behandlas som en avvikelse.
+
+Dashboarden ska visa ett tydligt, datadrivet startflöde tills varje relevant lager har en
+slutförd baseline. En pågående första inventering ska kunna fortsättas där användaren slutade.
+Lagerhälsa ska sakna procentsats innan baselinen är etablerad, eftersom tillförlitligheten då
+ännu inte kan bedömas. Efter slutförandet används det ordinarie inventerings-, historik-,
+rapporterings- och Lagerhälsa-flödet.
+
 ---
 
 # InventorySession
@@ -590,6 +615,8 @@ Exempel:
   warehouseId,
 
   name,
+
+  establishesBaseline,
 
   status:
     "draft" |

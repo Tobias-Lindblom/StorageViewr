@@ -27,16 +27,17 @@ export function HistoryList({ items }: { items: HistoryItem[] }) {
       {items.map(item => {
         const inventory = item.type === "INVENTORY";
         const correction = item.type === "CORRECTION";
-        const tone = inventory || (item.difference ?? 0) < 0 ? "danger" : "success";
+        const transfer = item.type === "TRANSFER";
+        const tone = transfer ? "neutral" : inventory || (item.difference ?? 0) < 0 ? "danger" : "success";
         const amount = item.difference === null ? "" :
           (item.difference > 0 ? "+" : "") + item.difference.toLocaleString("sv-SE");
-        const title = inventory || correction ? label(item) : item.productName;
+        const title = inventory || correction || transfer ? label(item) : item.productName;
         return <li key={item.id}>
           <button type="button" className="history-row" aria-haspopup="dialog"
             onClick={event => { trigger.current = event.currentTarget; setSelected(item); }}>
             <span className={"history-marker is-" + tone} aria-hidden="true">
-              {inventory || amount.length > 6
-                ? <AppIcon name={inventory ? "inventory" : (item.difference ?? 0) < 0 ? "minus" : "plus"} width={23} height={23} />
+              {inventory || transfer || amount.length > 6
+                ? <AppIcon name={inventory ? "inventory" : transfer ? "transfer" : (item.difference ?? 0) < 0 ? "minus" : "plus"} width={23} height={23} />
                 : <span className={amount.length > 4 ? "history-small-amount" : ""}>{amount}</span>}
             </span>
             <span className="history-identity">
@@ -59,7 +60,7 @@ export function HistoryList({ items }: { items: HistoryItem[] }) {
           <strong>{selected.productName}</strong><span>SKU {selected.sku}</span>
         </div>}
         <dl className="history-event-meta">
-          <div><dt>Lagerplats</dt><dd>{selected.locationCode}</dd></div>
+          <div><dt>{selected.type === "TRANSFER" ? "Flytt" : "Lagerplats"}</dt><dd>{selected.locationCode}</dd></div>
           <div><dt>Lager</dt><dd>{selected.warehouseName}</dd></div>
           <div><dt>Tid</dt><dd><time dateTime={selected.createdAt}>{time(selected.createdAt)}</time></dd></div>
           <div><dt>Utförare</dt><dd>{selected.performedByName}</dd></div>
@@ -70,7 +71,7 @@ export function HistoryList({ items }: { items: HistoryItem[] }) {
         <section><h3>{selected.type === "INVENTORY" && !selected.productName ? "Inventering" : "Orsak"}</h3>
           <p>{selected.reason}</p></section>
         {selected.balances.length > 0 && <section>
-          <h3>{selected.type === "INVENTORY" && !selected.productName ? "Saldokorrigeringar" : "Saldo före och efter"}</h3>
+          <h3>{selected.type === "INVENTORY" && !selected.productName ? "Saldokorrigeringar" : selected.type === "TRANSFER" ? "Saldon före och efter" : "Saldo före och efter"}</h3>
           <ul className="history-balance-list">
             {selected.balances.map(balance => <li key={balance.id}>
               {selected.balances.length > 1 && <strong>{balance.productName} · {balance.locationCode}</strong>}

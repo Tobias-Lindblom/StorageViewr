@@ -5,24 +5,25 @@ import { usePathname } from "next/navigation";
 import { useId, useRef, useState } from "react";
 import { AppIcon } from "./app-icon";
 import { BottomSheet } from "./bottom-sheet";
-
-const destinations = [
-  { href: "/dashboard", label: "Översikt", description: "Lagerhälsa och senaste aktivitet", icon: "dashboard" },
-  { href: "/warehouses", label: "Lager", description: "Dina lager och lagerplatser", icon: "warehouse" },
-  { href: "/inventories", label: "Inventering", description: "Pågående och genomförda inventeringar", icon: "inventory" },
-  { href: "/reports", label: "Rapporter & dokument", description: "Lagervärde och inventeringsunderlag", icon: "document" },
-  { href: "/discrepancies", label: "Avvikelser", description: "Granska öppna inventeringsavvikelser", icon: "alert" },
-] as const;
+import { MobileNavIcon } from "./mobile-nav-icon";
 
 export function MoreMenu({ admin }: { admin: boolean }) {
   const pathname = usePathname();
+  const history = admin ? "/inventory/history" : "/inventories/completed";
+  const destinations = [
+    { href: history, label: "Historik", description: admin ? "Alla lagerhändelser och förändringar" : "Genomförda inventeringar", icon: "history" as const },
+    { href: "/inventories", label: "Inventering", description: "Pågående och genomförda inventeringar", icon: "inventory" as const },
+    { href: "/warehouses", label: "Lager", description: "Dina lager och lagerplatser", icon: "warehouse" as const },
+    { href: "/reports", label: "Rapporter & dokument", description: "Lagervärde och inventeringsunderlag", icon: "document" as const },
+    { href: "/discrepancies", label: "Avvikelser", description: "Granska öppna inventeringsavvikelser", icon: "alert" as const },
+  ];
   const id = useId();
   const trigger = useRef<HTMLButtonElement>(null);
   const [panel, setPanel] = useState({ pathname, open: false });
   if (panel.pathname !== pathname) setPanel({ pathname, open: false });
   const open = panel.pathname === pathname && panel.open;
   const current = destinations.find(item => pathname === item.href || pathname.startsWith(item.href + "/"));
-  const active = open || (!!current && (admin || pathname !== "/inventories/completed"));
+  const active = open || !!current;
 
   function close() {
     setPanel({ pathname, open: false });
@@ -33,7 +34,7 @@ export function MoreMenu({ admin }: { admin: boolean }) {
     <button type="button" ref={trigger} className={"mobile-nav-item w-full " + (active ? "is-active" : "")}
       aria-label="Mer" aria-haspopup="dialog" aria-expanded={open} aria-controls={open ? id : undefined}
       onClick={() => setPanel({ pathname, open: true })}>
-      <span className="nav-icon"><AppIcon name="more" width={20} height={20} strokeWidth={3} /></span>
+      <span className="nav-icon"><MobileNavIcon name="more" size={20} /></span>
       <span>Mer</span>
     </button>
     {open && <BottomSheet id={id} title="Mer" variant="navigation" onClose={close}>

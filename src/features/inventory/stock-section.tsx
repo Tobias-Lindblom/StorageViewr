@@ -5,8 +5,9 @@ import { BottomSheet } from "@/components/bottom-sheet";
 import type { StockData } from "./service";
 import { PlacementEditor } from "./placement-editor";
 import { StockEditor } from "./stock-editor";
+import { TransferEditor } from "./transfer-editor";
 import type { Scope, Choice, EditorActionState } from "./stock-types";
-import { QuickActions, type MovementType } from "@/components/quick-actions";
+import { QuickActions, type MovementType, type QuickActionType } from "@/components/quick-actions";
 import { EmptyState } from "@/components/empty-state";
 import { ProductPlacementList } from "@/features/products/product-placement-list";
 import { LocationProductList } from "@/features/locations/location-product-list";
@@ -15,6 +16,7 @@ export function StockSection({
   data,
   scope,
   choices,
+  locationChoices,
   operable,
   admin,
   inventoryAction,
@@ -22,12 +24,14 @@ export function StockSection({
   data: StockData;
   scope: Scope;
   choices: Choice[];
+  locationChoices: Choice[];
   operable: boolean;
   admin: boolean;
   inventoryAction?: ReactNode;
 }) {
   const [selection, setSelection] = useState<string | null>(null);
   const [placing, setPlacing] = useState(false);
+  const [transferring, setTransferring] = useState(false);
   const [initialType, setInitialType] = useState<MovementType>("RECEIPT");
   const [notice, setNotice] = useState("");
   const [stockAction, setStockAction] = useState<EditorActionState>({
@@ -37,6 +41,10 @@ export function StockSection({
   const [placementAction, setPlacementAction] = useState<EditorActionState>({
     disabled: true,
     label: "Placera med 0 st",
+  });
+  const [transferAction, setTransferAction] = useState<EditorActionState>({
+    disabled: true,
+    label: "Flytta material",
   });
   const opener = useRef<HTMLElement | null>(null);
   const router = useRouter();
@@ -66,6 +74,20 @@ export function StockSection({
   function closePlacement() {
     setPlacing(false);
     requestAnimationFrame(() => opener.current?.focus());
+  }
+  function openTransfer() {
+    opener.current = document.activeElement as HTMLElement;
+    setTransferAction({ disabled: true, label: "Flytta material" });
+    setTransferring(true);
+    setNotice("");
+  }
+  function closeTransfer() {
+    setTransferring(false);
+    requestAnimationFrame(() => opener.current?.focus());
+  }
+  function handleQuickAction(type: QuickActionType) {
+    if (type === "TRANSFER") openTransfer();
+    else open("", type);
   }
   const placedIds = new Set(
     data.items.map((row) =>
@@ -116,7 +138,7 @@ export function StockSection({
       {operable && <div className={compact ? "product-quick-actions" : "location-quick-actions"}>
         <h3>Snabbåtgärder</h3>
         {inventoryAction}
-        <QuickActions admin={compact && admin} onAction={type => open("", type)} />
+        <QuickActions admin={compact && admin} onAction={handleQuickAction} />
       </div>}
       {selection !== null && (
         <BottomSheet
@@ -170,6 +192,34 @@ export function StockSection({
             onSaved={() => {
               closePlacement();
               setNotice("Produkten har placerats med 0 st i saldo.");
+              router.refresh();
+            }}
+          />
+        </BottomSheet>
+      )}
+      {transferring && (
+        <BottomSheet
+          title="Flytta material"
+          onClose={closeTransfer}
+          footer={
+            <button
+              type="submit"
+              form="transfer-editor-form"
+              className="button w-full"
+              disabled={transferAction.disabled}
+            >
+              {transferAction.label}
+            </button>
+          }
+        >
+          <TransferEditor
+            scope={scope}
+            stock={data}
+            locationChoices={locationChoices}
+            onActionStateChange={setTransferAction}
+            onSaved={() => {
+              closeTransfer();
+              setNotice("Flytten har registrerats och lagerplatserna har uppdaterats.");
               router.refresh();
             }}
           />

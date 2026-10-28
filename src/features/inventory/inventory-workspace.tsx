@@ -8,6 +8,7 @@ import type { InventoryDetail } from "./session-queries";
 import { DownloadInventoryReport } from "./download-report";
 import { CountPlace } from "./count-place";
 import { InventorySignature } from "./inventory-signature";
+import { BaselineSummary } from "./baseline-summary";
 
 const number = (value: number) => value.toLocaleString("sv-SE");
 const date = (value: string) => new Date(value).toLocaleDateString("sv-SE", { timeZone: "Europe/Stockholm", day: "numeric", month: "short", year: "numeric" });
@@ -92,7 +93,9 @@ export function InventoryWorkspace({
       await reload();
       close();
       setNotice(
-        "Inventeringen är genomförd. Saldon och historik har uppdaterats.",
+        data.establishesBaseline
+          ? "Baseline är etablerad. Startsaldon och historik har uppdaterats."
+          : "Inventeringen är genomförd. Saldon och historik har uppdaterats.",
       );
       setSignerName("");
       setSignatureDataUrl(null);
@@ -160,6 +163,7 @@ export function InventoryWorkspace({
           <time dateTime={data.completionSignedAt}>{date(data.completionSignedAt)}</time>
         </p>
       )}
+      {completed && data.baselineSummary && <BaselineSummary data={data} />}
       {!completed && data.places.some(row => row.stale) && <p className="inventory-detail-stale-note">
         Saldot har ändrats på en räknad plats. Räkna om markerade platser före slutförande.
       </p>}
@@ -187,8 +191,10 @@ export function InventoryWorkspace({
                   <dl>
                     <div><dt>Förväntat</dt><dd>{number(item.expectedQuantity)}</dd></div>
                     <div><dt>Räknat</dt><dd>{number(item.countedQuantity ?? 0)}</dd></div>
-                    <div><dt>Avvikelse</dt><dd className={(item.difference ?? 0) < 0 ? "is-negative" : (item.difference ?? 0) > 0 ? "is-positive" : ""}>
-                      {(item.difference ?? 0) > 0 ? "+" : ""}{number(item.difference ?? 0)}
+                    <div><dt>{data.establishesBaseline && item.expectedQuantity === 0 ? "Startsaldo" : "Avvikelse"}</dt><dd className={data.establishesBaseline && item.expectedQuantity === 0 ? "" : (item.difference ?? 0) < 0 ? "is-negative" : (item.difference ?? 0) > 0 ? "is-positive" : ""}>
+                      {data.establishesBaseline && item.expectedQuantity === 0
+                        ? number(item.countedQuantity ?? 0)
+                        : <>{(item.difference ?? 0) > 0 ? "+" : ""}{number(item.difference ?? 0)}</>}
                     </dd></div>
                   </dl>
                 </li>)}</ul> : <p>Platsen bekräftades som tom.</p>}
@@ -295,7 +301,9 @@ export function InventoryWorkspace({
           </li>)}</ul>
         </section> : <div className="inventory-review-no-differences">
           <AppIcon name="verified" width={23} height={23} />
-          <div><p>Inga avvikelser</p><span>De sparade räkningarna har inga saldoavvikelser.</span></div>
+          <div><p>{data.establishesBaseline ? "Startsaldon redo" : "Inga avvikelser"}</p><span>{data.establishesBaseline
+            ? "Räknade saldon etableras som verifierade startsaldon när inventeringen slutförs."
+            : "De sparade räkningarna har inga saldoavvikelser."}</span></div>
         </div>}
         {admin && ready && allDiscrepanciesHandled && (
           <InventorySignature
@@ -308,7 +316,9 @@ export function InventoryWorkspace({
         {admin && <label className="inventory-review-confirm">
           <input type="checkbox" className="m-0! mt-1! h-4! min-h-0! w-4! shrink-0 px-0! accent-accent"
             checked={confirmed} disabled={!ready || !allDiscrepanciesHandled || busy} onChange={event => setConfirmed(event.target.checked)} />
-          <span>Jag har granskat räkningarna och valt hur varje avvikelse ska hanteras. Godkända saldon uppdateras när inventeringen slutförs.</span>
+          <span>{data.establishesBaseline
+            ? "Jag har granskat räkningarna och bekräftar att de ska etableras som lagrets verifierade startsaldon."
+            : "Jag har granskat räkningarna och valt hur varje avvikelse ska hanteras. Godkända saldon uppdateras när inventeringen slutförs."}</span>
         </label>}
       </BottomSheet>}
     </article>

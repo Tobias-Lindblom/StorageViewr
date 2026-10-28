@@ -19,12 +19,13 @@ import { InventoryDiscrepancy } from "../src/models/inventory-discrepancy";
 import { createProduct, updateProduct, getProduct } from "../src/features/products/service";
 import { createWarehouse } from "../src/features/warehouses/service";
 import { createLocation, updateLocation, getLocation } from "../src/features/locations/service";
-import { listStock, getStockPair, listMovements, registerStockMovement } from "../src/features/inventory/service";
+import { listStock, getStockPair, listMovements, placeProduct, registerStockMovement } from "../src/features/inventory/service";
 import { correctStockForTest as correctStock } from "./helpers/stock";
 import { testInventorySignature } from "./helpers/inventory-signature";
 import { startInventory, saveLocationCount, finishInventory } from "../src/features/inventory/sessions";
 import { getDashboard } from "../src/features/dashboard/service";
 import { getDashboardActivity } from "../src/features/dashboard/activity";
+import { getWarehouseSetupState } from "../src/features/dashboard/setup-state";
 import { getVerification } from "../src/features/inventory/verification";
 import { getInventoryHealthSummary } from "../src/features/inventory/inventory-health";
 import { listDiscrepancies, updateDiscrepancy } from "../src/features/inventory/discrepancies";
@@ -68,6 +69,274 @@ async function finish(f: Awaited<ReturnType<typeof fixture>>) {
     ...testInventorySignature,
   });
 }
+
+test("warehouse setup progresses from empty organization to an established baseline", async () => {
+  const context = tenant();
+  const foreign = tenant();
+  assert.equal((await getWarehouseSetupState(context)).phase, "NO_WAREHOUSE");
+
+  const warehouse = await createWarehouse(context, {
+    name: "Första lagret",
+    code: "START",
+  });
+  assert.equal((await getWarehouseSetupState(context)).phase, "NO_LOCATIONS");
+
+  const location = await createLocation(context, {
+    ...parts,
+    warehouseId: warehouse.id,
+  });
+  const empty = await createLocation(context, {
+    ...parts,
+    position: "02",
+    warehouseId: warehouse.id,
+  });
+  assert.equal((await getWarehouseSetupState(context)).phase, "NO_PRODUCTS");
+
+  const product = await createProduct(context, {
+    name: "Basprodukt",
+    sku: "BASE-01",
+    unitValue: "12.5000",
+  });
+  const unvaluedProduct = await createProduct(context, {
+    name: "Reservprodukt",
+    sku: "BASE-02",
+  });
+  await createProduct(context, { name: "Ej placerad", sku: "BASE-03" });
+  let setup = await getWarehouseSetupState(context);
+  assert.equal(setup.phase, "UNPLACED_PRODUCTS");
+  assert.equal(setup.unplacedProductCount, 3);
+
+  await placeProduct(context, {
+    productId: product.id,
+    locationId: location.id,
+  });
+  await placeProduct(context, {
+    productId: unvaluedProduct.id,
+    locationId: location.id,
+  });
+  setup = await getWarehouseSetupState(context);
+  assert.equal(setup.phase, "READY_FOR_BASELINE");
+  assert.equal(setup.placedProductCount, 2);
+  assert.equal(setup.unplacedProductCount, 1);
+  assert.equal((await getInventoryHealthSummary(context)).score, null);
+
+  await assert.rejects(
+    startInventory(context, {
+      name: "Ofullständig baseline",
+      baseline: true,
+      warehouseId: warehouse.id,
+      locationIds: [location.id],
+    }),
+    status(400),
+  );
+
+  await startInventory(context, {
+    name: "Vanlig delinventering",
+    warehouseId: warehouse.id,
+    locationIds: [location.id],
+  });
+  setup = await getWarehouseSetupState(context);
+  assert.equal(setup.phase, "READY_FOR_BASELINE");
+  assert.equal(setup.activeInitialInventory, null);
+
+  const emptyWarehouse = await createWarehouse(context, {
+    name: "Lager utan positioner",
+    code: "EMPTY",
+  });
+  const emptyWarehouseLocation = await createLocation(context, {
+    ...parts,
+    warehouseId: emptyWarehouse.id,
+  });
+  await assert.rejects(
+    startInventory(context, {
+      name: "Tom baseline",
+      baseline: true,
+      warehouseId: emptyWarehouse.id,
+      locationIds: [emptyWarehouseLocation.id],
+    }),
+    status(400),
+  );
+
+  const inventory = await startInventory(context, {
+    name: "Första inventeringen",
+    baseline: true,
+    warehouseId: warehouse.id,
+    locationIds: [location.id, empty.id],
+  });
+  setup = await getWarehouseSetupState(context);
+  assert.equal(setup.phase, "BASELINE_IN_PROGRESS");
+  assert.equal(setup.activeInitialInventory?.countedLocations, 0);
+  assert.equal(setup.activeInitialInventory?.totalLocations, 2);
+
+  await saveLocationCount(context, inventory.id, location.id, {
+    expectedRevision: 0,
+    confirmComplete: true,
+    rows: [
+      {
+        productId: product.id,
+        expectedVersion: 1,
+        countedQuantity: 24,
+      },
+      {
+        productId: unvaluedProduct.id,
+        expectedVersion: 1,
+        countedQuantity: 2,
+      },
+    ],
+  });
+  let detail = await getInventory(context, inventory.id);
+  assert.equal(detail.establishesBaseline, true);
+  assert.equal(detail.discrepancies.length, 0);
+  assert.equal(
+    await InventoryDiscrepancy.countDocuments({
+      organizationId: context.organizationId,
+    }),
+    0,
+  );
+  assert.equal((await getStockPair(context, {
+    productId: product.id,
+    locationId: location.id,
+  })).quantity, 0);
+  setup = await getWarehouseSetupState(context);
+  assert.equal(setup.activeInitialInventory?.countedLocations, 1);
+
+  await saveLocationCount(context, inventory.id, empty.id, {
+    expectedRevision: 0,
+    confirmComplete: true,
+    rows: [],
+  });
+  detail = await getInventory(context, inventory.id);
+  await finishInventory(context, inventory.id, {
+    expectedRevision: detail.revision,
+    confirmed: true,
+    ...testInventorySignature,
+  });
+
+  assert.equal((await getStockPair(context, {
+    productId: product.id,
+    locationId: location.id,
+  })).quantity, 24);
+  setup = await getWarehouseSetupState(context);
+  assert.equal(setup.phase, "BASELINE_ESTABLISHED");
+  assert.equal(setup.baselineEstablished, true);
+  assert.equal((await getWarehouseSetupState(foreign)).phase, "NO_WAREHOUSE");
+  assert.equal((await getInventoryHealthSummary(context)).score, 100);
+  const completed = await getInventory(context, inventory.id);
+  assert.equal(completed.baselineSummary?.products, 2);
+  assert.equal(completed.baselineSummary?.positions, 2);
+  assert.equal(completed.baselineSummary?.countedUnits, "26");
+  assert.equal(completed.baselineSummary?.inventoryValueUnits, "3000000");
+  assert.equal(completed.baselineSummary?.productsWithoutValue, 1);
+  assert.equal(
+    await InventoryMovement.countDocuments({
+      organizationId: context.organizationId,
+      inventorySessionId: inventory.id,
+      type: "INVENTORY",
+    }),
+    2,
+  );
+
+  const followUp = await startInventory(context, {
+    name: "Kontrollinventering",
+    warehouseId: warehouse.id,
+    locationIds: [location.id],
+  });
+  await saveLocationCount(context, followUp.id, location.id, {
+    expectedRevision: 0,
+    confirmComplete: true,
+    rows: [
+      {
+        productId: product.id,
+        expectedVersion: 2,
+        countedQuantity: 22,
+      },
+      {
+        productId: unvaluedProduct.id,
+        expectedVersion: 2,
+        countedQuantity: 2,
+      },
+    ],
+  });
+  const followUpDetail = await getInventory(context, followUp.id);
+  assert.equal(followUpDetail.establishesBaseline, false);
+  assert.equal(followUpDetail.discrepancies.length, 1);
+  assert.equal(
+    await InventoryDiscrepancy.countDocuments({
+      organizationId: context.organizationId,
+      status: "OPEN",
+    }),
+    1,
+  );
+});
+
+test("baseline remains in setup until every relevant warehouse has been inventoried", async () => {
+  const context = tenant();
+  const product = await createProduct(context, productInput);
+  const firstWarehouse = await createWarehouse(context, {
+    name: "Lager ett",
+    code: "ONE",
+  });
+  const secondWarehouse = await createWarehouse(context, {
+    name: "Lager två",
+    code: "TWO",
+  });
+  const firstLocation = await createLocation(context, {
+    ...parts,
+    warehouseId: firstWarehouse.id,
+  });
+  const secondLocation = await createLocation(context, {
+    ...parts,
+    warehouseId: secondWarehouse.id,
+  });
+  await placeProduct(context, {
+    productId: product.id,
+    locationId: firstLocation.id,
+  });
+  await placeProduct(context, {
+    productId: product.id,
+    locationId: secondLocation.id,
+  });
+
+  for (const [warehouseId, locationId] of [
+    [firstWarehouse.id, firstLocation.id],
+    [secondWarehouse.id, secondLocation.id],
+  ]) {
+    const inventory = await startInventory(context, {
+      name: "Första inventeringen",
+      baseline: true,
+      warehouseId,
+      locationIds: [locationId],
+    });
+    await saveLocationCount(context, inventory.id, locationId, {
+      expectedRevision: 0,
+      confirmComplete: true,
+      rows: [
+        {
+          productId: product.id,
+          expectedVersion: 1,
+          countedQuantity: 0,
+        },
+      ],
+    });
+    const detail = await getInventory(context, inventory.id);
+    await finishInventory(context, inventory.id, {
+      expectedRevision: detail.revision,
+      confirmed: true,
+      ...testInventorySignature,
+    });
+    const setup = await getWarehouseSetupState(context);
+    if (warehouseId === firstWarehouse.id) {
+      assert.equal(setup.phase, "READY_FOR_BASELINE");
+      assert.equal(setup.baselineWarehouseCount, 1);
+      assert.equal(setup.baselineWarehouseTotal, 2);
+      assert.equal((await getInventoryHealthSummary(context)).score, null);
+    } else {
+      assert.equal(setup.phase, "BASELINE_ESTABLISHED");
+      assert.equal(setup.baselineWarehouseCount, 2);
+      assert.equal((await getInventoryHealthSummary(context)).score, 100);
+    }
+  }
+});
 
 test("counting freezes location scope, tracks empty places, preserves stock until completion and saves snapshots", async () => {
   const f = await fixture(10);

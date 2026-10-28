@@ -100,6 +100,17 @@ export async function startInventory(context: TenantContext, input: unknown) {
   const db = await connectDb();
   return db.connection.transaction(async (session) => {
     const warehouse = await lockWarehouse(context, data.warehouseId, session);
+    const completedInventoryExists = Boolean(
+      await InventorySession.exists({
+        organizationId: context.organizationId,
+        warehouseId: warehouse._id,
+        status: "completed",
+        $or: [
+          { establishesBaseline: true },
+          { establishesBaseline: { $exists: false } },
+        ],
+      }).session(session),
+    );
     const locations = await Location.find({
       organizationId: context.organizationId,
       warehouseId: warehouse._id,
@@ -111,6 +122,18 @@ export async function startInventory(context: TenantContext, input: unknown) {
         400,
         "INVALID_SCOPE",
         "Alla valda platser måste vara aktiva och tillhöra det valda lagret.",
+      );
+    const activeLocationCount = await Location.countDocuments({
+      organizationId: context.organizationId,
+      warehouseId: warehouse._id,
+      active: true,
+    }).session(session);
+    const fullWarehouseScope = locations.length === activeLocationCount;
+    if (data.baseline && !fullWarehouseScope)
+      throw new AppError(
+        400,
+        "BASELINE_SCOPE_INCOMPLETE",
+        "Den första inventeringen måste omfatta alla aktiva lagerplatser i lagret.",
       );
     await Location.updateMany(
       {
@@ -125,6 +148,12 @@ export async function startInventory(context: TenantContext, input: unknown) {
       locations.map((row) => row._id),
       session,
     );
+    if (data.baseline && !levels.length)
+      throw new AppError(
+        400,
+        "BASELINE_POSITIONS_REQUIRED",
+        "Placera minst en aktiv produkt i lagret före den första inventeringen.",
+      );
     // Share product locks with deactivation, including zero balances.
     await Product.updateMany(
       {
@@ -145,6 +174,8 @@ export async function startInventory(context: TenantContext, input: unknown) {
           warehouseId: warehouse._id,
           warehouseName: warehouse.name,
           name: data.name,
+          establishesBaseline:
+            !completedInventoryExists && fullWarehouseScope && levels.length > 0,
           startedBy: context.userId,
           startedByName: starter?.name ?? "Ej sparat",
         },
@@ -277,7 +308,10 @@ export async function saveLocationCount(
     await InventoryCount.deleteMany(scopeFilter, { session });
     if (counts.length) await InventoryCount.insertMany(counts, { session });
     const discrepancies = counts
-      .filter((row) => row.difference !== 0)
+      .filter((row) =>
+        row.difference !== 0 &&
+        !(inventory.establishesBaseline && row.expectedQuantity === 0),
+      )
       .map((row) => ({
         organizationId: context.organizationId,
         inventorySessionId: inventory._id,
@@ -412,7 +446,10 @@ export async function finishInventory(
       .lean();
     const discrepancyKeys = new Set(
       counts
-        .filter((row) => row.difference !== 0)
+        .filter((row) =>
+          row.difference !== 0 &&
+          !(inventory.establishesBaseline && row.expectedQuantity === 0),
+        )
         .map((row) => key(row.productId, row.locationId)),
     );
     const decisions = new Map(

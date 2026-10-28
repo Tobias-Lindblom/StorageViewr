@@ -14,6 +14,7 @@ const paths = {
   filter: "M4 5h16M7 12h10M10 19h4",
   search: "M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0Zm-2 5 6 6",
   download: "M12 3v12m-5-5 5 5 5-5M4 17v4h16v-4",
+  transfer: "M7 7h12m-3-3 3 3-3 3M17 17H5m3 3-3-3 3-3",
   document: "M6 3h8l4 4v14H6V3Zm8 0v5h5M9 12h6M9 16h6",
   check: "M5 12l4 4L19 6",
   chevron: "m9 5 7 7-7 7",

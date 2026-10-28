@@ -3,6 +3,7 @@ import { objectIdSchema, quantitySchema } from "./organization";
 const inventoryIdSchema = objectIdSchema.transform(value => value.toLowerCase());
 export const startInventorySchema = z.object({
   name: z.string().trim().min(2, "Ange ett namn på inventeringen.").max(120),
+  baseline: z.boolean().default(false),
   warehouseId: inventoryIdSchema,
   locationIds: z.array(inventoryIdSchema).min(1, "Välj minst en lagerplats.").max(200)
     .refine(ids => new Set(ids).size === ids.length, "En lagerplats får bara väljas en gång."),

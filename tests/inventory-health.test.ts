@@ -34,6 +34,27 @@ test("a traceable receipt preserves trust", () => {
   assert.equal(evaluate(25, [movement()]).reason, "VERIFIED");
 });
 
+test("a traceable transfer preserves trust on both affected positions", () => {
+  assert.equal(
+    evaluate(17, [movement({
+      type: "TRANSFER",
+      previousQuantity: 20,
+      newQuantity: 17,
+      difference: -3,
+    })]).reason,
+    "VERIFIED",
+  );
+  assert.equal(
+    evaluate(23, [movement({
+      type: "TRANSFER",
+      previousQuantity: 20,
+      newQuantity: 23,
+      difference: 3,
+    })]).reason,
+    "VERIFIED",
+  );
+});
+
 test("a current level that differs from the ledger is a mismatch", () => {
   const result = evaluate(24, [movement()]);
   assert.equal(result.reason, "LEDGER_MISMATCH");

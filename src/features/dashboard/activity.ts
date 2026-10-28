@@ -28,12 +28,21 @@ export async function getDashboardActivity(context: TenantContext, options: { lo
   const sessions = new Set(counts.map(row => String(row.inventorySessionId) + ":" + row.locationCode));
   const stock: DashboardActivity[] = movements.items
     .filter(row => row.type !== "INVENTORY" || !sessions.has(row.inventorySessionId + ":" + row.locationCode))
+    .filter(row => locationId || row.type !== "TRANSFER" || row.transferDirection === "SOURCE")
     .map(row => ({
       id: row.id,
-      amount: (row.difference > 0 ? "+" : "") + row.difference.toLocaleString("sv-SE"),
-      label: row.productName, locationCode: row.locationCode, createdAt: row.createdAt,
+      amount: row.type === "TRANSFER"
+        ? "↔ " + Math.abs(row.difference).toLocaleString("sv-SE")
+        : (row.difference > 0 ? "+" : "") + row.difference.toLocaleString("sv-SE"),
+      label: row.productName,
+      locationCode: row.type === "TRANSFER" && row.counterpartLocationCode
+        ? (row.transferDirection === "DESTINATION"
+            ? row.counterpartLocationCode + " → " + row.locationCode
+            : row.locationCode + " → " + row.counterpartLocationCode)
+        : row.locationCode,
+      createdAt: row.createdAt,
       href: "/inventory/history" + (locationId ? "?locationId=" + locationId : ""),
-      tone: row.difference < 0 ? "danger" : "success",
+      tone: row.type === "TRANSFER" ? "neutral" : row.difference < 0 ? "danger" : "success",
     }));
   const physical: DashboardActivity[] = counts.map(row => ({
     id: "count-" + row._id, amount: "INV", label: "Inventerad plats",

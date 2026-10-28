@@ -48,6 +48,12 @@ const schema = new Schema(
     organizationDetails: organizationDetailsSchema,
     startedByName: { type: String, immutable: true },
     completedByName: String,
+    establishesBaseline: {
+      type: Boolean,
+      required: true,
+      default: false,
+      immutable: true,
+    },
     completionSignerName: String,
     completionSignatureImage: Buffer,
     completionSignedAt: Date,
@@ -61,7 +67,8 @@ const cachedInventorySession = models.InventorySession as Model<InventorySession
 if (
   cachedInventorySession &&
   (!cachedInventorySession.schema.path("organizationDetails") ||
-    !cachedInventorySession.schema.path("completionSignatureImage"))
+    !cachedInventorySession.schema.path("completionSignatureImage") ||
+    !cachedInventorySession.schema.path("establishesBaseline"))
 )
   deleteModel("InventorySession");
 export const InventorySession: Model<InventorySessionRecord> =

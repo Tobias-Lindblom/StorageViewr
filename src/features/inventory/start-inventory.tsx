@@ -12,12 +12,14 @@ export function StartInventory({
   defaultName,
   initialWarehouseId,
   className,
+  baseline = false,
 }: {
   initialWarehouseId?: string;
   className?: string;
   initialLocationIds?: string[];
   label?: ReactNode;
   defaultName?: string;
+  baseline?: boolean;
   warehouses: { id: string; name: string }[];
   locations: { id: string; warehouseId: string; code: string }[];
 }) {
@@ -58,6 +60,7 @@ export function StartInventory({
         "POST",
         {
           name: new FormData(event.currentTarget).get("name"),
+          baseline,
           warehouseId,
           locationIds: selected,
         },
@@ -90,7 +93,7 @@ export function StartInventory({
       </button>
       {open && (
         <BottomSheet
-          title="Starta inventering"
+          title={baseline ? "Starta första inventeringen" : "Starta inventering"}
           onClose={() => {
             if (!busy) {
               setOpen(false);
@@ -110,14 +113,16 @@ export function StartInventory({
                 className="button w-full"
                 disabled={busy || !selected.length || selected.length > 200}
               >
-                {busy ? "Startar…" : "Starta inventering · " + selected.length + " platser"}
+                {busy ? "Startar…" : (baseline ? "Starta första inventeringen · " : "Starta inventering · ") + selected.length + " platser"}
               </button>
             </>
           }
         >
           <form id="start-inventory-form" onSubmit={submit}>
             <p className="text-sm leading-6 text-muted">
-              Välj lager och platser som ska räknas. Urvalet låses när inventeringen startar.
+              {baseline
+                ? "Alla valda platser räknas för att etablera lagrets verifierade startsaldon. Urvalet låses när inventeringen startar."
+                : "Välj lager och platser som ska räknas. Urvalet låses när inventeringen startar."}
             </p>
 
             <div className="mt-5 grid gap-5 sm:grid-cols-2">

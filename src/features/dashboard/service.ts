@@ -1,31 +1,27 @@
 import "server-only";
 import { getDashboardInsights } from "./insights";
 import { getDashboardActivity } from "./activity";
-import { Warehouse } from "@/models/warehouse";
-import { Location } from "@/models/location";
 import { Product } from "@/models/product";
 import { InventorySession } from "@/models/inventory-session";
 import { InventorySessionLocation } from "@/models/inventory-session-location";
 import type { TenantContext } from "@/lib/server/tenant";
 import { productStockStages } from "@/features/products/product-stock";
 import { legacyOreToSek, sekToUnits } from "@/lib/money";
+import { getWarehouseSetupState } from "./setup-state";
 
 export async function getDashboard(context: TenantContext) {
+  const setup = await getWarehouseSetupState(context);
   const filter = { organizationId: context.organizationId, active: true };
   const inventoryFilter = {
     organizationId: context.organizationId,
     status: "active" as const,
   };
   const [
-    warehouseCount,
-    locationCount,
     productStock,
     inventoryRecords,
     insights,
     activity,
   ] = await Promise.all([
-    Warehouse.countDocuments(filter),
-    Location.countDocuments(filter),
     Product.aggregate<{
       unitValue?: string | null;
       unitValueOre?: number | null;
@@ -43,7 +39,7 @@ export async function getDashboard(context: TenantContext) {
       .sort({ startedAt: -1, _id: -1 })
       .limit(3)
       .lean(),
-    getDashboardInsights(context),
+    getDashboardInsights(context, setup.baselineEstablished),
     getDashboardActivity(context),
   ]);
   const scopes = inventoryRecords.length
@@ -70,9 +66,10 @@ export async function getDashboard(context: TenantContext) {
   return {
     insights,
     activity,
-    warehouseCount,
-    locationCount,
-    productCount: productStock.length,
+    setup,
+    warehouseCount: setup.warehouseCount,
+    locationCount: setup.locationCount,
+    productCount: setup.productCount,
     stockUnitCount: stockUnitCount.toString(),
     inventoryValueUnits: inventoryValueUnits.toString(),
     productsWithoutValue,

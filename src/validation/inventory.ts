@@ -39,13 +39,30 @@ const correctionMovementSchema = z
         quantity: quantitySchema,
       })
       .strict();
+const transferMovementSchema = z
+  .object({
+    type: z.literal("TRANSFER"),
+    productId: objectIdSchema,
+    sourceLocationId: objectIdSchema,
+    destinationLocationId: objectIdSchema,
+    expectedSourceVersion: expectedVersionSchema.unwrap(),
+    expectedDestinationVersion: expectedVersionSchema,
+    quantity: quantitySchema,
+    reason: movementReasonSchema,
+  })
+  .strict()
+  .refine(
+    (value) => value.sourceLocationId !== value.destinationLocationId,
+    { message: "Välj två olika lagerplatser.", path: ["destinationLocationId"] },
+  );
 export const stockMovementSchema = z.discriminatedUnion("type", [
   receiptMovementSchema,
   correctionMovementSchema,
+  transferMovementSchema,
 ]);
 export const historyQuerySchema = z.object({
   productId: objectIdSchema.optional(), locationId: objectIdSchema.optional(),
   q: z.string().trim().max(100).default(""),
-  kind: z.enum(["all", "receipt", "inventory", "correction"]).default("all"),
+  kind: z.enum(["all", "receipt", "transfer", "inventory", "correction"]).default("all"),
   page: z.coerce.number().int().min(1).max(100000).default(1),
 }).strict().refine(value => !(value.productId && value.locationId), "Välj högst en produkt eller lagerplats.");

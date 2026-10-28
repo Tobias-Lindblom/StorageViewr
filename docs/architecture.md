@@ -94,7 +94,7 @@ Dubbletter i filen och befintliga SKU valideras och en sammanfattning visas inna
    i webbläsartest; kontroll på fysisk telefon med utskriven QR-etikett återstår.
 7. Dashboard: klar. Faktiska tenant-avgränsade aggregat och inventeringsprogress från den
    färdiga kärnan visas på översikten.
-8. Lagerhändelser: klar. Inleverans och administratörskorrigering registreras med
+8. Lagerhändelser: klar. Inleverans, flytt och administratörskorrigering registreras med
    orsak, versionskontroll och full historik.
 
 Etapp 1–8 är funktionellt implementerade. Fas 6 har ingen kvarvarande programmeringspunkt,
@@ -255,6 +255,10 @@ Ingen separat utkaststatus används i denna leverans. Omfattningen fryses vid st
 platser som skapas senare läggs inte automatiskt till. Flera inventeringar kan pågå samtidigt.
 
 InventorySession använder active/completed och en revision för granskningen.
+Fältet establishesBaseline markerar att sessionen är den första fullständiga inventeringen av
+ett lager. Det lagras på den befintliga sessionen; ingen separat baseline-collection eller
+parallell räkningsmotor används. En uttryckligen begärd baseline måste omfatta samtliga aktiva
+platser i lagret.
 InventorySessionLocation sparar pending/counted, platskod, räknare, tid och en revision
 som skyddar mot att två användare skriver över samma platsräkning.
 InventoryCount är en snapshot med produktnamn, SKU, förväntat antal/version, faktiskt antal,
@@ -270,6 +274,10 @@ Endast admin avslutar efter granskning. Avslutets transaction kontrollerar grans
 revision, att samtliga platser är räknade, aktuella saldoversioner och nytillkomna placeringar.
 Alla avvikelser justerar saldo och skapar INVENTORY-rörelser med inventorySessionId,
 historiska namn och administratörens identitet. Matchande antal kräver ingen saldorörelse.
+När establishesBaseline är satt behandlas en första förändring från förväntat nollsaldo som
+startsaldot och skapar därför ingen InventoryDiscrepancy. Räkningen, saldouppdateringen och
+INVENTORY-rörelsen sparas fortfarande. Skillnader mot ett redan registrerat positivt saldo
+förblir vanliga avvikelser, liksom alla skillnader i senare inventeringar.
 Ett fel återställer hela avslutet. Upprepat avslut är idempotent, även efter senare inaktivering.
 Avslutade inventeringar är skrivskyddade och visar de ursprungliga räkningarna.
 
@@ -361,13 +369,25 @@ och en direktlänk till inventeringen. Visa alla leder till den fullständiga in
 Progressen räknas på servern från tenant-avgränsade InventorySessionLocation-poster; inga
 exempelvärden eller klientberäknade ersättningsvärden används.
 
+Dashboardens centrala setup-state räknas på servern från aktiva lager, platser, produkter,
+placeringar och slutförda baseline-sessioner. Tillståndet leder användaren genom tom
+organisation, lagerstruktur, produktplacering, redo för baseline och pågående baseline.
+I flerlagersföretag krävs en slutförd fullständig baseline för varje relevant lager innan den
+ordinarie dashboarden visas. Lagerhälsa returnerar score null fram till dess. Efter slutförd
+baseline visar inventeringsvyn en sammanfattning av produkter, positioner, antal, lagervärde,
+produkter utan styckvärde och eventuella verkliga avvikelser.
+
 ## Genomförd fas 8 – Lagerhändelser
 
 Produkter placeras på lagerplatser och får därefter saldo genom inleverans eller inventering.
-Lagerpersonal kan registrera inleveranser med antal och obligatorisk kommentar. Endast
+Lagerpersonal kan registrera inleveranser och flytta en produkt mellan två aktiva lagerplatser
+med obligatorisk kommentar. En nollplacering kan flyttas utan antal. En delflytt lämnar
+källplaceringen med återstående saldo, medan en hel flytt tar bort källplaceringen. Flytten
+skapar två kopplade revisionsrader men visas som en sammanhållen händelse. Endast
 administratörer kan korrigera ett registrerat saldo direkt; korrigeringen kräver en kommentar,
 skapar en revisionspost och gör att positionen behöver verifieras igen.
 
-Vid samtidig ändring måste det aktuella saldot läsas in före ett nytt försök. Saldo och
-historikpost sparas i samma transaktion. Integrationstester verifierar roller, tenant-isolering,
-versionskonflikter och rollback vid misslyckad historikskrivning.
+Vid samtidig ändring måste det aktuella saldot läsas in före ett nytt försök. Berörda saldon
+och historikposter sparas i samma transaktion. Integrationstester verifierar roller,
+tenant-isolering, noll-, del- och helflytt, versionskonflikter och rollback vid misslyckad
+historikskrivning.

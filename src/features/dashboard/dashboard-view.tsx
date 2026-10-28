@@ -8,6 +8,7 @@ import { DashboardActions } from "./dashboard-actions";
 import { RecentActivity } from "./recent-activity";
 import { StartInventory } from "@/features/inventory/start-inventory";
 import { formatSek } from "@/lib/money";
+import { WarehouseSetup } from "./warehouse-setup";
 
 const SECONDS_PER_LOCATION = 30;
 const SECONDS_PER_POSITION = 15;
@@ -52,6 +53,22 @@ export function DashboardView({ dashboard, locations, warehouses, admin, account
   ].filter(row => Number(row[0]) > 0).slice(0, 3);
   const choices = locations.map(place => ({ id: place.id, label: place.warehouseName + " · " + place.code }));
   const firstName = accountName.trim().split(/\s+/)[0] ?? "";
+  if (!dashboard.setup.baselineEstablished) {
+    return (
+      <div className="warehouse-dashboard">
+        <header className="dashboard-welcome">
+          <h1>God morgon{firstName ? ", " + firstName : ""}</h1>
+          <p>Vi hjälper er att fastställa det fysiska lagret</p>
+        </header>
+        <WarehouseSetup
+          setup={dashboard.setup}
+          locations={locations}
+          warehouses={warehouses}
+          admin={admin}
+        />
+      </div>
+    );
+  }
   const focusLabel: ReactNode = <>
     <span className="dashboard-focus-icon"><AppIcon name="layers" width={29} height={29} /></span>
     <span className="dashboard-focus-copy"><strong>{title}</strong><span>{description}</span>

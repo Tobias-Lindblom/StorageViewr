@@ -1,4 +1,5 @@
 import "server-only";
+import { Types } from "mongoose";
 import { historyMovementTypes, historySearch } from "./history-query";
 import { InventoryLevel } from "@/models/inventory-level";
 import { InventoryMovement } from "@/models/inventory-movement";
@@ -250,11 +251,286 @@ function stale(): never {
     "Saldot har ändrats av någon annan. Läs in aktuellt saldo och kontrollera ditt nya antal innan du sparar igen.",
   );
 }
+
+type ParsedMovement = ReturnType<typeof stockMovementSchema.parse>;
+type TransferMovement = Extract<ParsedMovement, { type: "TRANSFER" }>;
+
+async function registerStockTransfer(
+  context: TenantContext,
+  data: TransferMovement,
+) {
+  const db = await connectDb();
+  try {
+    return await db.connection.transaction(async (session) => {
+      const locations = await Location.find({
+        _id: { $in: [data.sourceLocationId, data.destinationLocationId] },
+        organizationId: context.organizationId,
+        active: true,
+      }).session(session);
+      if (locations.length !== 2)
+        throw new AppError(
+          404,
+          "LOCATION_NOT_FOUND",
+          "En av lagerplatserna kunde inte hittas.",
+        );
+
+      const source = locations.find(
+        (row) => String(row._id) === data.sourceLocationId,
+      )!;
+      const destination = locations.find(
+        (row) => String(row._id) === data.destinationLocationId,
+      )!;
+      const warehouseIds = [
+        ...new Set(locations.map((row) => String(row.warehouseId))),
+      ].sort();
+      const warehouses = [];
+      for (const warehouseId of warehouseIds) {
+        const warehouse = await Warehouse.findOneAndUpdate(
+          {
+            _id: warehouseId,
+            organizationId: context.organizationId,
+            active: true,
+          },
+          { $inc: { locationRevision: 1 } },
+          { session, returnDocument: "after" },
+        );
+        if (!warehouse)
+          throw new AppError(
+            409,
+            "WAREHOUSE_INACTIVE",
+            "Ett av lagren är inte längre aktivt.",
+          );
+        warehouses.push(warehouse);
+      }
+      for (const locationId of [
+        data.sourceLocationId,
+        data.destinationLocationId,
+      ].sort()) {
+        const locked = await Location.findOneAndUpdate(
+          {
+            _id: locationId,
+            organizationId: context.organizationId,
+            active: true,
+          },
+          { $inc: { stockRevision: 1 } },
+          { session, returnDocument: "after" },
+        );
+        if (!locked)
+          throw new AppError(
+            409,
+            "LOCATION_INACTIVE",
+            "En av lagerplatserna är inte längre aktiv.",
+          );
+      }
+
+      const product = await Product.findOneAndUpdate(
+        {
+          _id: data.productId,
+          organizationId: context.organizationId,
+          active: true,
+        },
+        { $inc: { stockRevision: 1 } },
+        { session, returnDocument: "after" },
+      );
+      if (!product)
+        throw new AppError(
+          404,
+          "PRODUCT_NOT_FOUND",
+          "Produkten kunde inte hittas.",
+        );
+
+      const levelFilter = {
+        organizationId: context.organizationId,
+        productId: product._id,
+      };
+      const levels = await InventoryLevel.find({
+        ...levelFilter,
+        locationId: { $in: [source._id, destination._id] },
+      }).session(session);
+      const sourceLevel = levels.find((row) => row.locationId.equals(source._id));
+      const destinationLevel = levels.find((row) =>
+        row.locationId.equals(destination._id),
+      );
+      if (
+        !sourceLevel ||
+        sourceLevel.version !== data.expectedSourceVersion ||
+        (destinationLevel?.version ?? null) !== data.expectedDestinationVersion
+      )
+        stale();
+      if (data.quantity === 0 && sourceLevel.quantity !== 0)
+        throw new AppError(
+          400,
+          "INVALID_TRANSFER_QUANTITY",
+          "Ange hur många enheter som ska flyttas.",
+        );
+      if (sourceLevel.quantity < data.quantity)
+        throw new AppError(
+          400,
+          "INSUFFICIENT_STOCK",
+          "Det finns inte tillräckligt saldo på källplatsen.",
+        );
+      if (
+        (destinationLevel?.quantity ?? 0) >
+        Number.MAX_SAFE_INTEGER - data.quantity
+      )
+        throw new AppError(400, "STOCK_LIMIT", "Saldot skulle bli för stort.");
+      const fullTransfer = data.quantity === sourceLevel.quantity;
+      const destinationChanges = data.quantity > 0 || !destinationLevel;
+      if (
+        (!fullTransfer && sourceLevel.version >= Number.MAX_SAFE_INTEGER) ||
+        (destinationChanges &&
+          (destinationLevel?.version ?? 0) >= Number.MAX_SAFE_INTEGER)
+      )
+        throw new AppError(
+          409,
+          "VERSION_LIMIT",
+          "Saldot kan inte ändras fler gånger.",
+        );
+
+      const sourceBefore = sourceLevel.quantity;
+      const destinationBefore = destinationLevel?.quantity ?? 0;
+      const sourceAfter = sourceBefore - data.quantity;
+      const destinationAfter = destinationBefore + data.quantity;
+      let updatedSource = null;
+      if (fullTransfer) {
+        const deleted = await InventoryLevel.deleteOne(
+          {
+            ...levelFilter,
+            locationId: source._id,
+            version: data.expectedSourceVersion,
+          },
+          { session },
+        );
+        if (deleted.deletedCount !== 1) stale();
+      } else {
+        updatedSource = await InventoryLevel.findOneAndUpdate(
+          {
+            ...levelFilter,
+            locationId: source._id,
+            version: data.expectedSourceVersion,
+          },
+          { $set: { quantity: sourceAfter }, $inc: { version: 1 } },
+          { session, returnDocument: "after", runValidators: true },
+        );
+        if (!updatedSource) stale();
+      }
+
+      let updatedDestination;
+      if (destinationLevel) {
+        if (data.quantity === 0) {
+          updatedDestination = destinationLevel;
+        } else {
+          updatedDestination = await InventoryLevel.findOneAndUpdate(
+            {
+              ...levelFilter,
+              locationId: destination._id,
+              version: data.expectedDestinationVersion,
+            },
+            { $set: { quantity: destinationAfter }, $inc: { version: 1 } },
+            { session, returnDocument: "after", runValidators: true },
+          );
+          if (!updatedDestination) stale();
+        }
+      } else {
+        [updatedDestination] = await InventoryLevel.create(
+          [
+            {
+              ...levelFilter,
+              warehouseId: destination.warehouseId,
+              locationId: destination._id,
+              quantity: destinationAfter,
+              version: 1,
+            },
+          ],
+          { session },
+        );
+      }
+
+      const actor = await User.findById(context.userId)
+        .select("name")
+        .session(session)
+        .lean();
+      const sourceWarehouse = warehouses.find((row) =>
+        row._id.equals(source.warehouseId),
+      )!;
+      const destinationWarehouse = warehouses.find((row) =>
+        row._id.equals(destination.warehouseId),
+      )!;
+      const transferId = new Types.ObjectId();
+      const shared = {
+        organizationId: context.organizationId,
+        productId: product._id,
+        type: "TRANSFER" as const,
+        transferId,
+        performedBy: context.userId,
+        performedByName: actor?.name ?? "Användare",
+        productName: product.name,
+        sku: product.sku,
+        reason: data.reason,
+      };
+      await InventoryMovement.create(
+        [
+          {
+            ...shared,
+            warehouseId: sourceWarehouse._id,
+            locationId: source._id,
+            locationCode: source.code,
+            warehouseName: sourceWarehouse.name,
+            transferDirection: "SOURCE",
+            counterpartLocationId: destination._id,
+            counterpartLocationCode: destination.code,
+            counterpartWarehouseName: destinationWarehouse.name,
+            previousQuantity: sourceBefore,
+            newQuantity: sourceAfter,
+            difference: -data.quantity,
+          },
+          {
+            ...shared,
+            warehouseId: destinationWarehouse._id,
+            locationId: destination._id,
+            locationCode: destination.code,
+            warehouseName: destinationWarehouse.name,
+            transferDirection: "DESTINATION",
+            counterpartLocationId: source._id,
+            counterpartLocationCode: source.code,
+            counterpartWarehouseName: sourceWarehouse.name,
+            previousQuantity: destinationBefore,
+            newQuantity: destinationAfter,
+            difference: data.quantity,
+          },
+        ],
+        { session, ordered: true },
+      );
+      return {
+        type: data.type,
+        transferId: String(transferId),
+        productId: String(product._id),
+        quantity: data.quantity,
+        source: {
+          locationId: String(source._id),
+          quantity: sourceAfter,
+          version: updatedSource?.version ?? null,
+          removed: fullTransfer,
+        },
+        destination: {
+          locationId: String(destination._id),
+          quantity: updatedDestination.quantity,
+          version: updatedDestination.version,
+        },
+      };
+    });
+  } catch (error) {
+    if (isDuplicateKey(error)) stale();
+    throw error;
+  }
+}
+
 export async function registerStockMovement(
   context: TenantContext,
   input: unknown,
 ) {
   const data = stockMovementSchema.parse(input);
+  if (data.type === "TRANSFER") return registerStockTransfer(context, data);
   if (data.type === "CORRECTION") requireAdmin(context);
   const db = await connectDb();
   try {
@@ -428,6 +704,13 @@ export async function listMovements(context: TenantContext, input: unknown) {
       inventorySessionId: row.inventorySessionId
         ? String(row.inventorySessionId)
         : null,
+      transferId: row.transferId ? String(row.transferId) : null,
+      transferDirection: row.transferDirection ?? null,
+      counterpartLocationId: row.counterpartLocationId
+        ? String(row.counterpartLocationId)
+        : null,
+      counterpartLocationCode: row.counterpartLocationCode ?? null,
+      counterpartWarehouseName: row.counterpartWarehouseName ?? null,
       previousQuantity: row.previousQuantity,
       newQuantity: row.newQuantity,
       difference: row.difference,

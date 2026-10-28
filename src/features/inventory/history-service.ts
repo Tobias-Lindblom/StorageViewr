@@ -14,6 +14,10 @@ type EventRow = {
   performedByName: string; createdAt: Date; difference?: number;
   previousQuantity?: number; newQuantity?: number;
   inventorySessionId?: Types.ObjectId;
+  transferId?: Types.ObjectId;
+  transferDirection?: "SOURCE" | "DESTINATION";
+  counterpartLocationCode?: string;
+  counterpartWarehouseName?: string;
   physical?: boolean;
 };
 type EventGroup = { _id: string; createdAt: Date; rows: EventRow[] };
@@ -37,11 +41,20 @@ export async function listHistory(context: TenantContext, input: unknown) {
     ...(locationId ? { locationId: new Types.ObjectId(locationId) } : {}),
   };
   const inventoryKey = { $concat: ["inventory:", { $toString: "$inventorySessionId" }, ":", { $toString: "$locationId" }] };
-  const eventId = productId ? { $toString: "$_id" } : { $cond: [
-    { $and: [{ $eq: ["$type", "INVENTORY"] },
-      { $ne: [{ $ifNull: ["$inventorySessionId", null] }, null] }] },
-    inventoryKey,
-    { $toString: "$_id" },
+  const transferKey = { $concat: ["transfer:", { $toString: "$transferId" }] };
+  const transferEvent = { $and: [
+    { $eq: ["$type", "TRANSFER"] },
+    { $ne: [{ $ifNull: ["$transferId", null] }, null] },
+  ] };
+  const eventId = { $cond: [
+    transferEvent,
+    transferKey,
+    productId ? { $toString: "$_id" } : { $cond: [
+      { $and: [{ $eq: ["$type", "INVENTORY"] },
+        { $ne: [{ $ifNull: ["$inventorySessionId", null] }, null] }] },
+      inventoryKey,
+      { $toString: "$_id" },
+    ] },
   ] };
   const pipeline: PipelineStage[] = [
     { $match: scope },
@@ -85,14 +98,31 @@ export async function listHistory(context: TenantContext, input: unknown) {
     await InventoryMovement.aggregate<EventGroup>([...pipeline, sort, { $skip: (page - 1) * 20 }, { $limit: 20 }]);
   const items: HistoryItem[] = records.map(group => {
     const physical = group.rows.find(row => row.physical);
-    const row = physical ?? group.rows[0];
+    const transfer = group.rows.find(row => row.type === "TRANSFER");
+    const source = group.rows.find(row => row.transferDirection === "SOURCE");
+    const destination = group.rows.find(row => row.transferDirection === "DESTINATION");
+    const row = physical ?? source ?? transfer ?? group.rows[0];
+    const transferLocation = !transfer ? null : source && destination
+      ? source.locationCode + " → " + destination.locationCode
+      : row.transferDirection === "DESTINATION"
+        ? (row.counterpartLocationCode ?? "Källplats") + " → " + row.locationCode
+        : row.locationCode + " → " + (row.counterpartLocationCode ?? "Målplats");
+    const transferWarehouse = !transfer ? null : source && destination
+      ? source.warehouseName === destination.warehouseName
+        ? source.warehouseName
+        : source.warehouseName + " → " + destination.warehouseName
+      : row.transferDirection === "DESTINATION"
+        ? (row.counterpartWarehouseName ?? row.warehouseName) + " → " + row.warehouseName
+        : row.warehouseName + " → " + (row.counterpartWarehouseName ?? row.warehouseName);
     return {
       id: group._id, type: row.type,
       productName: row.productName, sku: row.sku,
-      locationCode: row.locationCode, warehouseName: row.warehouseName, reason: row.reason,
+      locationCode: transferLocation ?? row.locationCode,
+      warehouseName: transferWarehouse ?? row.warehouseName,
+      reason: row.reason,
       performedByName: row.performedByName || "Användare",
       createdAt: group.createdAt.toISOString(),
-      difference: physical ? null : row.difference ?? 0,
+      difference: physical || transfer ? null : row.difference ?? 0,
       inventorySessionId: row.inventorySessionId ? String(row.inventorySessionId) : null,
       balances: group.rows.filter(row => !row.physical).map(row => ({
         id: String(row._id), productName: row.productName, sku: row.sku,

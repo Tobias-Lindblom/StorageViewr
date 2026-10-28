@@ -21,8 +21,13 @@ function uniqueFocusLocations(items: InventoryPositionHealth[]) {
   return [...locations.values()];
 }
 
-export async function getDashboardInsights(context: TenantContext) {
-  const health = await getInventoryHealthSummary(context);
+export async function getDashboardInsights(
+  context: TenantContext,
+  baselineEstablished?: boolean,
+) {
+  const health = await getInventoryHealthSummary(context, {
+    baselineEstablished,
+  });
   const focusLocations = uniqueFocusLocations(health.attentionItems);
   const focusIds = new Set(focusLocations.map(row => row.locationId));
   const focusItems = health.attentionItems.filter(row => focusIds.has(row.locationId));

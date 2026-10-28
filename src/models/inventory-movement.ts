@@ -1,5 +1,6 @@
 import {
   Schema,
+  deleteModel,
   model,
   models,
   type InferSchemaType,
@@ -15,6 +16,7 @@ const schema = new Schema({
     type: String,
     enum: [
       "RECEIPT",
+      "TRANSFER",
       "CORRECTION",
       "INVENTORY",
     ],
@@ -22,6 +24,15 @@ const schema = new Schema({
     immutable: true,
   },
   inventorySessionId: { type: Schema.Types.ObjectId, immutable: true },
+  transferId: { type: Schema.Types.ObjectId, immutable: true },
+  transferDirection: {
+    type: String,
+    enum: ["SOURCE", "DESTINATION"],
+    immutable: true,
+  },
+  counterpartLocationId: { type: Schema.Types.ObjectId, immutable: true },
+  counterpartLocationCode: { type: String, immutable: true },
+  counterpartWarehouseName: { type: String, immutable: true },
   previousQuantity: { ...amount, immutable: true },
   newQuantity: { ...amount, immutable: true },
   difference: { type: Number, required: true, validate: Number.isSafeInteger, immutable: true },
@@ -37,8 +48,15 @@ const schema = new Schema({
 schema.index({ organizationId: 1, createdAt: -1, _id: -1 });
 schema.index({ organizationId: 1, productId: 1, createdAt: -1, _id: -1 });
 schema.index({ organizationId: 1, locationId: 1, createdAt: -1, _id: -1 });
+schema.index(
+  { organizationId: 1, transferId: 1, locationId: 1 },
+  { unique: true, partialFilterExpression: { type: "TRANSFER" } },
+);
 schema.index({ organizationId: 1, inventorySessionId: 1, productId: 1, locationId: 1 }, { unique: true, partialFilterExpression: { type: "INVENTORY" } });
 type InventoryMovementRecord = InferSchemaType<typeof schema>;
+const cachedInventoryMovement = models.InventoryMovement as Model<InventoryMovementRecord> | undefined;
+if (cachedInventoryMovement && !cachedInventoryMovement.schema.path("transferId"))
+  deleteModel("InventoryMovement");
 export const InventoryMovement: Model<InventoryMovementRecord> =
   (models.InventoryMovement as Model<InventoryMovementRecord> | undefined) ??
   model<InventoryMovementRecord>("InventoryMovement", schema);
