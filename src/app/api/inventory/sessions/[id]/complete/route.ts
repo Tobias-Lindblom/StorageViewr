@@ -2,7 +2,7 @@ import { api, assertOrigin, readJson } from "@/lib/server/api";
 import { requireTenant } from "@/lib/server/tenant";
 import { rateLimit } from "@/lib/server/rate-limit";
 import { finishInventory } from "@/features/inventory/sessions";
-import { finishInventorySchema } from "@/validation/inventory-session";
+import { z } from "zod";
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -14,7 +14,9 @@ export async function POST(
     return finishInventory(
       context,
       (await params).id,
-      await readJson(request, finishInventorySchema, 450_000),
+      // finishInventory owns validation and normalization. Reading the bounded
+      // JSON as unknown avoids applying transformed money fields twice.
+      await readJson(request, z.unknown(), 450_000),
     );
   });
 }

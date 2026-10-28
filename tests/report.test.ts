@@ -155,7 +155,10 @@ async function fixture(quantity = 10) {
     warehouseId: warehouse.id,
     locationIds: [location.id, empty.id],
   });
-  async function complete(counted = 8) {
+  async function complete(
+    counted = 8,
+    incomingValueEntries: Array<{ label: string; amount: string }> = [],
+  ) {
     await saveLocationCount(context, inventory.id, location.id, {
       expectedRevision: 0,
       confirmComplete: true,
@@ -172,6 +175,7 @@ async function fixture(quantity = 10) {
     await finishInventory(context, inventory.id, {
       expectedRevision: detail.revision,
       confirmed: true,
+      incomingValueEntries,
       ...testInventorySignature,
     });
   }
@@ -193,7 +197,10 @@ test("reports require completion and tenant ownership and use immutable counting
     getInventoryReport(f.context, f.inventory.id),
     status(409),
   );
-  await f.complete();
+  await f.complete(8, [
+    { label: "HMD (Dispo van)", amount: "10 000" },
+    { label: "Leverans Tyskland", amount: "22500,125" },
+  ]);
   const original = await getInventoryReport(f.context, f.inventory.id);
   assert.equal(original.companyName, "Åström Lager AB");
   assert.equal(original.companyDetails.organizationNumber, "556016-0680");
@@ -215,6 +222,12 @@ test("reports require completion and tenant ownership and use immutable counting
   assert.equal(original.places[0].rows[0].valueDifferenceUnits, "-16902");
   assert.equal(original.summary.expectedValueUnits, "84510");
   assert.equal(original.summary.countedValueUnits, "67608");
+  assert.deepEqual(original.incomingValueEntries, [
+    { label: "HMD (Dispo van)", amountUnits: "100000000" },
+    { label: "Leverans Tyskland", amountUnits: "225001250" },
+  ]);
+  assert.equal(original.summary.incomingValueUnits, "325001250");
+  assert.equal(original.summary.totalGoodsValueUnits, "325068858");
   assert.equal(original.summary.valueDifferenceUnits, "-16902");
   assert.equal(original.summary.productsWithoutValue, 0);
   await correctStock(f.context, {
@@ -272,6 +285,62 @@ test("reports require completion and tenant ownership and use immutable counting
     await renderInventoryReport(original),
   );
   await writeFile(path.join(folder, "short.json"), JSON.stringify(original));
+});
+
+test("incoming value is an immutable inventory snapshot and never affects stock", async () => {
+  const f = await fixture();
+  await f.complete(8, [{ label: "HMD", amount: "10000,50" }]);
+
+  const detail = await getInventory(f.context, f.inventory.id);
+  assert.deepEqual(detail.incomingValueSummary, {
+    entries: [{ label: "HMD", amountUnits: "100005000" }],
+    inventoryValueUnits: "67608",
+    incomingValueUnits: "100005000",
+    totalGoodsValueUnits: "100072608",
+    productsWithoutValue: 0,
+  });
+  assert.equal(
+    await InventoryMovement.countDocuments({
+      organizationId: f.context.organizationId,
+      inventorySessionId: f.inventory.id,
+    }),
+    1,
+  );
+  assert.equal(
+    (await InventoryLevel.findOne({
+      organizationId: f.context.organizationId,
+      productId: f.product.id,
+      locationId: f.location.id,
+    }).lean())?.quantity,
+    8,
+  );
+
+  await finishInventory(f.context, f.inventory.id, {
+    expectedRevision: detail.revision,
+    confirmed: true,
+    incomingValueEntries: [{ label: "Ska inte ersätta", amount: "1" }],
+    ...testInventorySignature,
+  });
+  assert.equal(
+    (await getInventoryReport(f.context, f.inventory.id)).summary.incomingValueUnits,
+    "100005000",
+  );
+
+  const next = await startInventory(f.context, {
+    name: "Nästa inventering",
+    warehouseId: f.warehouse.id,
+    locationIds: [f.location.id, f.empty.id],
+  });
+  assert.equal((await getInventory(f.context, next.id)).incomingValueSummary, null);
+  assert.deepEqual(
+    (await InventorySession.findById(next.id).lean())?.incomingValueEntries,
+    [],
+  );
+
+  const bytes = await renderInventoryReport(
+    await getInventoryReport(f.context, f.inventory.id),
+  );
+  assert.equal(bytes.subarray(0, 5).toString(), "%PDF-");
 });
 
 test("location stock reports include zero-balance placements, empty places and current product balances", async () => {
@@ -441,6 +510,12 @@ test("legacy sessions remain downloadable without inventing missing historical n
   assert.equal(report.startedBy, "Ej sparat");
   assert.equal(report.completedBy, "Ej sparat");
   assert.equal(report.signature, null);
+  assert.deepEqual(report.incomingValueEntries, []);
+  assert.equal(report.summary.incomingValueUnits, "0");
+  assert.equal(
+    report.summary.totalGoodsValueUnits,
+    report.summary.countedValueUnits,
+  );
   const bytes = await renderInventoryReport(report);
   assert.equal(bytes.subarray(0, 5).toString(), "%PDF-");
   await writeFile(path.join(folder, "legacy.pdf"), bytes);

@@ -9,6 +9,8 @@ import { DownloadInventoryReport } from "./download-report";
 import { CountPlace } from "./count-place";
 import { InventorySignature } from "./inventory-signature";
 import { BaselineSummary } from "./baseline-summary";
+import { IncomingValueEditor, type IncomingValueDraft } from "./incoming-value-editor";
+import { IncomingValueSummary } from "./incoming-value-summary";
 
 const number = (value: number) => value.toLocaleString("sv-SE");
 const date = (value: string) => new Date(value).toLocaleDateString("sv-SE", { timeZone: "Europe/Stockholm", day: "numeric", month: "short", year: "numeric" });
@@ -35,6 +37,7 @@ export function InventoryWorkspace({
   const [confirmed, setConfirmed] = useState(false);
   const [signerName, setSignerName] = useState("");
   const [signatureDataUrl, setSignatureDataUrl] = useState<string | null>(null);
+  const [incomingValueEntries, setIncomingValueEntries] = useState<IncomingValueDraft[]>([]);
   const [resolutions, setResolutions] = useState<Record<string, "APPROVE" | "INVESTIGATE">>({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -85,6 +88,7 @@ export function InventoryWorkspace({
         "/api/inventory/sessions/" + data.id + "/complete",
         "POST",
         { expectedRevision: data.revision, confirmed, signerName, signatureDataUrl,
+          incomingValueEntries,
           resolutions: data.discrepancies.map(row => ({
             productId: row.productId, locationId: row.locationId,
             action: resolutions[discrepancyKey(row.productId, row.locationId)],
@@ -99,6 +103,7 @@ export function InventoryWorkspace({
       );
       setSignerName("");
       setSignatureDataUrl(null);
+      setIncomingValueEntries([]);
     } catch (error) {
       setError(
         error instanceof Error
@@ -164,6 +169,7 @@ export function InventoryWorkspace({
         </p>
       )}
       {completed && data.baselineSummary && <BaselineSummary data={data} />}
+      {completed && data.incomingValueSummary && <IncomingValueSummary data={data} />}
       {!completed && data.places.some(row => row.stale) && <p className="inventory-detail-stale-note">
         Saldot har ändrats på en räknad plats. Räkna om markerade platser före slutförande.
       </p>}
@@ -306,12 +312,20 @@ export function InventoryWorkspace({
             : "De sparade räkningarna har inga saldoavvikelser."}</span></div>
         </div>}
         {admin && ready && allDiscrepanciesHandled && (
-          <InventorySignature
-            signerName={signerName}
-            onSignerNameChange={setSignerName}
-            onSignatureChange={setSignatureDataUrl}
-            disabled={busy}
-          />
+          <>
+            <IncomingValueEditor
+              entries={incomingValueEntries}
+              onChange={setIncomingValueEntries}
+              disabled={busy}
+            />
+            <InventorySignature
+              signerName={signerName}
+              signatureDataUrl={signatureDataUrl}
+              onSignerNameChange={setSignerName}
+              onSignatureChange={setSignatureDataUrl}
+              disabled={busy}
+            />
+          </>
         )}
         {admin && <label className="inventory-review-confirm">
           <input type="checkbox" className="m-0! mt-1! h-4! min-h-0! w-4! shrink-0 px-0! accent-accent"

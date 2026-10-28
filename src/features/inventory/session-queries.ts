@@ -109,6 +109,26 @@ export async function getInventory(context: TenantContext, id: string) {
       .session(session)
       .lean();
     const productMap = new Map(products.map((row) => [String(row._id), row]));
+    const inventoryValueUnits = counts
+      .reduce(
+        (sum, row) =>
+          row.unitValue == null
+            ? sum
+            : sum + BigInt(row.countedQuantity) * sekToUnits(row.unitValue),
+        BigInt(0),
+      );
+    const productsWithoutValue = new Set(
+      counts
+        .filter((row) => row.unitValue == null)
+        .map((row) => String(row.productId)),
+    ).size;
+    const incomingValueEntries = (inventory.incomingValueEntries ?? []).map(
+      (entry) => ({ label: entry.label, amountUnits: entry.amountUnits }),
+    );
+    const incomingValueUnits = incomingValueEntries.reduce(
+      (sum, entry) => sum + BigInt(entry.amountUnits),
+      BigInt(0),
+    );
     const places = scopes
       .map((scope) => {
         const saved = counts.filter((row) =>
@@ -182,21 +202,8 @@ export async function getInventory(context: TenantContext, id: string) {
                 BigInt(0),
               )
               .toString(),
-            inventoryValueUnits: counts
-              .reduce(
-                (sum, row) =>
-                  row.unitValue == null
-                    ? sum
-                    : sum +
-                      BigInt(row.countedQuantity) * sekToUnits(row.unitValue),
-                BigInt(0),
-              )
-              .toString(),
-            productsWithoutValue: new Set(
-              counts
-                .filter((row) => row.unitValue == null)
-                .map((row) => String(row.productId)),
-            ).size,
+            inventoryValueUnits: inventoryValueUnits.toString(),
+            productsWithoutValue,
             openDiscrepancies: await InventoryDiscrepancy.countDocuments({
               organizationId: context.organizationId,
               inventorySessionId: inventory._id,
@@ -212,6 +219,18 @@ export async function getInventory(context: TenantContext, id: string) {
       status: inventory.status,
       establishesBaseline,
       baselineSummary,
+      incomingValueSummary:
+        inventory.status === "completed" && incomingValueEntries.length
+          ? {
+              entries: incomingValueEntries,
+              inventoryValueUnits: inventoryValueUnits.toString(),
+              incomingValueUnits: incomingValueUnits.toString(),
+              totalGoodsValueUnits: (
+                inventoryValueUnits + incomingValueUnits
+              ).toString(),
+              productsWithoutValue,
+            }
+          : null,
       revision: inventory.revision,
       startedAt: inventory.startedAt.toISOString(),
       completedAt: inventory.completedAt?.toISOString() ?? null,

@@ -1,6 +1,6 @@
 /** Unit values are canonical SEK strings with four decimals. Arithmetic uses 1/10,000 SEK. */
 export function parseSekValue(input: string): string | null {
-  const value = input.trim();
+  const value = input.trim().replace(/[ \u00a0\u202f]/g, "");
   if (!value) return null;
   if (!/^\d{1,14}([.,]\d{1,4})?$/.test(value))
     throw new Error("Ange ett positivt styckvärde eller 0, med högst fyra decimaler.");

@@ -20,6 +20,18 @@ const organizationDetailsSchema = new Schema(
   },
   { _id: false },
 );
+const incomingValueEntrySchema = new Schema(
+  {
+    label: { type: String, required: true, maxlength: 120 },
+    amountUnits: {
+      type: String,
+      required: true,
+      maxlength: 18,
+      match: /^\d{1,18}$/,
+    },
+  },
+  { _id: false },
+);
 const schema = new Schema(
   {
     organizationId: {
@@ -57,6 +69,10 @@ const schema = new Schema(
     completionSignerName: String,
     completionSignatureImage: Buffer,
     completionSignedAt: Date,
+    incomingValueEntries: {
+      type: [incomingValueEntrySchema],
+      default: [],
+    },
     revision: { type: Number, required: true, default: 0 },
   },
   { collection: "inventorySessions", timestamps: true },
@@ -68,7 +84,8 @@ if (
   cachedInventorySession &&
   (!cachedInventorySession.schema.path("organizationDetails") ||
     !cachedInventorySession.schema.path("completionSignatureImage") ||
-    !cachedInventorySession.schema.path("establishesBaseline"))
+    !cachedInventorySession.schema.path("establishesBaseline") ||
+    !cachedInventorySession.schema.path("incomingValueEntries"))
 )
   deleteModel("InventorySession");
 export const InventorySession: Model<InventorySessionRecord> =

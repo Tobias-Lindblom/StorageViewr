@@ -280,6 +280,10 @@ INVENTORY-rörelsen sparas fortfarande. Skillnader mot ett redan registrerat pos
 förblir vanliga avvikelser, liksom alla skillnader i senare inventeringar.
 Ett fel återställer hela avslutet. Upprepat avslut är idempotent, även efter senare inaktivering.
 Avslutade inventeringar är skrivskyddade och visar de ursprungliga räkningarna.
+Vid granskningen kan admin dessutom lägga till högst 50 manuella poster för inkommande
+varuvärde. Posterna sparas som exakta 1/10 000-kronorsenheter på InventorySession först när
+inventeringen slutförs och blir därefter en skrivskyddad snapshot. De skapar inga saldon,
+placeringar, rörelser eller verifieringar och påverkar inte Lagerhälsa eller dashboardens värden.
 
 Start, räkning och avslut använder samma lagerlås som saldoändringar. Produkt- och platslås
 samordnar med inaktivering. Platser och produkter som refereras av en öppen inventering
@@ -341,7 +345,9 @@ avvikelser, exakta totalsummor, separata över-/underskott och samtliga räkning
 tabellrubriker upprepas vid sidbrytningar. Alla tider visas i Europe/Stockholm.
 
 Rapportunderlaget läses från completed InventorySession, InventorySessionLocation och
-InventoryCount, aldrig dagens InventoryLevel eller produktnamn.
+InventoryCount, aldrig dagens InventoryLevel eller produktnamn. När en inventering har manuellt
+inkommande varuvärde visar PDF:en inventerat lagervärde, varje inkommande post, totalt inkommande
+och totalt varuvärde. Äldre sessioner utan poster får samma rapport som tidigare.
 Nya sessioner sparar startedByName vid start samt organizationName och completedByName
 vid avslut. Äldre sessioner går också att exportera: osparade ansvarignamn anges som
 Ej sparat; om företagsnamnets historik saknas används dagens namn med tydlig upplysning.

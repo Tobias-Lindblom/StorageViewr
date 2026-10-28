@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { objectIdSchema, quantitySchema } from "./organization";
+import { parseSekValue, sekToUnits } from "@/lib/money";
 const inventoryIdSchema = objectIdSchema.transform(value => value.toLowerCase());
 export const startInventorySchema = z.object({
   name: z.string().trim().min(2, "Ange ett namn på inventeringen.").max(120),
@@ -18,6 +19,23 @@ export const saveCountSchema = z.object({
     countedQuantity: quantitySchema,
   }).strict()).max(500).refine(rows => new Set(rows.map(row => row.productId)).size === rows.length, "Produkten får bara räknas en gång per plats."),
 }).strict();
+const incomingValueEntrySchema = z.object({
+  label: z.string().trim().min(1, "Ange en referens eller beskrivning.").max(120),
+  amount: z.string().trim().min(1, "Ange ett värde.").max(30),
+}).strict().transform((entry, context) => {
+  try {
+    const value = parseSekValue(entry.amount);
+    if (value === null) throw new Error("missing amount");
+    return { label: entry.label, amountUnits: sekToUnits(value).toString() };
+  } catch {
+    context.addIssue({
+      code: "custom",
+      path: ["amount"],
+      message: "Ange ett värde på minst 0 kr, med högst fyra decimaler.",
+    });
+    return z.NEVER;
+  }
+});
 export const finishInventorySchema = z.object({
   expectedRevision: quantitySchema,
   confirmed: z.literal(true, { error: "Bekräfta att avvikelserna har granskats." }),
@@ -28,6 +46,10 @@ export const finishInventorySchema = z.object({
       /^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/,
       "Signaturen har ett ogiltigt format.",
     ),
+  incomingValueEntries: z.array(incomingValueEntrySchema).max(
+    50,
+    "Högst 50 inkommande värdeposter kan läggas till.",
+  ).default([]),
   resolutions: z.array(z.object({
     productId: inventoryIdSchema,
     locationId: inventoryIdSchema,

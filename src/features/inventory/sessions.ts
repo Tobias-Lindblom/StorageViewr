@@ -585,6 +585,7 @@ export async function finishInventory(
           completionSignerName: data.signerName,
           completionSignatureImage: signatureImage,
           completionSignedAt: completedAt,
+          incomingValueEntries: data.incomingValueEntries,
           organizationName: organization?.name,
           organizationDetails: organization
             ? organizationDocumentDetails(organization)

@@ -126,7 +126,8 @@ Starta om utvecklingsservern efter ändrade Mongoose-modeller så att de nya fä
 3. Öppna en plats, ange faktiskt antal och bekräfta hela platsen. Även tomma platser bekräftas.
 4. Hittat en annan produkt? Sök och lägg till den i räkningen. Högst 500 produkter per plats.
 5. Räkningarna sparas separat från lagersaldot. Ändrade saldon kräver omläsning och omräkning.
-6. När alla platser är räknade väljer admin Granska och avsluta, bekräftar och uppdaterar saldona.
+6. När alla platser är räknade väljer admin Granska och avsluta. Där kan inkommande varuvärde
+   anges som frivill rapportinformation innan inventeringen signeras och saldona uppdateras.
 7. Avslutad inventering visar historiska räkningar; saldohistoriken länkar tillbaka till inventeringen.
 
 Kör `npm run db:indexes` efter uppdateringen och starta om utvecklingsservern.
@@ -150,6 +151,8 @@ När inventeringen är avslutad väljer du Ladda ner PDF.
 Rapporten innehåller sammanfattning och alla produkter per lagerplats med förväntat antal,
 räknat antal, avvikelse, räknare och tid. Även tomma platser och rader utan avvikelse ingår.
 Rapporten använder de historiska räkningarna och påverkas inte av senare saldoändringar.
+Om inkommande varuvärde angavs vid avslutet visas det separat och summeras med inventerat
+lagervärde. Uppgiften påverkar aldrig lagersaldo, lagerhistorik eller Lagerhälsa.
 
 Servern behöver assets/fonts vid körning; next.config.ts inkluderar typsnitten i route tracing.
 Starta om utvecklingsservern efter ändrade InventorySession-modeller för att nya

@@ -508,6 +508,38 @@ test("validation rejects duplicate scope, duplicate products, unsafe counts and 
   assert.equal(saveCountSchema.safeParse({ ...input, organizationId: id }).success, false);
   assert.equal(finishInventorySchema.safeParse({ expectedRevision: 1, confirmed: true }).success, false);
   assert.equal(finishInventorySchema.safeParse({ expectedRevision: 1, confirmed: true, signerName: "A", signatureDataUrl: "data:image/png;base64,AAAA" }).success, false);
+  const completion = {
+    expectedRevision: 1,
+    confirmed: true,
+    ...testInventorySignature,
+  };
+  const parsed = finishInventorySchema.parse({
+    ...completion,
+    incomingValueEntries: [
+      { label: "  HMD  ", amount: "10 000,125" },
+      { label: "Nollvärde", amount: "0" },
+    ],
+  });
+  assert.deepEqual(parsed.incomingValueEntries, [
+    { label: "HMD", amountUnits: "100001250" },
+    { label: "Nollvärde", amountUnits: "0" },
+  ]);
+  for (const incomingValueEntries of [
+    [{ label: "", amount: "1" }],
+    [{ label: "A".repeat(121), amount: "1" }],
+    [{ label: "Fel", amount: "-1" }],
+    [{ label: "Fel", amount: "inte pengar" }],
+    [{ label: "Fel", amount: "1,12345" }],
+    Array.from({ length: 51 }, (_, index) => ({
+      label: "Post " + index,
+      amount: "1",
+    })),
+  ]) {
+    assert.equal(
+      finishInventorySchema.safeParse({ ...completion, incomingValueEntries }).success,
+      false,
+    );
+  }
 });
 
 test("scope creation racing location deactivation cannot freeze an inactive place", async () => {

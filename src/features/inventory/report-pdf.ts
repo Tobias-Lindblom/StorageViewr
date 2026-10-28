@@ -13,9 +13,7 @@ const colors = {
   soft: "#FBFAFD",
   line: "#E2DCEB",
   green: "#167448",
-  greenPale: "#EDF8F2",
   red: "#AD354E",
-  redPale: "#FBEFF2",
 };
 
 const clean = (value: string) => value.replace(/\s+/g, " ").trim();
@@ -23,8 +21,6 @@ const amount = (value: number | string) =>
   BigInt(value).toLocaleString("sv-SE");
 const quantityLabel = (value: number, singular: string, plural: string) =>
   amount(value) + " " + (value === 1 ? singular : plural);
-const signed = (value: number | string) =>
-  (BigInt(value) > BigInt(0) ? "+" : "") + amount(value);
 const formatSignedSek = (value: number | string | bigint) => {
   const units = BigInt(value);
   const absolute = units < BigInt(0) ? -units : units;
@@ -130,37 +126,84 @@ export async function renderInventoryReport(
       function header(firstPage = false) {
         doc
           .save()
-          .roundedRect(left, 30, 27, 27, 7)
-          .fillAndStroke(colors.pale, "#D5C6EE");
-        doc
-          .translate(left + 4, 34)
-          .scale(0.8)
-          .path(
-            "M12 3 L21 8 L21 16 L12 21 L3 16 L3 8 Z M12 12 L21 8 M12 12 L3 8 M12 12 L12 21",
-          )
-          .lineWidth(1.5)
-          .strokeColor(colors.purple)
-          .stroke()
+          .translate(left, 29)
+          .scale(1.05)
+          .path("M12 1 23 7 12 13 1 7 12 1Z")
+          .fill("#AA88FF")
+          .path("M1 8 11.5 13.7V25L1 19V8Z")
+          .fill("#9254DB")
+          .path("m12.5 13.7 10.5-5.7v11l-10.5 6V13.7Z")
+          .fill("#C6A4F5")
           .restore();
-        text("StorageViewr.", left + 36, 35, 175, 16, true);
+        text("StorageViewr", left + 34, 35, 175, 16, true);
 
         if (firstPage) {
-          text("Inventeringsrapport", left, 73, width, 24, true);
-          text(
-            report.companyName + " · Exporterad " + date(exportedAt),
-            left,
-            105,
-            width,
-            8.5,
-            false,
-            colors.muted,
-          );
-          line(129);
-          y = 146;
+          y = 76;
         } else {
           line(72);
           y = 94;
         }
+      }
+
+      function reportIntro() {
+        const panelTop = y;
+        const innerLeft = left + 17;
+        const innerWidth = width - 34;
+        const titleWidth = innerWidth - 170;
+        const nameTop = panelTop + 17;
+        const nameHeight = measure(report.name, titleWidth, 19, true);
+        const metaTop = nameTop + nameHeight + 8;
+        const dividerTop = metaTop + 19;
+        const scopeTop = dividerTop + 13;
+        const panelHeight = scopeTop - panelTop + 27;
+
+        doc
+          .roundedRect(left, panelTop, width, panelHeight, 9)
+          .fillAndStroke(colors.soft, colors.line);
+        text(
+          "Exporterad " + date(exportedAt),
+          left + width - 205,
+          panelTop + 20,
+          188,
+          7.5,
+          false,
+          colors.muted,
+          "right",
+        );
+        text(report.name, innerLeft, nameTop, titleWidth, 19, true);
+        text(
+          report.companyName + " · " + report.warehouseName,
+          innerLeft,
+          metaTop,
+          innerWidth,
+          8.5,
+          false,
+          colors.muted,
+        );
+        doc
+          .moveTo(innerLeft, dividerTop)
+          .lineTo(left + width - 17, dividerTop)
+          .lineWidth(0.6)
+          .strokeColor(colors.line)
+          .stroke();
+        text(
+          quantityLabel(report.summary.places, "lagerplats", "lagerplatser") +
+            "  ·  " +
+            quantityLabel(
+              report.summary.products,
+              "unik produkt",
+              "unika produkter",
+            ) +
+            "  ·  " +
+            quantityLabel(report.summary.rows, "räknad rad", "räknade rader"),
+          innerLeft,
+          scopeTop,
+          innerWidth,
+          8,
+          false,
+          colors.muted,
+        );
+        y = panelTop + panelHeight + 19;
       }
 
       function newPage() {
@@ -172,197 +215,166 @@ export async function renderInventoryReport(
         if (y + height > bottom) newPage();
       }
 
-      function heading(title: string, subtitle?: string) {
-        ensure(subtitle ? 50 : 30);
-        y += text(title, left, y, width, 15, true) + 5;
-        if (subtitle)
-          y += text(subtitle, left, y, width, 8, false, colors.muted) + 9;
-      }
+      function sectionHeading(title: string, subtitle: string) {
+        const innerLeft = left + 16;
+        const innerWidth = width - 32;
+        const titleHeight = measure(title, innerWidth, 15, true);
+        const subtitleHeight = measure(subtitle, innerWidth, 8.5);
+        const panelHeight = 17 + titleHeight + 6 + subtitleHeight + 15;
+        ensure(panelHeight + 10);
+        const titleTop = y + 17;
+        const subtitleTop = titleTop + titleHeight + 6;
 
-      function facts(items: [string, string][]) {
-        const columnWidth = width / 2;
-        const innerWidth = columnWidth - 26;
-        const rowHeights: number[] = [];
-        for (let index = 0; index < items.length; index += 2) {
-          const row = items.slice(index, index + 2);
-          rowHeights.push(
-            Math.max(...row.map(([, value]) => measure(value, innerWidth, 9))) +
-              31,
-          );
-        }
-        const panelHeight = rowHeights.reduce(
-          (total, height) => total + height,
-          0,
-        );
-        ensure(panelHeight + 12);
         doc
-          .roundedRect(left, y, width, panelHeight, 7)
+          .roundedRect(left, y, width, panelHeight, 8)
           .fillAndStroke(colors.soft, colors.line);
-        let rowY = y;
-        for (let index = 0; index < items.length; index += 2) {
-          const row = items.slice(index, index + 2);
-          const height = rowHeights[index / 2];
-          if (index > 0) {
-            doc
-              .moveTo(left + 13, rowY)
-              .lineTo(left + width - 13, rowY)
-              .lineWidth(0.5)
-              .strokeColor(colors.line)
-              .stroke();
-          }
-          doc
-            .moveTo(left + columnWidth, rowY + 10)
-            .lineTo(left + columnWidth, rowY + height - 10)
-            .lineWidth(0.5)
-            .strokeColor(colors.line)
-            .stroke();
-          row.forEach(([label, value], column) => {
-            const x = left + column * columnWidth + 13;
-            text(label, x, rowY + 9, innerWidth, 7.2, false, colors.muted);
-            text(value, x, rowY + 23, innerWidth, 9, true);
-          });
-          rowY += height;
+        text(title, innerLeft, titleTop, innerWidth, 15, true);
+        text(
+          subtitle,
+          innerLeft,
+          subtitleTop,
+          innerWidth,
+          8.5,
+          false,
+          colors.muted,
+        );
+        y += panelHeight + 10;
+      }
+
+      function valueRow(
+        label: string,
+        value: string,
+        strong = false,
+        highlighted = false,
+      ) {
+        const labelWidth = width - 180;
+        const rowHeight = Math.max(
+          highlighted ? 38 : 28,
+          measure(label, labelWidth, highlighted ? 10 : 8.5, strong) + 14,
+        );
+        ensure(rowHeight);
+        if (highlighted)
+          doc.roundedRect(left, y, width, rowHeight, 6).fill(colors.pale);
+        text(
+          label,
+          left + (highlighted ? 12 : 2),
+          y + (highlighted ? 12 : 8),
+          labelWidth - (highlighted ? 10 : 0),
+          highlighted ? 10 : 8.5,
+          strong,
+          highlighted ? colors.purple : colors.ink,
+        );
+        text(
+          value,
+          left + width - 170,
+          y + (highlighted ? 11 : 8),
+          highlighted ? 158 : 168,
+          highlighted ? 11 : 8.5,
+          true,
+          highlighted ? colors.purple : colors.ink,
+          "right",
+        );
+        y += rowHeight;
+      }
+
+      function incomingValueSummary() {
+        if (!report.incomingValueEntries.length) return;
+
+        const estimatedHeight =
+          250 + report.incomingValueEntries.length * 29;
+        const availablePageHeight = bottom - 94;
+        if (estimatedHeight <= availablePageHeight && y + estimatedHeight > bottom)
+          newPage();
+        else if (estimatedHeight > availablePageHeight) ensure(250);
+
+        y += 8;
+        sectionHeading(
+          "Lagervärde",
+          "Totalt varuvärde består av det inventerade lagervärdet och manuellt registrerade inkommande värden.",
+        );
+
+        ensure(46);
+        doc
+          .roundedRect(left, y, width, 36, 6)
+          .fillAndStroke(colors.soft, colors.line);
+        text(
+          "Inventerat lagervärde",
+          left + 12,
+          y + 11,
+          width - 194,
+          9,
+          true,
+        );
+        text(
+          formatSek(BigInt(report.summary.countedValueUnits)),
+          left + width - 170,
+          y + 10,
+          158,
+          9.5,
+          true,
+          colors.ink,
+          "right",
+        );
+        y += 48;
+
+        ensure(42);
+        text(
+          "Inkommande varuvärde",
+          left + 2,
+          y,
+          width - 174,
+          10,
+          true,
+        );
+        text(
+          "Manuellt registrerade poster",
+          left + 2,
+          y + 17,
+          width - 174,
+          7.5,
+          false,
+          colors.muted,
+        );
+        y += 34;
+
+        for (const entry of report.incomingValueEntries) {
+          ensure(29);
+          doc.roundedRect(left, y, width, 25, 4).fill(colors.soft);
+          text(entry.label, left + 12, y + 8, width - 194, 8.5);
+          text(
+            formatSek(BigInt(entry.amountUnits)),
+            left + width - 170,
+            y + 8,
+            158,
+            8.5,
+            true,
+            colors.ink,
+            "right",
+          );
+          y += 29;
         }
-        y += panelHeight + 12;
-      }
 
-      function metricCards(items: [string, string][]) {
-        ensure(62);
-        const gap = 10;
-        const cardWidth = (width - gap * (items.length - 1)) / items.length;
-        items.forEach(([label, value], index) => {
-          const x = left + index * (cardWidth + gap);
-          doc
-            .roundedRect(x, y, cardWidth, 52, 7)
-            .fillAndStroke(colors.pale, colors.line);
-          text(label, x + 12, y + 8, cardWidth - 24, 7.5, false, colors.muted);
-          let valueSize = 15;
-          doc.font("bold");
-          while (valueSize > 9) {
-            doc.fontSize(valueSize);
-            if (doc.widthOfString(value) <= cardWidth - 24) break;
-            valueSize -= 0.5;
-          }
-          text(value, x + 12, y + 23, cardWidth - 24, valueSize, true);
-        });
-        y += 62;
-      }
-
-      function resultBanner() {
-        const hasDiscrepancies = report.summary.discrepancies > 0;
-        const background = hasDiscrepancies ? colors.redPale : colors.greenPale;
-        const accent = hasDiscrepancies ? colors.red : colors.green;
-        const title = hasDiscrepancies
-          ? quantityLabel(
-              report.summary.discrepancies,
-              "rad med avvikelse",
-              "rader med avvikelse",
-            )
-          : "Inga avvikelser registrerade";
-        const description = hasDiscrepancies
-          ? "Nettodifferens " + signed(report.summary.difference) + " st"
-          : "Räknat antal överensstämmer med förväntat antal.";
-        ensure(58);
-        doc.roundedRect(left, y, width, 48, 7).fill(background);
-        doc.roundedRect(left, y, 4, 48, 2).fill(accent);
-        text(title, left + 16, y + 9, width - 32, 10, true, accent);
-        text(description, left + 16, y + 27, width - 32, 8, false, accent);
-        y += 60;
+        ensure(79);
+        line(y + 1);
+        y += 5;
+        valueRow(
+          "Summa inkommande",
+          formatSek(BigInt(report.summary.incomingValueUnits)),
+          true,
+        );
+        y += 5;
+        valueRow(
+          "Totalt varuvärde",
+          formatSek(BigInt(report.summary.totalGoodsValueUnits)),
+          true,
+          true,
+        );
+        y += 8;
       }
 
       doc.addPage();
       header(true);
-      y += text(report.name, left, y, width, 18, true) + 5;
-      y +=
-        text(
-          "Slutförd inventering · " + report.warehouseName,
-          left,
-          y,
-          width,
-          8.5,
-          false,
-          colors.muted,
-        ) + 12;
-      facts([
-        ["Startad", date(report.startedAt) + " · " + report.startedBy],
-        ["Slutförd", date(report.completedAt) + " · " + report.completedBy],
-      ]);
-
-      resultBanner();
-      metricCards([
-        ["Förväntat antal", amount(report.summary.expected) + " st"],
-        ["Räknat antal", amount(report.summary.counted) + " st"],
-        ["Räknat värde", formatSek(BigInt(report.summary.countedValueUnits))],
-        [
-          "Värdedifferens",
-          formatSignedSek(report.summary.valueDifferenceUnits),
-        ],
-      ]);
-      y +=
-        text(
-          "Omfattning: " +
-            quantityLabel(report.summary.places, "lagerplats", "lagerplatser") +
-            "  –  " +
-            quantityLabel(
-              report.summary.products,
-              "unik produkt",
-              "unika produkter",
-            ) +
-            "  –  " +
-            quantityLabel(report.summary.rows, "räknad rad", "räknade rader"),
-          left,
-          y,
-          width,
-          8.5,
-          false,
-          colors.muted,
-        ) + 5;
-      y +=
-        text(
-          "Fördelning: Överskott " +
-            signed(report.summary.surplus) +
-            " st  –  Underskott " +
-            signed(report.summary.shortage) +
-            " st  –  " +
-            quantityLabel(
-              report.summary.emptyPlaces,
-              "tom lagerplats",
-              "tomma lagerplatser",
-            ),
-          left,
-          y,
-          width,
-          8,
-          false,
-          colors.muted,
-        ) + 5;
-      y +=
-        text(
-          report.summary.productsWithoutValue === 0
-            ? "Värdering: Räknat lagervärde " +
-                formatSek(BigInt(report.summary.countedValueUnits)) +
-                "  –  Värdedifferens " +
-                formatSignedSek(report.summary.valueDifferenceUnits)
-            : "Värdering: " +
-                quantityLabel(
-                  report.summary.productsWithoutValue,
-                  "produkt saknar styckvärde",
-                  "produkter saknar styckvärde",
-                ) +
-                " och ingår inte i värdekolumnernas total.",
-          left,
-          y,
-          width,
-          8,
-          false,
-          report.summary.productsWithoutValue > 0
-            ? colors.purple
-            : BigInt(report.summary.valueDifferenceUnits) < BigInt(0)
-              ? colors.red
-              : BigInt(report.summary.valueDifferenceUnits) > BigInt(0)
-                ? colors.green
-                : colors.muted,
-        ) + 10;
+      reportIntro();
       if (report.currentCompanyName) {
         ensure(36);
         doc.roundedRect(left, y, width, 30, 5).fill(colors.soft);
@@ -378,9 +390,9 @@ export async function renderInventoryReport(
         y += 40;
       }
 
-      y += 9;
+      y += 3;
       ensure(118);
-      heading(
+      sectionHeading(
         "Inventerade lagerplatser",
         "Alla registrerade produktrader visas, även de utan avvikelse. Antal anges i styck.",
       );
@@ -425,21 +437,21 @@ export async function renderInventoryReport(
       }
 
       function tableHeader() {
-        doc.rect(left, y, width, 25).fill(colors.pale);
+        doc.rect(left, y, width, 29).fill(colors.pale);
         headers.forEach((label, index) => {
           const numeric = index >= 3;
-          text(
+          fittedText(
             label,
             colX[index] + 5,
-            y + 7,
+            y + 9,
             colWidths[index] - 10,
-            5.4,
+            6.2,
             true,
             colors.purple,
             numeric ? "right" : "left",
           );
         });
-        y += 25;
+        y += 29;
       }
 
       type ReportPlace = InventoryReport["places"][number];
@@ -462,12 +474,12 @@ export async function renderInventoryReport(
         const { place, row } = entry;
         const rowHeight = row
           ? Math.max(
-              25,
-              measure(place.code, colWidths[0] - 12, 6.4, true) + 12,
-              measure(row.name, colWidths[1] - 12, 6.4, true) + 12,
-              measure(row.sku, colWidths[2] - 12, 5.8, true) + 12,
+              29,
+              measure(place.code, colWidths[0] - 12, 7, true) + 14,
+              measure(row.name, colWidths[1] - 12, 7.2, true) + 14,
+              measure(row.sku, colWidths[2] - 12, 6.4, true) + 14,
             )
-          : 25;
+          : 29;
         if (y + rowHeight > bottom) {
           newPage();
           tableHeader();
@@ -480,18 +492,32 @@ export async function renderInventoryReport(
             .fill(row.difference < 0 ? colors.red : colors.green);
         }
 
-        text(place.code, colX[0] + 6, y + 7, colWidths[0] - 12, 6.4, true);
-        text(
+        fittedText(
+          place.code,
+          colX[0] + 6,
+          y + 9,
+          colWidths[0] - 12,
+          7,
+          true,
+        );
+        fittedText(
           row?.name ?? "Tom lagerplats",
           colX[1] + 6,
-          y + 7,
+          y + 9,
           colWidths[1] - 12,
-          6.4,
+          7.2,
           Boolean(row),
           row ? colors.ink : colors.green,
         );
         if (row) {
-          text(row.sku, colX[2] + 6, y + 7, colWidths[2] - 12, 5.8, true);
+          fittedText(
+            row.sku,
+            colX[2] + 6,
+            y + 9,
+            colWidths[2] - 12,
+            6.4,
+            true,
+          );
         }
 
         const values = row
@@ -518,9 +544,9 @@ export async function renderInventoryReport(
           fittedText(
             value,
             colX[columnIndex] + 5,
-            y + 7,
+            y + 9,
             colWidths[columnIndex] - 10,
-            5.8,
+            6.6,
             Boolean(row) && (columnIndex < 5 || isDifference),
             isDifference && difference < BigInt(0)
               ? colors.red
@@ -538,33 +564,40 @@ export async function renderInventoryReport(
       }
       y += 14;
 
-      heading(
+      incomingValueSummary();
+
+      ensure(report.signature ? 225 : 190);
+      sectionHeading(
         "Signering",
-        "Inventeringen signerades i samband med att den genomfördes.",
+        report.signature
+          ? "Digital signatur, namnförtydligande och inventeringens tidpunkter."
+          : "Tidsuppgifter för inventeringen. Digital signatur saknas i det äldre underlaget.",
       );
       if (report.signature) {
-        ensure(112);
+        ensure(142);
         const panelTop = y;
-        const panelHeight = 98;
+        const panelHeight = 128;
         const signatureWidth = 230;
+        const detailsX = left + signatureWidth + 16;
+        const detailsWidth = width - signatureWidth - 32;
         doc
           .roundedRect(left, panelTop, width, panelHeight, 7)
           .fillAndStroke(colors.soft, colors.line);
         doc.image(report.signature.image, left + 15, panelTop + 12, {
-          fit: [signatureWidth - 30, 52],
+          fit: [signatureWidth - 30, 62],
           align: "center",
           valign: "center",
         });
         doc
-          .moveTo(left + 15, panelTop + 69)
-          .lineTo(left + signatureWidth - 15, panelTop + 69)
+          .moveTo(left + 15, panelTop + 82)
+          .lineTo(left + signatureWidth - 15, panelTop + 82)
           .lineWidth(0.5)
           .strokeColor(colors.line)
           .stroke();
         text(
           "Signatur",
           left + 15,
-          panelTop + 76,
+          panelTop + 90,
           signatureWidth - 30,
           7,
           false,
@@ -578,54 +611,93 @@ export async function renderInventoryReport(
           .stroke();
         text(
           "Namnförtydligande",
-          left + signatureWidth + 16,
-          panelTop + 17,
-          width - signatureWidth - 32,
+          detailsX,
+          panelTop + 12,
+          detailsWidth,
           7,
           false,
           colors.muted,
         );
-        text(
+        fittedText(
           report.signature.signerName,
-          left + signatureWidth + 16,
-          panelTop + 32,
-          width - signatureWidth - 32,
+          detailsX,
+          panelTop + 25,
+          detailsWidth,
           10,
           true,
         );
         text(
-          "Signerad",
-          left + signatureWidth + 16,
-          panelTop + 57,
-          width - signatureWidth - 32,
+          "Startad",
+          detailsX,
+          panelTop + 48,
+          detailsWidth,
           7,
           false,
           colors.muted,
         );
+        fittedText(
+          date(report.startedAt),
+          detailsX,
+          panelTop + 61,
+          detailsWidth,
+          8,
+          true,
+        );
         text(
+          "Signerad",
+          detailsX,
+          panelTop + 84,
+          detailsWidth,
+          7,
+          false,
+          colors.muted,
+        );
+        fittedText(
           date(report.signature.signedAt),
-          left + signatureWidth + 16,
-          panelTop + 72,
-          width - signatureWidth - 32,
-          8.5,
+          detailsX,
+          panelTop + 97,
+          detailsWidth,
+          8,
           true,
         );
         y += panelHeight + 14;
       } else {
-        ensure(54);
+        ensure(108);
+        const panelTop = y;
+        const panelHeight = 94;
+        const columnWidth = width / 2;
         doc
-          .roundedRect(left, y, width, 42, 7)
+          .roundedRect(left, panelTop, width, panelHeight, 7)
           .fillAndStroke(colors.soft, colors.line);
         text(
           "Digital signatur saknas i underlaget för denna äldre inventering.",
           left + 13,
-          y + 14,
+          panelTop + 12,
           width - 26,
           8,
           false,
           colors.muted,
         );
-        y += 54;
+        line(panelTop + 36);
+        text("Startad", left + 13, panelTop + 49, columnWidth - 26, 7, false, colors.muted);
+        fittedText(
+          date(report.startedAt) + " · " + report.startedBy,
+          left + 13,
+          panelTop + 64,
+          columnWidth - 26,
+          8,
+          true,
+        );
+        text("Slutförd", left + columnWidth + 13, panelTop + 49, columnWidth - 26, 7, false, colors.muted);
+        fittedText(
+          date(report.completedAt) + " · " + report.completedBy,
+          left + columnWidth + 13,
+          panelTop + 64,
+          columnWidth - 26,
+          8,
+          true,
+        );
+        y += panelHeight + 14;
       }
 
       const details = report.companyDetails;

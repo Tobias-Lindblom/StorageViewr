@@ -146,6 +146,18 @@ export async function getInventoryReport(context: TenantContext, id: string) {
       valueDifferenceUnits: string;
     } => row.unitValue !== null,
   );
+  const incomingValueEntries = (inventory.incomingValueEntries ?? []).map(
+    (entry) => ({
+      label: entry.label,
+      amountUnits: entry.amountUnits,
+    }),
+  );
+  const countedValueUnits = sum(
+    valuedRows.map((row) => row.countedValueUnits),
+  );
+  const incomingValueUnits = sum(
+    incomingValueEntries.map((entry) => entry.amountUnits),
+  );
 
   return {
     id: String(inventory._id),
@@ -170,6 +182,7 @@ export async function getInventoryReport(context: TenantContext, id: string) {
             signedAt: inventory.completionSignedAt.toISOString(),
           }
         : null,
+    incomingValueEntries,
     places,
     summary: {
       places: places.length,
@@ -192,7 +205,11 @@ export async function getInventoryReport(context: TenantContext, id: string) {
           .map((row) => row.productId),
       ).size,
       expectedValueUnits: sum(valuedRows.map((row) => row.expectedValueUnits)),
-      countedValueUnits: sum(valuedRows.map((row) => row.countedValueUnits)),
+      countedValueUnits,
+      incomingValueUnits,
+      totalGoodsValueUnits: (
+        BigInt(countedValueUnits) + BigInt(incomingValueUnits)
+      ).toString(),
       valueDifferenceUnits: sum(
         valuedRows.map((row) => row.valueDifferenceUnits),
       ),
