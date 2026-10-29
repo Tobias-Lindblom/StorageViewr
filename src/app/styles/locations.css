@@ -1,0 +1,113 @@
+/* Flat location cards mirror the mobile location list reference. */
+.location-card-list { display: grid; gap: 7px; list-style: none; margin: 0; padding: 0; }
+.location-card { display: flex; align-items: flex-start; gap: 10px; min-width: 0; min-height: 86px; padding: 10px; border: 1px solid color-mix(in srgb, var(--color-line) 45%, transparent); border-radius: 9px; background: linear-gradient(110deg, color-mix(in srgb, var(--color-surface) 90%, var(--color-canvas)), color-mix(in srgb, var(--color-surface) 55%, var(--color-canvas))); transition: border-color 150ms ease, background-color 150ms ease; }
+.location-card:hover { border-color: color-mix(in srgb, var(--color-accent) 55%, var(--color-line)); background: var(--color-surface-raised); }
+.location-card-marker { display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 38px; height: 44px; margin-top: 1px; border-radius: 7px; background: var(--color-surface-raised); color: var(--color-accent); }
+.location-card-identity { min-width: 0; flex: 1; }
+.location-card-code { display: block; font-size: 14px; line-height: 1.3; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.location-card-warehouse { display: block; margin-top: 3px; color: var(--color-muted); font-size: 11px; line-height: 1.35; overflow-wrap: anywhere; }
+.location-card-stats { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+.location-card-stats > span { min-width: 0; max-width: 100%; padding: 2px 7px; border: 1px solid color-mix(in srgb, var(--color-line) 55%, transparent); border-radius: 10px; background: var(--color-surface-raised); color: var(--color-muted); font-size: 10px; line-height: 1.3; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.location-occupancy-badge { flex-shrink: 0; min-width: 64px; margin-top: 1px; padding: 3px 7px; border: 1px solid var(--color-line); border-radius: 12px; text-align: center; font-size: 10px; line-height: 1.25; }
+.location-occupancy-badge.is-occupied { color: var(--color-success); border-color: color-mix(in srgb, var(--color-success) 35%, var(--color-line)); background: color-mix(in srgb, var(--color-success) 12%, var(--color-surface)); }
+.location-occupancy-badge.is-empty { color: var(--color-muted); background: var(--color-surface-raised); }
+.location-occupancy-badge.is-inactive { color: var(--color-warning); border-color: color-mix(in srgb, var(--color-warning) 30%, var(--color-line)); background: color-mix(in srgb, var(--color-warning) 8%, var(--color-surface)); }
+.location-tools-link { display: inline-flex; align-items: center; justify-content: flex-start; gap: 8px; min-height: 44px; color: var(--color-accent); font-size: 12px; text-align: left; }
+.location-tools-link:hover { color: var(--color-foreground); }
+@media (max-width: 359px) {
+  .location-card { gap: 8px; padding: 9px; }
+  .location-card-code { font-size: 13px; }
+  .location-card-marker { width: 34px; height: 40px; }
+  .location-occupancy-badge { min-width: 57px; padding-inline: 5px; }
+}
+@media (min-width: 1024px) {
+  .location-card { min-height: 92px; padding: 12px; }
+  .location-card-code { font-size: 15px; }
+}
+@media (min-width: 1280px) {
+  .location-card-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+}
+
+/* Location detail follows the compact physical stock reference. */
+.location-detail { padding: 0 0 12px; }
+.location-detail-header { margin-bottom: 12px; }
+.location-detail-identity-row { display: flex; align-items: flex-start; gap: 10px; }
+.location-detail-marker { display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 42px; height: 44px; border-radius: 7px; background: var(--color-surface-raised); color: var(--color-accent); }
+.location-detail-identity { min-width: 0; flex: 1; }
+.location-detail-identity h1 { margin: 0 0 4px; font-size: 22px; line-height: 1.25; font-weight: 700; overflow-wrap: anywhere; }
+.location-detail-identity p { color: var(--color-muted); font-size: 12px; line-height: 1.4; overflow-wrap: anywhere; }
+.location-edit-action { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; min-height: 36px; padding: 0 8px; border: 1px solid color-mix(in srgb, var(--color-accent) 45%, var(--color-line)); border-radius: 7px; background: var(--color-surface); color: var(--color-accent); font-size: 11px; }
+.location-edit-action:hover { background: var(--color-surface-raised); }
+.location-detail-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+.location-detail-tags > div { display: inline-flex; align-items: center; gap: 4px; min-height: 22px; padding: 3px 8px; border: 1px solid color-mix(in srgb, var(--color-line) 70%, transparent); border-radius: 12px; background: var(--color-surface-raised); color: var(--color-muted); font-size: 10px; line-height: 1.2; overflow-wrap: anywhere; }
+.location-detail-tags > div.is-inactive { color: var(--color-warning); }
+.location-summary { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; padding: 10px; border: 1px solid color-mix(in srgb, var(--color-line) 55%, transparent); border-radius: 9px; background: linear-gradient(115deg, var(--color-surface), color-mix(in srgb, var(--color-surface) 55%, var(--color-canvas))); }
+.location-summary > dl { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.location-summary > dl + dl { padding-left: 10px; border-left: 1px solid color-mix(in srgb, var(--color-line) 50%, transparent); }
+.location-summary > dl > dd { min-width: 0; }
+.location-summary .product-summary-icon, .location-verification .product-summary-icon { width: 34px; height: 36px; }
+.location-summary dd { font-size: 16px; line-height: 1.3; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.location-summary dt { flex-shrink: 0; }
+.location-summary dd > strong { display: block; font-weight: 400; }
+.location-summary dd > span { display: block; margin-top: 2px; color: var(--color-muted); font-size: 10px; line-height: 1.3; }
+.location-verification { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 82px; margin-top: 9px; padding: 10px; border: 1px solid color-mix(in srgb, var(--color-line) 55%, transparent); border-radius: 9px; background: linear-gradient(115deg, var(--color-surface), color-mix(in srgb, var(--color-surface) 55%, var(--color-canvas))); text-align: left; }
+.location-verification:hover { border-color: color-mix(in srgb, var(--color-accent) 40%, var(--color-line)); }
+.location-verification-body { flex: 1; min-width: 0; }
+.location-verification-title { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 5px; color: var(--color-muted); font-size: 10px; }
+.location-verification-badge { display: inline-flex; align-items: center; padding: 2px 8px; border: 1px solid var(--color-line); border-radius: 12px; background: var(--color-surface-raised); font-size: 10px; }
+.location-verification-badge.is-verified { border-color: color-mix(in srgb, var(--color-success) 35%, var(--color-line)); background: color-mix(in srgb, var(--color-success) 12%, var(--color-surface)); color: var(--color-success); }
+.location-verification-badge.needs-counting { border-color: color-mix(in srgb, var(--color-warning) 30%, var(--color-line)); color: var(--color-warning); }
+.location-verification time, .location-verification-none { display: block; margin-top: 3px; font-size: 12px; line-height: 1.4; }
+.location-verification-note { display: block; margin-top: 3px; color: var(--color-muted); font-size: 10px; line-height: 1.4; overflow-wrap: anywhere; }
+.location-stock-section { margin-top: 12px; min-width: 0; }
+.location-stock-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 5px; min-height: 36px; }
+.location-stock-heading h2 { margin: 0; font-size: 14px; line-height: 1.3; font-weight: 700; }
+.location-place-button { display: inline-flex; align-items: center; min-height: 36px; padding-left: 8px; color: var(--color-accent); font-size: 11px; }
+.location-product-list { margin: 0; padding: 0; list-style: none; border: 1px solid color-mix(in srgb, var(--color-line) 45%, transparent); border-radius: 8px; background: linear-gradient(110deg, var(--color-surface), color-mix(in srgb, var(--color-surface) 55%, var(--color-canvas))); overflow: hidden; }
+.location-product-list > li + li { border-top: 1px solid color-mix(in srgb, var(--color-line) 55%, transparent); }
+.location-product-row { display: flex; align-items: center; gap: 9px; min-width: 0; min-height: 58px; padding: 6px; }
+.location-product-row:hover { background: #ffffff04; }
+.location-product-photo { display: flex; flex-shrink: 0; width: 42px; height: 42px; border: 0; border-radius: 5px; background: var(--color-surface-raised); object-fit: cover; object-position: center; }
+.location-product-photo.product-photo-placeholder { background: var(--color-surface-raised); }
+.location-product-identity { min-width: 0; flex: 1; }
+.location-product-identity > span:first-child { display: block; font-size: 13px; line-height: 1.3; overflow-wrap: anywhere; }
+.location-product-identity > span:last-child { display: block; margin-top: 4px; color: var(--color-muted); font-size: 10px; line-height: 1.3; overflow-wrap: anywhere; }
+.location-product-quantity { flex-shrink: 0; max-width: 35%; font-size: 13px; font-weight: 400; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.location-product-quantity.is-empty { color: var(--color-destructive); }
+.location-product-row:hover .location-product-quantity:not(.is-empty) { color: var(--color-cyan); }
+.location-quick-actions { margin-top: 16px; }
+.location-quick-actions > h3 { margin: 0 0 8px; font-size: 14px; font-weight: 700; }
+.location-inventory-block { margin-bottom: 8px; }
+.location-inventory-action { display: inline-flex; align-items: center; justify-content: center; gap: 7px; width: 100%; min-height: 44px; padding: 8px 10px; border: 1px solid var(--border-active); border-radius: 7px; background: var(--brand-gradient); box-shadow: inset 0 1px 0 #ffffff20; color: white; font-size: 12px; }
+.location-inventory-action:hover { filter: brightness(1.1); }
+.location-inventory-note { color: var(--color-muted); font-size: 11px; line-height: 1.6; }
+.location-detail .quick-action { display: flex; flex-direction: row; gap: 5px; min-height: 44px; padding: 6px 3px; border-radius: 7px; font-size: 11px; font-weight: 400; }
+.location-detail .quick-action svg { width: 17px; height: 17px; }
+.location-detail .dashboard-activity { margin-top: 12px; }
+.location-detail .dashboard-section-heading h2 { font-size: 14px; }
+.location-detail .activity-row { grid-template-columns: 30px minmax(0, 1fr) 91px; min-height: 43px; gap: 8px; }
+.location-detail .activity-row time { font-size: 10px; }
+.location-delete-menu > button { display: flex; align-items: center; justify-content: flex-start; gap: 8px; width: 100%; min-height: 44px; padding: 0 10px; border-radius: 7px; color: var(--color-destructive); font-size: 12px; text-align: left; }
+.location-delete-menu > button:hover { background: color-mix(in srgb, var(--color-destructive) 8%, var(--color-surface)); }
+@media (max-width: 359px) {
+  .location-detail-identity-row { gap: 8px; }
+  .location-detail-identity h1 { font-size: 20px; }
+  .location-detail-marker { width: 36px; height: 40px; }
+  .location-edit-action { padding: 0 6px; font-size: 10px; }
+  .location-summary { padding: 8px; gap: 8px; }
+  .location-summary > dl { gap: 7px; }
+  .location-summary > dl + dl { padding-left: 8px; }
+  .location-verification { padding: 8px; gap: 8px; }
+  .location-product-row { gap: 7px; }
+  .location-product-photo { width: 36px; height: 36px; }
+  .location-product-identity > span:first-child { font-size: 12px; }
+  .location-product-quantity { font-size: 12px; }
+  .location-detail .activity-row { grid-template-columns: 26px minmax(0, 1fr) 81px; gap: 6px; }
+}
+@media (min-width: 1024px) {
+  .location-detail-identity h1 { font-size: 28px; }
+  .location-summary, .location-verification { max-width: 620px; }
+  .location-stock-section { margin-top: 18px; }
+  .location-product-row { min-height: 66px; padding: 8px; }
+  .location-product-identity > span:first-child { font-size: 14px; }
+}

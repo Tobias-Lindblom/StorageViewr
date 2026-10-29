@@ -1,0 +1,39 @@
+/* Compact destinations in the mobile More panel. */
+.navigation-sheet { width: min(100%, 480px); max-height: 80dvh; border-radius: 22px 22px 0 0; border-color: color-mix(in srgb, var(--color-accent) 25%, var(--color-line)); background: linear-gradient(145deg, var(--color-surface), var(--color-canvas) 85%); }
+.navigation-sheet .bottom-sheet-header { padding-inline: 16px; background: transparent; }
+.navigation-sheet .bottom-sheet-handle { min-height: 28px; }
+.navigation-sheet .bottom-sheet-handle > span { width: 38px; height: 4px; }
+.navigation-sheet .bottom-sheet-heading-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 2px 12px; }
+.navigation-sheet .bottom-sheet-heading-row h2 { padding: 0; border: 0; font-size: 20px; line-height: 1.3; font-weight: 700; letter-spacing: -0.3px; }
+.navigation-sheet .bottom-sheet-content { padding: 0 16px max(20px,env(safe-area-inset-bottom)); }
+.more-navigation { display: grid; gap: 7px; }
+.more-navigation-row { display: flex; align-items: center; gap: 11px; min-height: 66px; min-width: 0; padding: 10px; border: 1px solid color-mix(in srgb, var(--color-line) 45%, transparent); border-radius: 9px; background: linear-gradient(110deg, var(--color-surface), color-mix(in srgb, var(--color-surface) 55%, var(--color-canvas))); color: var(--color-foreground); }
+.more-navigation-row:hover, .more-navigation-row[aria-current="page"] { border-color: color-mix(in srgb, var(--color-accent) 45%, var(--color-line)); background: color-mix(in srgb, var(--color-accent) 6%, var(--color-surface)); }
+.more-navigation-icon { display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 36px; height: 40px; border-radius: 7px; background: var(--color-surface-raised); color: var(--color-accent); }
+.more-navigation-text { display: grid; flex: 1; min-width: 0; gap: 4px; }
+.more-navigation-text > span:first-child { font-size: 14px; line-height: 1.3; font-weight: 700; }
+.more-navigation-text > span + span { font-size: 11px; line-height: 1.4; color: var(--color-muted); overflow-wrap: anywhere; }
+.more-navigation-arrow { flex-shrink: 0; color: var(--color-muted); }
+.more-navigation-row[aria-current="page"] .more-navigation-arrow { color: var(--color-accent); }
+
+/* Profile details and settings use the same compact palette as the workspace. */
+.profile-menu-trigger { display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 12px; }
+.profile-menu-trigger:hover .header-avatar, .profile-menu-trigger[aria-expanded="true"] .header-avatar { border-color: var(--color-accent); }
+.profile-menu { position: absolute; top: 100%; right: 0; z-index: 50; width: min(288px,calc(100vw - 32px)); max-height: calc(100dvh - 80px); margin-top: 6px; overflow-y: auto; overscroll-behavior: contain; padding: 8px; border: 1px solid color-mix(in srgb, var(--color-accent) 20%, var(--color-line)); border-radius: 12px; background: linear-gradient(145deg,var(--color-surface),color-mix(in srgb,var(--color-surface) 65%,var(--color-canvas))); box-shadow: 0 14px 36px #0009; }
+.profile-menu-identity { display: flex; align-items: center; gap: 9px; min-width: 0; padding: 8px 6px 11px; }
+.profile-menu-text { display: grid; flex: 1; min-width: 0; gap: 3px; }
+.profile-menu-text strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; line-height: 1.3; font-weight: 700; }
+.profile-menu-text > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--color-muted); font-size: 11px; line-height: 1.4; }
+.profile-menu-row { display: flex; align-items: center; gap: 9px; width: 100%; min-height: 44px; min-width: 0; padding: 6px; border-radius: 7px; color: var(--color-foreground); font-size: 12px; font-weight: 400; line-height: 1.4; text-align: left; }
+.profile-menu-row:hover { background: var(--color-surface-raised); }
+.profile-menu-row > span:nth-child(2) { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.profile-menu-icon { display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 32px; height: 32px; border-radius: 7px; background: var(--color-surface-raised); color: var(--color-accent); }
+.profile-menu-arrow { flex-shrink: 0; margin-left: auto; color: var(--color-muted); }
+.profile-menu-section { margin-top: 7px; padding-top: 7px; border-top: 1px solid color-mix(in srgb,var(--color-line) 55%,transparent); }
+.profile-menu-caption { padding: 3px 6px 1px; color: var(--color-muted); font-size: 10px; line-height: 1.4; }
+.profile-menu-company { padding-block: 7px; }
+.profile-menu-company strong { font-size: 13px; }
+.profile-menu-logout { color: var(--color-destructive); }
+.profile-menu-logout > svg { flex-shrink: 0; width: 32px; height: 32px; padding: 7px; border-radius: 7px; background: color-mix(in srgb,var(--color-destructive) 8%,var(--color-surface)); }
+.profile-menu-logout:hover { background: color-mix(in srgb,var(--color-destructive) 8%,var(--color-surface)); }
+.profile-menu-logout:disabled { opacity: 0.6; }

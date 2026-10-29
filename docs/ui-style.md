@@ -7,10 +7,17 @@ scrollmodellen redan var stabila. De tydligaste bristerna var ett för litet
 färgsystem, många hårdkodade gradienter, varierande radier och kontrollhöjder,
 samt flera parallella varianter av listor, tomlägen och statusytor.
 
-Redesignen använder därför ett semantiskt lager i `globals.css`: tre
+Redesignen använder därför ett semantiskt lager med tokens i `globals.css`: tre
 yt-nivåer, subtil/normal/aktiv kant, primär/sekundär/dämpad text, tre
 radier och en kontrollhöjd på 48 px. Äldre feature-klasser pekar mot samma
 tokens så att visuella beslut inte behöver dupliceras i varje domän.
+
+`globals.css` innehåller endast imports, tokens, grundelement och utskriftsregler.
+Domänstilar ligger i `src/app/styles`: exempelvis `products.css`, `locations.css`,
+`inventory.css`, `dashboard.css` och `scanner.css`. Gemensamma ytor och färgregler
+ligger i `design-system.css`, `component-surfaces.css` och `semantic-colors.css`.
+Nya domänregler ska läggas i rätt modul och imports ska behålla ordningen där
+semantiska overrides kommer sist.
 
 Lila är reserverat för primära handlingar, aktiv navigation och vald status.
 Grönt, gult och rött används för semantisk återkoppling. Långa listor använder

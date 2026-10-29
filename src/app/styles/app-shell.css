@@ -1,0 +1,32 @@
+/* The document stays fixed. Only content regions own scrolling. */
+.app-shell, .viewport-page { position: relative; top: var(--app-viewport-top,0px); height: 100dvh; height: var(--app-visible-height,100dvh); min-height: 0; overflow: hidden; }
+.app-shell { display: flex; flex-direction: column; }
+.app-content, .viewport-page { min-height: 0; min-width: 0; overflow-y: auto; overscroll-behavior-y: contain; -webkit-overflow-scrolling: touch; }
+.app-content { flex: 1; }
+.viewport-page { scroll-behavior: smooth; padding-bottom: max(32px,env(safe-area-inset-bottom)); }
+.app-navigation { flex-shrink: 0; overscroll-behavior-y: contain; }
+.bottom-sheet { bottom: var(--app-keyboard-inset,0px); max-height: min(88dvh,52rem,var(--app-visible-height,100dvh)); }
+.bottom-sheet-header, .bottom-sheet-footer { flex-shrink: 0; }
+.bottom-sheet-content { overscroll-behavior-y: contain; }
+.scanner-sheet { max-height: min(96dvh,var(--app-visible-height,96dvh)); }
+.navigation-sheet { max-height: min(80dvh,var(--app-visible-height,80dvh)); }
+.scanner-camera { max-height: min(48dvh,440px,calc(var(--app-visible-height,100dvh) * 0.48)); }
+.profile-menu { max-height: calc(var(--app-visible-height,100dvh) - 80px - env(safe-area-inset-top)); overscroll-behavior-y: contain; }
+
+@media (max-width: 1023px) {
+  .workspace-header { min-height: calc(58px + env(safe-area-inset-top)); padding-top: env(safe-area-inset-top); padding-left: max(16px,env(safe-area-inset-left)); padding-right: max(16px,env(safe-area-inset-right)); }
+  .app-workspace .app-content { padding-left: max(16px,env(safe-area-inset-left)); padding-right: max(16px,env(safe-area-inset-right)); padding-bottom: max(32px,env(safe-area-inset-bottom)); }
+  .mobile-detail .app-content { padding-top: env(safe-area-inset-top); }
+  .mobile-dock { padding-left: max(6px,env(safe-area-inset-left)); padding-right: max(6px,env(safe-area-inset-right)); }
+  .bottom-sheet .bottom-sheet-header, .bottom-sheet .bottom-sheet-content, .bottom-sheet .bottom-sheet-footer { padding-left: max(20px,env(safe-area-inset-left)); padding-right: max(20px,env(safe-area-inset-right)); }
+  .navigation-sheet .bottom-sheet-header, .navigation-sheet .bottom-sheet-content { padding-left: max(16px,env(safe-area-inset-left)); padding-right: max(16px,env(safe-area-inset-right)); }
+}
+@media (hover: none) and (pointer: coarse) {
+  /* Preserve compact resting styles; 16px prevents iOS zoom when editing. */
+  input:focus, select:focus, textarea:focus { font-size: 16px !important; }
+}
+@media print {
+  html, body { position: static !important; inset: auto !important; width: auto; height: auto !important; overflow: visible !important; overscroll-behavior: auto; }
+  .app-shell, .viewport-page { top: 0; height: auto; overflow: visible; }
+  .app-content { overflow: visible; }
+}

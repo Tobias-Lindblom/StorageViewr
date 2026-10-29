@@ -16,7 +16,8 @@ medlemskap, säker tenant-kontext och organisationsinställningar. Inga påhitta
 - src/models: små Mongoose-modeller med infererade TypeScript-typer och explicita collections.
 - src/lib/server: anslutning, sessioner, tenant-kontext, API-fel, requestskydd och rate limiting.
 - src/validation: Zod för all extern input.
-- tests: integrationstester mot en isolerad MongoDB replica set.
+- tests: integrationstester mot en isolerad MongoDB replica set samt Playwright-flöden för
+  desktop, mobilprofil och tillgänglighet.
 
 ## Autentisering och tenant-gräns
 
@@ -102,9 +103,9 @@ men dess fysiska kontrollpunkt måste genomföras före publik lansering.
 
 ## Före publik lansering
 
-Fas 1 är en lokal utvecklingsgrund. E-postverifiering, lösenordsåterställning och inbjudningar
-behöver en vald e-postleverantör och byggs före publik lansering. Registrering kan inte användas
-för att ansluta till befintligt företag. IP-baserat skydd vid ingress bör komplettera databasens
+E-postverifiering och lösenordsåterställning behöver en vald e-postleverantör före publik
+lansering. Företagsinbjudningar med admin-/lagerroll är implementerade, men länken delas
+manuellt tills e-postleverans ansluts. IP-baserat skydd vid ingress bör komplettera databasens
 konto/global-begränsningar; lita aldrig på godtyckliga forwarded headers.
 
 ## Visuell riktning

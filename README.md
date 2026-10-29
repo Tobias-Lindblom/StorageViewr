@@ -27,7 +27,7 @@ Ursprungliga krav: [Kravspecifikation](docs/requirements.md).
 
 ## Kör lokalt
 1. Använd Node.js 22.13 eller senare, gärna aktuell LTS.
-2. Kör `npm install`.
+2. Kör `npm ci` för exakt samma beroenden som CI.
 3. Skapa `.env.local` från `.env.example` om du saknar en lokal fil.
 4. Ange `APP_URL`, `MONGODB_URI`, `MONGODB_DB` och `REGISTRATION_ENABLED`.
 5. Använd MongoDB Atlas eller lokal replica set; transaktioner krävs.
@@ -46,22 +46,25 @@ registreringen öppen i utveckling och stängd i produktion.
 2. Skapa lager med namn och unik kod.
 3. Öppna lagret och välj Ny lagerplats: zon A, sektion 01, första position 1, antal 10.
 4. Öppna en plats och följ QR-länken.
-5. Öppna lagerplatslistans filterpanel, välj QR-etiketter och skriv ut eller spara som PDF.
+5. Öppna lagrets QR-etiketter från lagerplatsvyn och skriv ut eller spara som PDF.
 6. Redigera platskod; länken är densamma, men etiketten behöver skrivas ut igen.
 
 För att skanna från en fysisk telefon måste APP_URL vara nåbar från telefonen.
 localhost på telefonen pekar på telefonen, inte din dator. Använd den konfigurerade
 adressen även i webbläsaren eftersom API:t verifierar Origin.
-Platsbaserad inventering finns i etapp 5. Kameraskanning finns i platsens räkningsruta; fysisk telefonverifiering återstår.
+Platsbaserad inventering och kameraskanning finns i samma räkningsflöde. Den fysiska
+kontrollen dokumenteras i [mobil verifiering](docs/mobile-verification.md).
 
 ## Verifiera
 - `npm run lint`
 - `npm run typecheck`
 - `npm test`
 - `npm run build`
+- `npm run test:e2e` (desktop, mobilprofil och tillgänglighet)
+- `npm audit --audit-level=moderate`
 - `npm start` efter build
 
-Integrationstester kör mot temporära replica sets, aldrig din vanliga databas.
+Integrationstester och webbläsartester kör mot temporära replica sets, aldrig din vanliga databas.
 Första körningen kan ladda ner MongoDB-testbinären. Testerna täcker autentisering,
 sessioner, tenant-isolering, roller, index, rollback, input och origin, rate limiting,
 QR-avgränsning, batchskapande och samtidiga lager-/platsändringar.
@@ -101,7 +104,9 @@ Alla verksamhetsfrågor, även referenser och QR-sökning, filtreras på organis
 Historiska objekt raderas inte. Ett lager med aktiva platser kan inte inaktiveras.
 
 ## Före publik lansering
-MVP:n är inte färdig. E-postverifiering, lösenordsåterställning och inbjudningar återstår.
+E-postverifiering och lösenordsåterställning återstår före publik lansering.
+Företagsinbjudningar och rollval är implementerade; en extern e-postleverans behöver kopplas
+på om inbjudningslänken ska skickas automatiskt i stället för att delas av administratören.
 Konto- och globala databasgränser bör kompletteras med IP-begränsning vid betrodd ingress.
 
 ## Referenser
@@ -136,15 +141,16 @@ Lagerarbetare kan räkna men kan inte starta eller avsluta inventeringar.
 Kameraskanning och manuell reservinmatning finns nu i räkningsrutan.
 
 ## Skanna vid inventering
-Öppna en plats i inventeringen. Rutan Räkna visar först Skanna platsens QR-kod.
-Material och antalsfält visas först när rätt platskod har verifierats.
+Öppna en plats i inventeringen. Kameran öppnas direkt för att verifiera platsens QR-kod.
+Material och antalsfält visas när rätt platskod har verifierats.
 Räkna sedan produkterna, ange antal och bekräfta. Koden måste matcha den valda platsen.
 Om kameran inte går att använda kan platskoden anges manuellt i samma ruta.
 Kameran behöver HTTPS eller localhost; en vanlig HTTP-adress på det lokala nätverket räcker inte.
 
 En QR-etikett som öppnas med telefonens kamera leder direkt till räkningen när platsen
 ingår i en pågående inventering. Vid flera pågående inventeringar får användaren välja.
-Test på fysisk telefon med utskrivna etiketter återstår.
+Fysisk telefon, kamera, rotation och utskrivna etiketter kontrolleras enligt
+[mobil verifiering](docs/mobile-verification.md).
 
 ## Ladda ner inventeringsrapport
 När inventeringen är avslutad väljer du Ladda ner PDF.

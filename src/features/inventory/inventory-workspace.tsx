@@ -11,9 +11,13 @@ import { InventorySignature } from "./inventory-signature";
 import { BaselineSummary } from "./baseline-summary";
 import { IncomingValueEditor, type IncomingValueDraft } from "./incoming-value-editor";
 import { IncomingValueSummary } from "./incoming-value-summary";
+import {
+  formatInventoryDate as date,
+  formatInventoryNumber as number,
+  inventoryDiscrepancyKey as discrepancyKey,
+} from "./inventory-format";
+import { CompletedInventoryPlace } from "./completed-inventory-place";
 
-const number = (value: number) => value.toLocaleString("sv-SE");
-const date = (value: string) => new Date(value).toLocaleDateString("sv-SE", { timeZone: "Europe/Stockholm", day: "numeric", month: "short", year: "numeric" });
 export function InventoryWorkspace({
   initial,
   admin,
@@ -52,7 +56,6 @@ export function InventoryWorkspace({
   const progress = data.places.length
     ? Math.round((data.counted / data.places.length) * 100)
     : 0;
-  const discrepancyKey = (productId: string, locationId: string) => productId + ":" + locationId;
   const allDiscrepanciesHandled = data.discrepancies.every(row =>
     Boolean(resolutions[discrepancyKey(row.productId, row.locationId)]));
   const place = data.places.find((row) => row.id === placeId);
@@ -180,32 +183,7 @@ export function InventoryWorkspace({
         </div>
         <ul className="inventory-place-list">
           {data.places.map(row => <li key={row.id}>
-            {completed ? <details className="inventory-place-details">
-              <summary className="inventory-place-row">
-                <span className="inventory-place-marker is-counted"><AppIcon name="verified" width={25} height={25} /></span>
-                <span className="inventory-place-identity">
-                  <span>{row.code}</span>
-                  <span>{row.rows.length} {row.rows.length === 1 ? "produkt" : "produkter"}{row.completedByName && " · " + row.completedByName}</span>
-                </span>
-                <span className="inventory-place-badge is-counted">Räknad</span>
-                <AppIcon name="chevron" width={15} height={15} className="inventory-place-arrow" />
-                <span className="sr-only">Visa räknade produkter</span>
-              </summary>
-              <div className="inventory-place-results">
-                {row.rows.length ? <ul>{row.rows.map(item => <li key={item.productId} className="inventory-result">
-                  <p>{item.productName}</p><span>SKU {item.sku}</span>
-                  <dl>
-                    <div><dt>Förväntat</dt><dd>{number(item.expectedQuantity)}</dd></div>
-                    <div><dt>Räknat</dt><dd>{number(item.countedQuantity ?? 0)}</dd></div>
-                    <div><dt>{data.establishesBaseline && item.expectedQuantity === 0 ? "Startsaldo" : "Avvikelse"}</dt><dd className={data.establishesBaseline && item.expectedQuantity === 0 ? "" : (item.difference ?? 0) < 0 ? "is-negative" : (item.difference ?? 0) > 0 ? "is-positive" : ""}>
-                      {data.establishesBaseline && item.expectedQuantity === 0
-                        ? number(item.countedQuantity ?? 0)
-                        : <>{(item.difference ?? 0) > 0 ? "+" : ""}{number(item.difference ?? 0)}</>}
-                    </dd></div>
-                  </dl>
-                </li>)}</ul> : <p>Platsen bekräftades som tom.</p>}
-              </div>
-            </details> : <button type="button" className="inventory-place-row" aria-haspopup="dialog"
+            {completed ? <CompletedInventoryPlace place={row} establishesBaseline={data.establishesBaseline} /> : <button type="button" className="inventory-place-row" aria-haspopup="dialog"
               onClick={() => openPlace(row.id)} data-state={row.stale ? "stale" : row.status}>
               <span className="inventory-place-marker"><AppIcon name="location" width={27} height={27}
                 fill="currentColor" strokeWidth={0} fillRule="evenodd" /></span>

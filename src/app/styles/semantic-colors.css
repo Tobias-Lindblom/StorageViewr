@@ -1,0 +1,189 @@
+/* Color hierarchy --------------------------------------------------------
+   Neutral is the resting state. Brand marks primary, active and selected
+   controls; semantic colors communicate operational state. */
+.button-secondary:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-2);
+}
+
+.mobile-nav-item:hover { color: var(--text-primary); }
+.mobile-nav-item.is-active,
+.mobile-nav-item.is-active:hover { color: var(--brand); }
+.mobile-nav-item[href="/products"]:not(.is-active) .nav-icon { color: inherit; }
+
+.nav-scanner {
+  border-width: 1px;
+  border-color: color-mix(in srgb, var(--brand) 45%, var(--border-default));
+  background: var(--surface-2);
+  color: var(--brand);
+  box-shadow: 0 0 0 3px var(--surface-0), 0 7px 20px rgb(0 0 0 / 0.34);
+}
+
+.dashboard-card-heading h2 > svg,
+.dashboard-section-heading h2 > svg { color: var(--icon-default); }
+.dashboard-health-heading h2 > svg { color: var(--brand); }
+.dashboard-card-heading > a,
+.dashboard-section-heading > a { color: var(--text-secondary); }
+.dashboard-card-heading > a:hover,
+.dashboard-section-heading > a:hover { color: var(--text-primary); }
+
+.action-primary {
+  border-color: color-mix(in srgb, var(--brand) 44%, var(--border-default));
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+.action-primary:hover { border-color: var(--border-active); background: color-mix(in srgb, var(--brand) 15%, var(--surface-2)); }
+.action-neutral,
+.quick-action-neutral { border-color: var(--border-default); background: var(--surface-1); color: var(--text-secondary); }
+.action-neutral:hover,
+.quick-action-neutral:hover { border-color: var(--border-strong); color: var(--text-primary); }
+.action-success,
+.quick-action-success { border-color: var(--border-default); background: var(--surface-1); color: var(--success); }
+
+.metric-neutral { color: var(--text-secondary); }
+.metric-inventory { color: var(--info); }
+
+.health-progress > span { background: var(--warning); }
+.health-details-summary > strong { color: var(--warning); }
+.health-tone-healthy .health-progress > span { background: var(--success); }
+.health-tone-healthy .health-score-row > strong,
+.health-details-summary.health-tone-healthy > strong { color: var(--success); }
+.health-tone-attention .health-progress > span { background: var(--warning); }
+.health-tone-attention .health-score-row > strong,
+.health-details-summary.health-tone-attention > strong { color: var(--warning); }
+.health-tone-critical .health-progress > span { background: var(--danger); }
+.health-tone-critical .health-score-row > strong,
+.health-details-summary.health-tone-critical > strong { color: var(--danger); }
+.health-tone-empty .health-progress > span { background: var(--text-muted); }
+.health-tone-empty .health-score-row > strong,
+.health-details-summary.health-tone-empty > strong { color: var(--text-secondary); }
+.health-progress > span { box-shadow: none; }
+.health-details-summary { background: var(--surface-2); }
+
+.dashboard-focus-icon {
+  background: var(--info-soft);
+  color: var(--info);
+}
+.dashboard-focus-action:hover { border-color: var(--border-strong); }
+.dashboard-overview-icon {
+  background: var(--surface-3);
+  color: var(--icon-default);
+}
+.dashboard-overview-icon.is-cyan,
+.dashboard-overview-icon.is-blue {
+  background: var(--info-soft);
+  color: color-mix(in srgb, var(--info) 78%, var(--text-primary));
+}
+.dashboard-overview-icon.is-violet,
+.dashboard-overview-icon.is-neutral {
+  background: var(--surface-3);
+  color: var(--icon-default);
+}
+.dashboard-overview-card:hover { background: var(--surface-2); }
+
+.product-filter-trigger,
+.location-filter-trigger {
+  border-color: var(--border-default);
+  color: var(--text-secondary);
+}
+.product-filter-trigger:hover,
+.location-filter-trigger:hover { border-color: var(--border-strong); color: var(--text-primary); }
+.product-filter-trigger:has(.product-filter-dot),
+.location-filter-trigger:has(.location-filter-dot) { border-color: var(--border-active); color: var(--brand); }
+
+.product-photo-placeholder,
+.product-summary-icon,
+.warehouse-card-marker,
+.inventory-card-marker,
+.inventory-detail-marker,
+.inventory-place-marker,
+.organization-avatar,
+.organization-empty-icon,
+.profile-menu-icon,
+.more-navigation-icon,
+.empty-state-icon,
+.system-state-icon {
+  border-color: var(--border-subtle);
+  background: var(--surface-2);
+  color: var(--icon-default);
+}
+.product-location-marker,
+.location-card-marker,
+.location-detail-marker {
+  background: var(--info-soft);
+  color: color-mix(in srgb, var(--info) 76%, var(--text-primary));
+}
+.inventory-card-marker.is-completed,
+.inventory-detail-marker.is-completed,
+.inventory-place-marker.is-counted {
+  background: var(--success-soft);
+  color: var(--success);
+}
+.organization-row:hover,
+.product-list-row:hover,
+.location-card:hover,
+.inventory-card:hover,
+.warehouse-card:hover,
+.inventory-place-row:hover,
+.location-verification:hover { border-color: var(--border-strong); }
+.organization-row.is-selected { border-color: var(--border-active); background: var(--brand-soft); }
+.organization-selected-tag { border-color: var(--border-active); background: var(--brand-soft); color: var(--brand); }
+
+.product-page-control,
+.location-toolbar-action,
+.location-edit-action,
+.inventory-review-action-secondary {
+  border-color: var(--border-default);
+  background: var(--surface-1);
+  color: var(--text-primary);
+}
+.product-page-control:hover,
+.location-toolbar-action:hover,
+.location-edit-action:hover,
+.inventory-review-action-secondary:hover { border-color: var(--border-strong); background: var(--surface-2); }
+
+.product-valuation-total dd { color: var(--text-primary); }
+.history-marker.is-neutral {
+  color: var(--info);
+  background: var(--info-soft);
+}
+
+.scanner-camera-status > svg,
+.scanner-camera-hint svg,
+.scanner-manual-trigger > svg:first-child,
+.scanner-choices a > svg { color: var(--icon-default); }
+.scanner-manual-trigger { border-color: var(--border-default); }
+.scanner-retry { color: var(--text-primary); }
+.scanner-camera-hint { color: var(--text-primary); }
+
+.navigation-sheet,
+.scanner-sheet,
+.profile-menu,
+.product-photo-lightbox-panel { border-color: var(--border-default); }
+.more-navigation-row:hover { background: var(--surface-2); }
+.more-navigation-row[aria-current="page"] { background: var(--brand-soft); }
+.more-navigation-row[aria-current="page"] .more-navigation-icon { color: var(--brand); }
+
+.header-avatar {
+  border-color: var(--border-default);
+  background: var(--surface-3);
+  color: var(--text-primary);
+}
+
+.inventory-card-status {
+  border-color: var(--border-default);
+  background: var(--surface-2);
+  color: var(--text-secondary);
+}
+.inventory-card-status.is-completed {
+  border-color: color-mix(in srgb, var(--success) 30%, var(--border-default));
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.inventory-detail .is-negative,
+.inventory-review-product .is-negative { color: var(--danger); }
+.inventory-detail .is-positive,
+.inventory-review-product .is-positive { color: var(--success); }
+.discrepancy-actions a,
+.discrepancy-actions button { color: var(--danger); }

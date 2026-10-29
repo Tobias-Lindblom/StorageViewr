@@ -1,0 +1,56 @@
+/* Live QR scanning opens over the current page, with a manual alternative in the same sheet. */
+.scanner-sheet { width: min(100%, 600px); max-height: 96dvh; border-radius: 28px 28px 0 0; border-color: color-mix(in srgb, var(--color-accent) 30%, var(--color-line)); background: radial-gradient(ellipse at 20% 0%, #5e427124, transparent 55%), linear-gradient(145deg, #191625, var(--color-canvas) 70%); }
+.scanner-sheet .bottom-sheet-header { padding: 0 20px; background: transparent; }
+.scanner-sheet .bottom-sheet-handle { min-height: 32px; }
+.scanner-sheet .bottom-sheet-handle > span { width: 44px; height: 4px; background: #81709488; }
+.scanner-sheet .bottom-sheet-heading-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.scanner-sheet .bottom-sheet-heading-row h2 { min-width: 0; padding: 0; border: 0; font-size: 24px; line-height: 1.2; font-weight: 700; letter-spacing: -0.6px; }
+.scanner-sheet .bottom-sheet-subtitle { margin: 4px 0 0; max-width: 450px; font-size: 13px; line-height: 1.55; color: var(--color-muted); }
+.scanner-sheet .bottom-sheet-content { padding: 16px 20px max(20px,env(safe-area-inset-bottom)); }
+.scanner-content { display: grid; gap: 12px; }
+.scanner-camera { position: relative; width: 100%; aspect-ratio: 1; max-height: min(48dvh,440px); min-height: 160px; overflow: hidden; border: 1px solid color-mix(in srgb, var(--color-accent) 25%, var(--color-line)); border-radius: 18px; background: linear-gradient(135deg, var(--color-surface-raised), var(--color-canvas)); }
+.scanner-camera[data-manual="true"] { aspect-ratio: auto; height: 130px; min-height: 130px; }
+.scanner-camera video { width: 100%; height: 100%; object-fit: cover; }
+.scanner-camera[data-state="paused"] video { opacity: 0; }
+.scanner-target { position: absolute; inset: 19% 20% 26%; border-radius: 12px; box-shadow: 0 0 0 999px #09081025; pointer-events: none; }
+.scanner-target i { position: absolute; width: 25px; height: 25px; border: solid #b779ff; filter: drop-shadow(0 0 5px #ac64ffcc); }
+.scanner-target i:nth-child(1) { top: 0; left: 0; border-width: 3px 0 0 3px; border-radius: 9px 0 0 0; }
+.scanner-target i:nth-child(2) { top: 0; right: 0; border-width: 3px 3px 0 0; border-radius: 0 9px 0 0; }
+.scanner-target i:nth-child(3) { bottom: 0; left: 0; border-width: 0 0 3px 3px; border-radius: 0 0 0 9px; }
+.scanner-target i:nth-child(4) { bottom: 0; right: 0; border-width: 0 3px 3px 0; border-radius: 0 0 9px 0; }
+.scanner-camera-hint { position: absolute; bottom: 7%; left: 50%; transform: translateX(-50%); display: flex; align-items: center; justify-content: center; gap: 8px; width: max-content; max-width: 90%; padding: 9px 12px; border: 1px solid #bda5ff40; border-radius: 24px; background: #13111fdd; color: #eee4ff; font-size: 11px; line-height: 1.4; text-align: center; }
+.scanner-camera-hint svg { flex-shrink: 0; color: var(--color-accent); }
+.scanner-camera-status { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 16px; background: #09081066; text-align: center; }
+.scanner-camera-status > svg { color: var(--color-accent); }
+.scanner-camera-status strong { font-size: 13px; font-weight: 400; }
+.scanner-retry { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 12px; border: 1px solid var(--color-line); border-radius: 8px; background: var(--color-surface-raised); color: var(--color-accent); font-size: 12px; }
+.scanner-manual-trigger { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 58px; padding: 12px; border: 1px solid color-mix(in srgb, var(--color-accent) 28%, var(--color-line)); border-radius: 14px; background: linear-gradient(115deg, var(--color-surface-raised),var(--color-surface)); color: var(--color-foreground); text-align: left; font-size: 14px; font-weight: 400; }
+.scanner-manual-trigger > svg:first-child { flex-shrink: 0; color: var(--color-accent); }
+.scanner-manual-trigger > span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.scanner-manual-trigger > svg:last-child { flex-shrink: 0; color: var(--color-muted); }
+.scanner-manual-trigger[aria-expanded="true"] > svg:last-child { transform: rotate(90deg); }
+.scanner-manual-form { padding: 12px; border: 1px solid var(--color-line); border-radius: 12px; background: var(--color-surface); }
+.scanner-manual-form label { font-size: 12px; font-weight: 400; }
+.scanner-manual-form input { min-height: 44px; border-radius: 8px; padding: 10px 12px; }
+.scanner-submit { display: flex; width: 100%; align-items: center; justify-content: center; min-height: 44px; margin-top: 10px; padding: 9px 12px; border: 1px solid var(--border-active); border-radius: 8px; background: var(--brand-gradient); color: white; font-size: 12px; }
+.scanner-submit:disabled { opacity: 0.45; }
+.scanner-error { padding: 10px 12px; border: 1px solid color-mix(in srgb, var(--color-destructive) 30%, var(--color-line)); border-radius: 9px; background: color-mix(in srgb, var(--color-destructive) 8%, var(--color-surface)); color: var(--color-destructive); font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.scanner-help { display: flex; align-items: flex-start; justify-content: center; gap: 7px; margin-top: 1px; color: var(--color-muted); font-size: 11px; line-height: 1.5; text-align: center; }
+.scanner-help svg { flex-shrink: 0; margin-top: 1px; }
+.scanner-choices h3 { margin: 0 0 7px; font-size: 16px; }
+.scanner-choices > p { margin-bottom: 14px; color: var(--color-muted); font-size: 13px; line-height: 1.5; }
+.scanner-choices ul { display: grid; gap: 7px; padding: 0; margin: 0 0 14px; list-style: none; }
+.scanner-choices a { display: flex; align-items: center; gap: 10px; min-height: 64px; padding: 10px; border: 1px solid var(--color-line); border-radius: 9px; background: var(--color-surface); }
+.scanner-choices a > svg { flex-shrink: 0; color: var(--color-accent); }
+.scanner-choices a > span { display: grid; gap: 4px; flex: 1; min-width: 0; }
+.scanner-choices strong { font-size: 13px; font-weight: 400; overflow-wrap: anywhere; }
+.scanner-choices a span span { font-size: 11px; color: var(--color-muted); overflow-wrap: anywhere; }
+@media (max-width: 359px) {
+  .scanner-sheet .bottom-sheet-header { padding-inline: 16px; }
+  .scanner-sheet .bottom-sheet-content { padding-inline: 16px; }
+  .scanner-sheet .bottom-sheet-heading-row h2 { font-size: 21px; }
+}
+@media (min-width: 1024px) {
+  .scanner-sheet .bottom-sheet-heading-row h2 { font-size: 28px; }
+  .scanner-sheet .bottom-sheet-subtitle { font-size: 14px; }
+}

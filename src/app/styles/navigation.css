@@ -1,0 +1,20 @@
+/* Application shell and primary navigation. */
+.app-workspace {
+  background: linear-gradient(155deg, color-mix(in srgb, var(--color-surface) 55%, var(--color-canvas)), var(--color-canvas) 45%);
+}
+.workspace-header { min-height: 58px; }
+.workspace-brand { display: inline-flex; align-items: center; gap: 9px; min-height: 44px; color: var(--color-foreground); font-size: 15px; font-weight: 700; letter-spacing: -0.25px; }
+.workspace-brand svg { flex-shrink: 0; }
+.header-avatar { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; border: 1px solid color-mix(in srgb, var(--color-line) 65%, transparent); background: color-mix(in srgb, var(--color-surface-raised) 80%, var(--color-muted)); color: var(--color-foreground); font-size: 11px; font-weight: 400; }
+.mobile-dock { position: relative; border-top: 1px solid color-mix(in srgb, var(--color-line) 75%, transparent); background: linear-gradient(180deg, var(--color-canvas), color-mix(in srgb, var(--color-surface) 35%, var(--color-canvas))); padding: 0 6px max(4px, env(safe-area-inset-bottom)); }
+.mobile-nav-item { position: relative; display: flex; min-height: 68px; min-width: 0; touch-action: manipulation; flex-direction: column; align-items: center; justify-content: center; gap: 5px; padding: 8px 1px 5px; color: var(--color-muted); font-size: 10px; font-weight: 400; line-height: 1.2; }
+.mobile-nav-item.is-active, .mobile-nav-item:hover { color: var(--color-accent); }
+.nav-icon { display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.mobile-nav-item[href="/products"] .nav-icon { color: var(--color-accent); }
+.nav-scanner { position: absolute; top: -12px; display: flex; width: 50px; height: 50px; align-items: center; justify-content: center; border: 2px solid #a971ff; border-radius: 50%; background: radial-gradient(circle at 50% 45%, #462269, #1c112c 72%); color: #c492ff; box-shadow: 0 0 0 3px var(--color-canvas), inset 0 0 10px #a766ff25, 0 0 18px #9b5bf533; }
+.mobile-nav-item:has(.nav-scanner) { min-height: 68px; }
+
+@media (min-width: 1024px) {
+  .workspace-header { min-height: 82px; }
+  .workspace-brand { font-size: 18px; }
+}

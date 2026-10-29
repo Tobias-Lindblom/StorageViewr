@@ -3,18 +3,15 @@ import { useState, type FormEvent } from "react";
 import { AppIcon } from "@/components/app-icon";
 import { MaterialArrow } from "@/components/material-arrow";
 import { InventoryScanner } from "@/features/scanner/inventory-scanner";
-import { clientApi } from "@/lib/client-api";
+import { clientApi, isApiError } from "@/lib/client-api";
 import type { InventoryPlace } from "./session-queries";
+import {
+  createCountRows,
+  mergeRefreshedCountRows,
+  type CountRow,
+  type ProductChoice,
+} from "./count-place-state";
 
-type Row = {
-  productId: string;
-  productName: string;
-  sku: string;
-  currentQuantity: number;
-  currentVersion: number | null;
-  value: string;
-};
-type Choice = { id: string; name: string; sku: string };
 export function CountPlace({
   inventoryId,
   place,
@@ -32,12 +29,7 @@ export function CountPlace({
   reload: () => Promise<unknown>;
   onSaved: () => Promise<void>;
 }) {
-  const [rows, setRows] = useState<Row[]>(() =>
-    place.rows.map((row) => ({
-      ...row,
-      value: row.countedQuantity === null ? "" : String(row.countedQuantity),
-    })),
-  );
+  const [rows, setRows] = useState<CountRow[]>(() => createCountRows(place));
   const [snapshot, setSnapshot] = useState(place);
   const [scanning, setScanning] = useState(() => !verified);
   const [confirmed, setConfirmed] = useState(false);
@@ -46,14 +38,14 @@ export function CountPlace({
   const [error, setError] = useState("");
   const [conflict, setConflict] = useState(false);
   const [search, setSearch] = useState("");
-  const [choices, setChoices] = useState<Choice[]>([]);
+  const [choices, setChoices] = useState<ProductChoice[]>([]);
   const [searched, setSearched] = useState(false);
   const recount = snapshot.status === "counted";
   async function findProducts() {
     setBusy(true);
     setError("");
     try {
-      const result = await clientApi<{ items: Choice[] }>(
+      const result = await clientApi<{ items: ProductChoice[] }>(
         "/api/products?" + new URLSearchParams({ q: search, status: "active" }),
         "GET",
       );
@@ -69,7 +61,7 @@ export function CountPlace({
       setBusy(false);
     }
   }
-  async function addProduct(choice: Choice) {
+  async function addProduct(choice: ProductChoice) {
     setBusy(true);
     setError("");
     try {
@@ -112,34 +104,23 @@ export function CountPlace({
     setBusy(true);
     setError("");
     try {
-      const response = await fetch(
+      await clientApi(
         "/api/inventory/sessions/" + inventoryId + "/count/" + place.id,
+        "PUT",
         {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            expectedRevision: snapshot.revision,
-            confirmReplace: replace,
-            confirmComplete: confirmed,
-            rows: rows.map((row) => ({
-              productId: row.productId,
-              expectedVersion: row.currentVersion,
-              countedQuantity: Number(row.value),
-            })),
-          }),
+          expectedRevision: snapshot.revision,
+          confirmReplace: replace,
+          confirmComplete: confirmed,
+          rows: rows.map((row) => ({
+            productId: row.productId,
+            expectedVersion: row.currentVersion,
+            countedQuantity: Number(row.value),
+          })),
         },
       );
-      const result = await response.json();
-      if (!response.ok) {
-        if (response.status === 409) setConflict(true);
-        throw new Error(
-          result.error?.details?.[0]?.message ??
-            result.error?.message ??
-            "Räkningen kunde inte sparas.",
-        );
-      }
       await onSaved();
     } catch (error) {
+      if (isApiError(error) && error.status === 409) setConflict(true);
       setError(
         error instanceof Error ? error.message : "Räkningen kunde inte sparas.",
       );
@@ -169,28 +150,7 @@ export function CountPlace({
               )!;
               setSnapshot(latest);
               onVerified();
-              setRows((current) => {
-                const existing = new Map(
-                  current.map((row) => [row.productId, row]),
-                );
-                const refreshed = latest.rows.map((row) => ({
-                  ...row,
-                  value:
-                    existing.get(row.productId)?.value ??
-                    (row.countedQuantity === null
-                      ? ""
-                      : String(row.countedQuantity)),
-                }));
-                return [
-                  ...refreshed,
-                  ...current.filter(
-                    (row) =>
-                      !latest.rows.some(
-                        (item) => item.productId === row.productId,
-                      ),
-                  ),
-                ];
-              });
+              setRows((current) => mergeRefreshedCountRows(current, latest));
               setConfirmed(false);
               setReplace(false);
               setConflict(false);

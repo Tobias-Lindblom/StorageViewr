@@ -1,0 +1,56 @@
+/* Company selection and setup share the warehouse workspace style. */
+.organization-workspace { padding-top: 2px; }
+.organization-chooser { max-width: 880px; }
+.organization-page-heading { margin-bottom: 20px; }
+.organization-page-heading h1 { margin: 0 0 5px; font-size: 22px; line-height: 1.2; font-weight: 700; letter-spacing: -0.3px; }
+.organization-page-heading p { color: var(--color-muted); font-size: 12px; line-height: 1.6; max-width: 520px; }
+.organization-list-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.organization-list-heading h2 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 14px; line-height: 1.3; font-weight: 700; }
+.organization-list-heading h2 > span { display: inline-flex; align-items: center; justify-content: center; min-width: 24px; min-height: 22px; padding: 0 6px; border: 1px solid color-mix(in srgb, var(--color-line) 65%, transparent); border-radius: 12px; background: var(--color-surface-raised); color: var(--color-muted); font-size: 10px; font-weight: 400; font-variant-numeric: tabular-nums; }
+.organization-primary-action { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding: 0 14px; border: 1px solid var(--border-active); border-radius: 7px; background: var(--brand-gradient); box-shadow: inset 0 1px 0 #ffffff20; font-size: 12px; color: white; }
+.organization-primary-action > span { font-size: 20px; line-height: 1; }
+.organization-primary-action:hover { filter: brightness(1.1); }
+.organization-primary-action:disabled { opacity: 0.6; }
+.organization-list { display: grid; gap: 8px; }
+.organization-row { display: flex; align-items: center; gap: 12px; width: 100%; min-width: 0; min-height: 76px; padding: 12px; text-align: left; border: 1px solid color-mix(in srgb, var(--color-line) 55%, transparent); border-radius: 9px; background: linear-gradient(110deg, var(--color-surface), color-mix(in srgb, var(--color-surface) 55%, var(--color-canvas))); transition: border-color 150ms ease; }
+.organization-row:hover { border-color: color-mix(in srgb, var(--color-accent) 55%, var(--color-line)); }
+.organization-row.is-selected { border-color: color-mix(in srgb, var(--color-accent) 45%, var(--color-line)); }
+.organization-row:disabled { opacity: 0.6; }
+.organization-avatar { display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 44px; height: 44px; border: 1px solid color-mix(in srgb, var(--color-accent) 20%, transparent); border-radius: 8px; background: var(--color-surface-raised); color: var(--color-accent); font-size: 15px; font-weight: 700; }
+.organization-identity { min-width: 0; flex: 1; }
+.organization-name { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.organization-name > strong { min-width: 0; font-size: 14px; font-weight: 700; line-height: 1.35; overflow-wrap: anywhere; }
+.organization-selected-tag { display: inline-flex; align-items: center; padding: 2px 6px; border: 1px solid color-mix(in srgb, var(--color-accent) 30%, var(--color-line)); border-radius: 10px; background: var(--color-surface-raised); color: var(--color-accent); font-size: 10px; font-weight: 400; }
+.organization-metadata { display: block; margin-top: 5px; color: var(--color-muted); font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
+.organization-row-arrow { flex-shrink: 0; color: var(--color-muted); }
+.organization-opening { flex-shrink: 0; max-width: 60px; color: var(--color-accent); font-size: 11px; }
+.organization-scan-notice { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 16px; padding: 12px; border: 1px solid color-mix(in srgb, var(--color-cyan) 25%, var(--color-line)); border-radius: 9px; background: color-mix(in srgb, var(--color-cyan) 5%, var(--color-surface)); color: var(--color-cyan); font-size: 12px; line-height: 1.6; }
+.organization-scan-notice svg { flex-shrink: 0; margin-top: 2px; }
+.organization-empty-card, .organization-form-panel { padding: 18px; border: 1px solid color-mix(in srgb, var(--color-line) 65%, transparent); border-radius: 9px; background: linear-gradient(135deg, var(--color-surface), color-mix(in srgb, var(--color-surface) 55%, var(--color-canvas))); }
+.organization-empty-icon { display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; margin-bottom: 14px; border-radius: 8px; background: var(--color-surface-raised); color: var(--color-accent); }
+.organization-empty-card h2 { margin: 0 0 8px; font-size: 16px; line-height: 1.3; }
+.organization-empty-card p { margin-bottom: 18px; color: var(--color-muted); font-size: 12px; line-height: 1.7; }
+.organization-empty-card .organization-primary-action { width: 100%; }
+.organization-create { max-width: 560px; }
+.organization-back { display: inline-flex; align-items: center; gap: 5px; min-height: 44px; margin-bottom: 8px; color: var(--color-foreground); font-size: 12px; }
+.organization-back svg { transform: rotate(180deg); }
+.organization-form-panel h2 { margin: 0 0 18px; font-size: 14px; font-weight: 700; }
+.organization-create-form { display: grid; gap: 18px; }
+.organization-create-form label { font-size: 12px; }
+.organization-create-form input { min-height: 44px; border-radius: 8px; font-size: 16px; background: var(--color-canvas); }
+.organization-create-form label > span { font-size: 11px; line-height: 1.5; }
+.organization-create-submit { width: 100%; margin-top: 4px; }
+@media (min-width: 1024px) {
+  .organization-workspace { padding-top: 24px; }
+  .organization-page-heading { margin-bottom: 26px; }
+  .organization-page-heading h1 { font-size: 28px; }
+  .organization-page-heading p { font-size: 14px; }
+  .organization-row { min-height: 82px; padding: 14px; }
+  .organization-name > strong { font-size: 15px; }
+  .organization-form-panel { padding: 24px; }
+  .organization-empty-card { max-width: 560px; padding: 24px; }
+  .organization-empty-card .organization-primary-action, .organization-create-submit { width: auto; justify-self: start; }
+}
+@media (min-width: 1280px) {
+  .organization-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+}

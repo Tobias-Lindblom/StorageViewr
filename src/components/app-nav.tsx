@@ -4,27 +4,18 @@ import { usePathname } from "next/navigation";
 import { AppIcon } from "./app-icon";
 import { MobileNavIcon, type MobileNavIconName } from "./mobile-nav-icon";
 import { ScannerButton } from "@/features/scanner/scanner-button";
+import {
+  desktopNavigation,
+  isNavigationDestinationActive,
+  mobileNavigation,
+} from "./app-navigation";
 
 export function AppNav({ admin, mobile = false }: { admin: boolean; mobile?: boolean }) {
   const pathname = usePathname();
-  const history = admin ? "/inventory/history" : "/inventories/completed";
-  const items = mobile ? [
-    { href: "/dashboard", label: "Översikt", icon: "dashboard" as const },
-    { href: "/products", label: "Produkter", icon: "product" as const },
-    { href: "/scanner", label: "Skanna", icon: "scan" as const },
-    { href: "/locations", label: "Lagerplatser", icon: "location" as const },
-  ] : [
-    { href: "/dashboard", label: "Översikt", icon: "dashboard" as const },
-    { href: "/products", label: "Produkter", icon: "product" as const },
-    { href: "/locations", label: "Lagerplatser", icon: "location" as const },
-    { href: "/inventories", label: "Inventering", icon: "inventory" as const },
-    { href: history, label: "Historik", icon: "history" as const },
-    { href: "/reports", label: "Rapporter", icon: "document" as const },
-  ];
+  const items = mobile ? mobileNavigation : desktopNavigation(admin);
   return <nav aria-label="Huvudnavigation" className={mobile ? "mobile-nav grid h-full grid-cols-4" : "desktop-nav"}>
     {items.map(item => {
-      const active = pathname === item.href || pathname.startsWith(item.href + "/") ||
-        (item.icon === "location" && pathname.startsWith("/location/"));
+      const active = isNavigationDestinationActive(pathname, item.href);
       const className = mobile ? "mobile-nav-item " + (active ? "is-active" : "") :
         "desktop-nav-item " +
         (active ? "is-active" : "");

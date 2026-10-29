@@ -1,22 +1,16 @@
 import "server-only";
-import PDFDocument from "pdfkit";
-import { readFile } from "node:fs/promises";
-import path from "node:path";
 import type { InventoryReport } from "./report-data";
 import { formatSek, formatUnitValue } from "@/lib/money";
+import {
+  cleanPdfText as clean,
+  createReportDocument,
+  drawReportBrand,
+  installReportFonts,
+  loadReportFonts,
+  renderPdfBuffer,
+  reportColors as colors,
+} from "@/lib/server/pdf-report";
 
-const colors = {
-  ink: "#201B2E",
-  muted: "#6B6478",
-  purple: "#6634BB",
-  pale: "#F5F1FC",
-  soft: "#FBFAFD",
-  line: "#E2DCEB",
-  green: "#167448",
-  red: "#AD354E",
-};
-
-const clean = (value: string) => value.replace(/\s+/g, " ").trim();
 const amount = (value: number | string) =>
   BigInt(value).toLocaleString("sv-SE");
 const quantityLabel = (value: number, singular: string, plural: string) =>
@@ -58,33 +52,15 @@ export async function renderInventoryReport(
   report: InventoryReport,
   exportedAt = new Date(),
 ) {
-  const [regular, bold] = await Promise.all([
-    readFile(path.join(process.cwd(), "assets/fonts/Roboto-Regular.ttf")),
-    readFile(path.join(process.cwd(), "assets/fonts/Roboto-Bold.ttf")),
-  ]);
-  const doc = new PDFDocument({
-    size: "A4",
-    margins: { top: 42, left: 42, right: 42, bottom: 54 },
-    bufferPages: true,
-    autoFirstPage: false,
-    info: {
-      Title: "Inventeringsrapport – " + clean(report.name),
-      Author: "StorageViewr",
-      Subject: "Genomförd inventering: " + clean(report.warehouseName),
-      Creator: "StorageViewr",
-      CreationDate: exportedAt,
-    },
+  const fonts = await loadReportFonts();
+  const doc = createReportDocument({
+    title: "Inventeringsrapport – " + clean(report.name),
+    subject: "Genomförd inventering: " + clean(report.warehouseName),
+    exportedAt,
   });
-  doc.registerFont("regular", regular);
-  doc.registerFont("bold", bold);
+  installReportFonts(doc, fonts);
 
-  return new Promise<Buffer>((resolve, reject) => {
-    const chunks: Buffer[] = [];
-    doc.on("data", (chunk) => chunks.push(Buffer.from(chunk)));
-    doc.on("end", () => resolve(Buffer.concat(chunks)));
-    doc.on("error", reject);
-
-    try {
+  return renderPdfBuffer(doc, () => {
       const left = 42;
       const width = 511.28;
       const bottom = 733;
@@ -124,18 +100,7 @@ export async function renderInventoryReport(
       }
 
       function header(firstPage = false) {
-        doc
-          .save()
-          .translate(left, 29)
-          .scale(1.05)
-          .path("M12 1 23 7 12 13 1 7 12 1Z")
-          .fill("#AA88FF")
-          .path("M1 8 11.5 13.7V25L1 19V8Z")
-          .fill("#9254DB")
-          .path("m12.5 13.7 10.5-5.7v11l-10.5 6V13.7Z")
-          .fill("#C6A4F5")
-          .restore();
-        text("StorageViewr", left + 34, 35, 175, 16, true);
+        drawReportBrand(doc, { left, top: 29, scale: 1.05 });
 
         if (firstPage) {
           y = 76;
@@ -801,10 +766,5 @@ export async function renderInventoryReport(
         doc.page.margins.bottom = originalBottom;
       }
 
-      doc.end();
-    } catch (error) {
-      doc.destroy();
-      reject(error);
-    }
   });
 }

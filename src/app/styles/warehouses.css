@@ -1,0 +1,39 @@
+/* Warehouse overview follows the compact product and location cards. */
+.warehouse-list-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.warehouse-list-toolbar > p { color: var(--color-muted); font-size: 12px; }
+.warehouse-create { font-weight: 400; }
+.warehouse-card-list { display: grid; gap: 7px; margin: 0; padding: 0; list-style: none; }
+.warehouse-card { display: flex; align-items: center; gap: 10px; min-width: 0; min-height: 86px; padding: 10px; border: 1px solid color-mix(in srgb, var(--color-line) 45%, transparent); border-radius: 9px; background: linear-gradient(110deg, color-mix(in srgb, var(--color-surface) 90%, var(--color-canvas)), color-mix(in srgb, var(--color-surface) 55%, var(--color-canvas))); transition: border-color 150ms ease, background-color 150ms ease; }
+.warehouse-card:hover { border-color: color-mix(in srgb, var(--color-accent) 55%, var(--color-line)); background: var(--color-surface-raised); }
+.warehouse-card-marker { display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 38px; height: 42px; border-radius: 7px; background: var(--color-surface-raised); color: var(--color-accent); }
+.warehouse-card-identity { display: grid; flex: 1; min-width: 0; gap: 3px; }
+.warehouse-card-identity > strong { font-size: 14px; line-height: 1.35; font-weight: 400; overflow-wrap: anywhere; }
+.warehouse-card-code { color: var(--color-muted); font-size: 11px; line-height: 1.3; overflow-wrap: anywhere; }
+.warehouse-card-count { justify-self: start; max-width: 100%; margin-top: 3px; padding: 2px 7px; border: 1px solid color-mix(in srgb, var(--color-line) 55%, transparent); border-radius: 10px; background: var(--color-surface-raised); color: var(--color-muted); font-size: 10px; line-height: 1.3; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.warehouse-card-status { flex-shrink: 0; min-width: 58px; padding: 3px 7px; border: 1px solid var(--color-line); border-radius: 12px; background: var(--color-surface-raised); color: var(--color-muted); text-align: center; font-size: 10px; line-height: 1.25; }
+.warehouse-card-status.is-active { color: var(--color-success); border-color: color-mix(in srgb, var(--color-success) 35%, var(--color-line)); background: color-mix(in srgb, var(--color-success) 12%, var(--color-surface)); }
+.warehouse-card-arrow { flex-shrink: 0; color: var(--color-muted); }
+@media (max-width: 359px) {
+  .warehouse-card { gap: 8px; padding: 10px 8px; }
+  .warehouse-card-marker { width: 32px; height: 38px; }
+}
+@media (min-width: 1024px) {
+  .warehouse-card { padding: 12px; gap: 12px; }
+  .warehouse-card-identity > strong { font-size: 15px; }
+  .warehouse-card-code { font-size: 12px; }
+}
+
+/* Warehouse cards link directly to scoped locations; their actions remain separate from the link. */
+.warehouse-card-row { display: flex; align-items: center; min-width: 0; border: 1px solid color-mix(in srgb, var(--color-line) 45%, transparent); border-radius: 9px; background: linear-gradient(110deg, color-mix(in srgb, var(--color-surface) 90%, var(--color-canvas)), color-mix(in srgb, var(--color-surface) 55%, var(--color-canvas))); transition: border-color 150ms ease, background-color 150ms ease; }
+.warehouse-card-row:hover { border-color: color-mix(in srgb, var(--color-accent) 55%, var(--color-line)); background: var(--color-surface-raised); }
+.warehouse-card-row .warehouse-card { flex: 1; border: 0; background: transparent; border-radius: inherit; }
+.warehouse-card-menu { flex-shrink: 0; align-self: center; z-index: auto; margin-right: 4px; }
+.warehouse-card-menu[data-open="true"] { z-index: 30; }
+.warehouse-more-trigger { display: flex; align-items: center; justify-content: center; width: 44px; min-height: 44px; border-radius: 7px; color: var(--color-muted); }
+.warehouse-more-trigger:hover, .warehouse-more-trigger[aria-expanded="true"] { background: var(--color-surface-raised); color: var(--color-accent); }
+.warehouse-more-panel > .button-secondary { justify-content: flex-start; border: 0; background: transparent; font-weight: 400; }
+.location-warehouse-scope { display: flex; align-items: center; flex-wrap: wrap; gap: 7px 12px; margin: -3px 0 12px; color: var(--color-muted); font-size: 12px; }
+.location-warehouse-scope > a { display: inline-flex; align-items: center; flex-shrink: 0; gap: 5px; min-height: 36px; color: var(--color-accent); }
+.location-warehouse-scope > a svg { rotate: 180deg; }
+.location-warehouse-scope > span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.location-warehouse-scope em { display: block; margin-top: 2px; font-size: 10px; font-style: normal; }

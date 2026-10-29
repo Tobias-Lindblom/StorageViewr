@@ -1,34 +1,21 @@
 import "server-only";
-import PDFDocument from "pdfkit";
-import { readFile } from "node:fs/promises";
-import path from "node:path";
 import type { LocationStockReport } from "./report-data";
 import { formatSek, formatUnitValue } from "@/lib/money";
+import {
+  cleanPdfText as clean,
+  createReportDocument,
+  drawReportBrand,
+  formatReportDate as date,
+  installReportFonts,
+  loadReportFonts,
+  renderPdfBuffer,
+  reportColors as colors,
+} from "@/lib/server/pdf-report";
 
-const colors = {
-  ink: "#201B2E",
-  muted: "#6B6478",
-  purple: "#6634BB",
-  pale: "#F5F1FC",
-  soft: "#FBFAFD",
-  line: "#E2DCEB",
-  green: "#167448",
-  greenPale: "#EDF8F2",
-};
-const clean = (value: string) => value.replace(/\s+/g, " ").trim();
 const amount = (value: number | string) =>
   BigInt(value).toLocaleString("sv-SE");
 const quantityLabel = (value: number, singular: string, plural: string) =>
   amount(value) + " " + (value === 1 ? singular : plural);
-const date = (value: Date) =>
-  value.toLocaleString("sv-SE", {
-    timeZone: "Europe/Stockholm",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 
 export function locationStockReportFilename(report: LocationStockReport) {
   const scope =
@@ -45,31 +32,14 @@ export async function renderLocationStockReport(
   report: LocationStockReport,
   exportedAt = new Date(),
 ) {
-  const [regular, bold] = await Promise.all([
-    readFile(path.join(process.cwd(), "assets/fonts/Roboto-Regular.ttf")),
-    readFile(path.join(process.cwd(), "assets/fonts/Roboto-Bold.ttf")),
-  ]);
-  const doc = new PDFDocument({
-    size: "A4",
-    margins: { top: 42, left: 42, right: 42, bottom: 54 },
-    bufferPages: true,
-    autoFirstPage: false,
-    info: {
-      Title: "Lagervärdesrapport – " + clean(report.scopeName),
-      Author: "StorageViewr",
-      Subject: "Aktuella lagersaldon och lagervärden",
-      Creator: "StorageViewr",
-      CreationDate: exportedAt,
-    },
+  const fonts = await loadReportFonts();
+  const doc = createReportDocument({
+    title: "Lagervärdesrapport – " + clean(report.scopeName),
+    subject: "Aktuella lagersaldon och lagervärden",
+    exportedAt,
   });
-  doc.registerFont("regular", regular);
-  doc.registerFont("bold", bold);
-  return new Promise<Buffer>((resolve, reject) => {
-    const chunks: Buffer[] = [];
-    doc.on("data", (chunk) => chunks.push(Buffer.from(chunk)));
-    doc.on("end", () => resolve(Buffer.concat(chunks)));
-    doc.on("error", reject);
-    try {
+  installReportFonts(doc, fonts);
+  return renderPdfBuffer(doc, () => {
       const left = 42;
       const width = 511.28;
       const bottom = 733;
@@ -105,21 +75,7 @@ export async function renderLocationStockReport(
           .stroke();
       }
       function header(firstPage = false) {
-        doc
-          .save()
-          .roundedRect(left, 30, 27, 27, 7)
-          .fillAndStroke(colors.pale, "#D5C6EE");
-        doc
-          .translate(left + 4, 34)
-          .scale(0.8)
-          .path(
-            "M12 3 L21 8 L21 16 L12 21 L3 16 L3 8 Z M12 12 L21 8 M12 12 L3 8 M12 12 L12 21",
-          )
-          .lineWidth(1.5)
-          .strokeColor(colors.purple)
-          .stroke()
-          .restore();
-        text("StorageViewr.", left + 36, 35, 175, 16, true);
+        drawReportBrand(doc, { left, top: 29, scale: 1.05 });
         if (firstPage) {
           text("Lagervärdesrapport", left, 73, width, 24, true);
           text(
@@ -466,10 +422,5 @@ export async function renderLocationStockReport(
         );
         doc.page.margins.bottom = originalBottom;
       }
-      doc.end();
-    } catch (error) {
-      doc.destroy();
-      reject(error);
-    }
   });
 }

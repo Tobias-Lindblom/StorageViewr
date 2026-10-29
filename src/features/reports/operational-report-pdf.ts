@@ -1,44 +1,20 @@
 import "server-only";
 
-import PDFDocument from "pdfkit";
-import { readFile } from "node:fs/promises";
-import path from "node:path";
 import { formatSek } from "@/lib/money";
 import type { DiscrepancyReport, HealthReport } from "./operational-report-data";
-
-const colors = { ink: "#201B2E", muted: "#6B6478", purple: "#6634BB", pale: "#F5F1FC", soft: "#FBFAFD", line: "#E2DCEB", red: "#B42338", green: "#167448" };
-const clean = (value: string) => value.replace(/\s+/g, " ").trim();
-const date = (value: Date) => value.toLocaleString("sv-SE", { timeZone: "Europe/Stockholm", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
-
-async function fonts() {
-  return Promise.all([
-    readFile(path.join(process.cwd(), "assets/fonts/Roboto-Regular.ttf")),
-    readFile(path.join(process.cwd(), "assets/fonts/Roboto-Bold.ttf")),
-  ]);
-}
-
-function createDocument(title: string, exportedAt: Date, layout: "portrait" | "landscape" = "portrait") {
-  return new PDFDocument({ size: "A4", layout, margins: { top: 42, left: 42, right: 42, bottom: 54 }, bufferPages: true, autoFirstPage: false,
-    info: { Title: title, Author: "StorageViewr", Creator: "StorageViewr", CreationDate: exportedAt } });
-}
-
-function output(doc: PDFKit.PDFDocument, draw: () => void) {
-  return new Promise<Buffer>((resolve, reject) => {
-    const chunks: Buffer[] = [];
-    doc.on("data", chunk => chunks.push(Buffer.from(chunk)));
-    doc.on("end", () => resolve(Buffer.concat(chunks)));
-    doc.on("error", reject);
-    try { draw(); doc.end(); } catch (cause) { reject(cause); }
-  });
-}
-
-function install(doc: PDFKit.PDFDocument, regular: Buffer, bold: Buffer) {
-  doc.registerFont("regular", regular); doc.registerFont("bold", bold);
-}
+import {
+  cleanPdfText as clean,
+  createReportDocument,
+  drawReportBrand,
+  formatReportDate as date,
+  installReportFonts,
+  loadReportFonts,
+  renderPdfBuffer,
+  reportColors as colors,
+} from "@/lib/server/pdf-report";
 
 function drawHeader(doc: PDFKit.PDFDocument, title: string, company: string, exportedAt: Date, width: number) {
-  doc.roundedRect(42, 30, 27, 27, 7).fillAndStroke(colors.pale, "#D5C6EE");
-  doc.font("bold").fontSize(16).fillColor(colors.ink).text("StorageViewr.", 78, 35, { width: 180 });
+  drawReportBrand(doc);
   doc.font("bold").fontSize(23).text(title, 42, 76, { width });
   doc.font("regular").fontSize(8.5).fillColor(colors.muted).text(company + " · Exporterad " + date(exportedAt), 42, 108, { width });
   doc.moveTo(42, 130).lineTo(42 + width, 130).lineWidth(0.6).strokeColor(colors.line).stroke();
@@ -58,10 +34,10 @@ function footer(doc: PDFKit.PDFDocument, company: string, title: string, exporte
 }
 
 export async function renderDiscrepancyReport(report: DiscrepancyReport, exportedAt = new Date()) {
-  const [regular, bold] = await fonts();
-  const doc = createDocument("Avvikelserapport", exportedAt, "landscape");
-  install(doc, regular, bold);
-  return output(doc, () => {
+  const fonts = await loadReportFonts();
+  const doc = createReportDocument({ title: "Avvikelserapport", exportedAt, layout: "landscape" });
+  installReportFonts(doc, fonts);
+  return renderPdfBuffer(doc, () => {
     const left = 42, width = 757.89, bottom = 520;
     let y = 150;
     const columns = [92, 145, 78, 65, 58, 58, 58, 84, 120];
@@ -72,7 +48,7 @@ export async function renderDiscrepancyReport(report: DiscrepancyReport, exporte
     const header = (first: boolean) => {
       doc.addPage();
       if (first) { drawHeader(doc, "Avvikelserapport", report.companyName, exportedAt, width); y = 150; }
-      else { doc.font("bold").fontSize(14).fillColor(colors.ink).text("StorageViewr. · Avvikelserapport", left, 35); y = 68; }
+      else { drawReportBrand(doc, { left, top: 24, scale: 0.8 }); doc.font("bold").fontSize(12).fillColor(colors.ink).text("Avvikelserapport", left + 180, 34); y = 68; }
       doc.rect(left, y, width, 24).fill(colors.pale);
       let x = left;
       headers.forEach((label, index) => { text(label, x + 5, y + 8, columns[index] - 10, 6.5, true, colors.purple, align(index)); x += columns[index]; });
@@ -100,15 +76,15 @@ export async function renderDiscrepancyReport(report: DiscrepancyReport, exporte
 }
 
 export async function renderHealthReport(report: HealthReport, exportedAt = new Date()) {
-  const [regular, bold] = await fonts();
-  const doc = createDocument("Lagerhälsorapport", exportedAt);
-  install(doc, regular, bold);
-  return output(doc, () => {
+  const fonts = await loadReportFonts();
+  const doc = createReportDocument({ title: "Lagerhälsorapport", exportedAt });
+  installReportFonts(doc, fonts);
+  return renderPdfBuffer(doc, () => {
     const left = 42, width = 511.28, bottom = 733;
     let y = 150;
     const text = (value: string, x: number, top: number, w: number, size = 8, boldText = false, color = colors.ink, align: "left" | "right" = "left") =>
       doc.font(boldText ? "bold" : "regular").fontSize(size).fillColor(color).text(clean(value), x, top, { width: w, align, lineGap: 2 });
-    const newPage = (first = false) => { doc.addPage(); if (first) { drawHeader(doc, "Lagerhälsorapport", report.companyName, exportedAt, width); y = 150; } else { doc.font("bold").fontSize(14).fillColor(colors.ink).text("StorageViewr. · Lagerhälsorapport", left, 35); y = 68; } };
+    const newPage = (first = false) => { doc.addPage(); if (first) { drawHeader(doc, "Lagerhälsorapport", report.companyName, exportedAt, width); y = 150; } else { drawReportBrand(doc, { left, top: 24, scale: 0.8 }); doc.font("bold").fontSize(12).fillColor(colors.ink).text("Lagerhälsorapport", left + 180, 34); y = 68; } };
     newPage(true);
     const metrics: [string, string][] = [
       ["Lagerhälsa", report.health.score === null ? "–" : report.health.score + "%"],

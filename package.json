@@ -9,38 +9,46 @@
     "lint": "eslint .",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "node --conditions=react-server --import tsx --test tests/foundation.test.ts tests/warehouse.test.ts tests/product.test.ts tests/product-model.test.ts tests/inventory.test.ts tests/counting.test.ts tests/inventory-health.test.ts tests/report.test.ts tests/pilot.test.ts",
+    "test:e2e": "playwright test",
+    "e2e:app": "node --import tsx scripts/e2e-app.ts",
     "icons:generate": "node scripts/generate-brand-icons.mjs",
     "db:indexes": "node --conditions=react-server --import tsx --env-file=.env.local scripts/create-indexes.ts"
   },
   "dependencies": {
-    "csv-parse": "^6.2.1",
-    "jsqr": "^1.4.0",
-    "mongoose": "^9",
-    "next": "latest",
-    "pdfkit": "^0.20.2",
-    "qrcode": "^1.5.4",
-    "react": "latest",
-    "react-dom": "latest",
-    "react-signature-canvas": "^1.1.0-alpha.2",
-    "server-only": "^0.0.1",
-    "sharp": "^0.35.4",
-    "zod": "^4"
+    "csv-parse": "7.0.3",
+    "jsqr": "1.4.0",
+    "mongoose": "9.11.4",
+    "next": "16.4.3",
+    "pdfkit": "0.20.2",
+    "qrcode": "1.5.4",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "react-signature-canvas": "1.1.0-alpha.2",
+    "server-only": "0.0.1",
+    "sharp": "0.35.5",
+    "zod": "4.6.6"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^22",
-    "@types/pdfkit": "^0.17.6",
-    "@types/qrcode": "^1.5.6",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^9",
-    "eslint-config-next": "latest",
-    "mongodb-memory-server": "^10",
-    "tailwindcss": "^4",
-    "tsx": "^4",
-    "typescript": "^5"
+    "@axe-core/playwright": "4.14.0",
+    "@playwright/test": "1.64.1",
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/node": "22.20.4",
+    "@types/pdfkit": "0.17.6",
+    "@types/qrcode": "1.5.6",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.4.3",
+    "mongodb-memory-server": "10.4.3",
+    "tailwindcss": "4.3.3",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3"
+  },
+  "overrides": {
+    "follow-redirects": "1.16.2",
+    "source-map-js": "1.2.2"
   },
   "engines": {
-    "node": "22.x"
+    "node": ">=22.13.0 <23"
   }
 }

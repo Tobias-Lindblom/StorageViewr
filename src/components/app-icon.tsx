@@ -38,10 +38,11 @@ const paths = {
   logout: "M10 5H5v14h5M14 8l4 4-4 4M8 12h10",
   qr: "M3 3h6v6H3zM15 3h6v6h-6zM3 15h6v6H3zM15 15h3v3h3v3h-6z",
 };
+export type AppIconName = keyof typeof paths;
 export function AppIcon({
   name,
   ...props
-}: SVGProps<SVGSVGElement> & { name: keyof typeof paths }) {
+}: SVGProps<SVGSVGElement> & { name: AppIconName }) {
   return (
     <svg
       width="21"

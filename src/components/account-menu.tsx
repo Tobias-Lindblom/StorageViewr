@@ -46,7 +46,7 @@ export function AccountMenu({ account, organization }: {
     <div ref={container} className="relative shrink-0" onBlur={event => {
       if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false);
     }}>
-      <button ref={trigger} type="button" aria-label="Företag och konto" aria-expanded={open} aria-controls={menuId}
+      <button ref={trigger} type="button" aria-label={`Företag och konto, ${initials}`} aria-expanded={open} aria-controls={menuId}
         className="profile-menu-trigger" onClick={() => setOpen(value => !value)}>
         <span className="header-avatar" aria-hidden="true">{initials}</span>
       </button>

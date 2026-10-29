@@ -1,0 +1,99 @@
+/* Premium UI system -------------------------------------------------------
+   Semantic overrides keep older feature classes compatible while every
+   screen consumes the same surfaces, borders, radii and interaction rules. */
+@layer base {
+  body {
+    background-color: var(--surface-0);
+    background-image: linear-gradient(155deg, rgb(170 136 255 / 0.035), transparent 36%);
+  }
+  h1 { letter-spacing: -0.035em; }
+  :where(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+    min-height: var(--control-height);
+    border-color: var(--border-default);
+    border-radius: var(--radius-sm);
+    background: var(--surface-0);
+    color: var(--text-primary);
+    transition: border-color 160ms var(--ease-standard), box-shadow 160ms var(--ease-standard), background-color 160ms var(--ease-standard);
+  }
+  :where(input:not([type="checkbox"]):not([type="radio"]), select, textarea):hover:not(:disabled) {
+    border-color: color-mix(in srgb, white 17%, transparent);
+  }
+  :where(input:not([type="checkbox"]):not([type="radio"]), select, textarea):focus {
+    border-color: var(--border-active);
+    box-shadow: 0 0 0 3px var(--brand-soft);
+  }
+}
+
+.button,
+.button-secondary {
+  min-height: var(--control-height);
+  border-radius: var(--radius-sm);
+  transition: transform 120ms var(--ease-standard), border-color 160ms var(--ease-standard), background-color 160ms var(--ease-standard), filter 160ms var(--ease-standard);
+}
+.button {
+  border-color: color-mix(in srgb, var(--brand) 48%, transparent);
+  background: var(--brand-strong);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.13);
+}
+.button:hover { filter: brightness(1.08); }
+.button-secondary { border-color: var(--border-default); background: var(--surface-1); }
+.button-secondary:hover { border-color: var(--border-active); background: var(--surface-2); }
+.button:active:not(:disabled),
+.button-secondary:active:not(:disabled),
+.product-create:active,
+.location-create:active,
+.dashboard-action:active { transform: scale(0.98); }
+
+.panel,
+.stock-card,
+.form-card {
+  border-color: var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.025);
+}
+.form-card { background: var(--surface-1); }
+.form-actions { border-color: var(--border-subtle); }
+.organization-details-section {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-subtle);
+}
+.organization-details-section > legend {
+  width: 100%;
+  margin-bottom: 4px;
+  font-size: 14px;
+  line-height: 1.4;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.organization-details-section > p {
+  margin-top: -10px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.55;
+}
+.organization-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 12px; }
+.organization-field-wide { grid-column: 1 / -1; }
+.organization-details-section label > span { color: var(--text-muted); font-size: 11px; font-weight: 400; }
+.organization-members-link { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 11px; min-height: 64px; margin-bottom: 20px; padding: 10px 12px; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); background: var(--surface-2); }
+.organization-members-link > span:first-child { display: grid; width: 36px; height: 36px; place-items: center; border-radius: 9px; background: color-mix(in srgb, var(--color-accent) 11%, var(--surface-3)); color: var(--color-accent); }
+.organization-members-link strong, .organization-members-link small { display: block; }
+.organization-members-link strong { font-size: 12px; }
+.organization-members-link small { margin-top: 3px; color: var(--text-secondary); font-size: 10px; line-height: 1.4; }
+.organization-members-link > svg { color: var(--text-secondary); }
+.organization-members-link:hover { border-color: var(--border-active); background: var(--surface-3); }
+.field-readonly,
+.notice {
+  min-height: var(--control-height);
+  border-color: var(--border-default);
+  border-radius: var(--radius-sm);
+}
+.error,
+.notice-success,
+.notice-warning { border-radius: var(--radius-sm); }
+
+
+
