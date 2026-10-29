@@ -38,7 +38,7 @@ export default async function LabelsPage({
               ? "1 etikett för en aktiv lagerplats."
               : labels.length + " etiketter för aktiva lagerplatser."
           }
-          action={labels.length ? <PrintButton /> : undefined}
+          action={labels.length ? <PrintButton warehouseId={warehouseId} /> : undefined}
         />
         <div className="form-card p-0! mb-5 overflow-hidden">
           <div className="p-4 sm:p-5">

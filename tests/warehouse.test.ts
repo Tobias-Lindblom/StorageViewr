@@ -30,6 +30,10 @@ import {
 import { getDashboard } from "../src/features/dashboard/service";
 import { getLabels, locationQr } from "../src/features/locations/labels";
 import {
+  locationLabelsFilename,
+  renderLocationLabelsPdf,
+} from "../src/features/locations/labels-pdf";
+import {
   locationBatchSchema,
   locationSchema,
 } from "../src/validation/location";
@@ -195,6 +199,10 @@ test("location references, QR lookup, list and edit cannot cross tenant boundari
     "http://localhost:3000/location/" + location.qrToken,
   );
   assert.ok(labels[0].image.startsWith("data:image/png;base64,"));
+  assert.equal(locationLabelsFilename(labels), "qr-etiketter-boras-lager.pdf");
+  const labelPdf = await renderLocationLabelsPdf(labels, new Date("2026-10-29T12:00:00Z"));
+  assert.equal(labelPdf.subarray(0, 4).toString(), "%PDF");
+  assert.ok(labelPdf.length > 1_000);
 });
 
 test("batch creation is atomic when a normalized code already exists", async () => {

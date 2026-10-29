@@ -43,6 +43,7 @@ const config: NextConfig = {
   outputFileTracingIncludes: {
     "/api/inventory/sessions/*/report": ["./assets/fonts/*.ttf"],
     "/api/locations/report": ["./assets/fonts/*.ttf"],
+    "/api/locations/labels": ["./assets/fonts/*.ttf"],
     "/api/reports/*": ["./assets/fonts/*.ttf"],
   },
   async headers() {

@@ -7,6 +7,14 @@ import { qrTokenSchema } from "@/validation/location";
 import type { TenantContext } from "@/lib/server/tenant";
 import { AppError } from "@/lib/server/errors";
 
+export type LocationLabel = {
+  id: string;
+  code: string;
+  warehouseName: string;
+  url: string;
+  image: string;
+};
+
 export function qrOrigin() {
   const configured = process.env.APP_URL;
   if (!configured)
@@ -52,7 +60,7 @@ export async function getLabels(context: TenantContext, warehouseId?: string) {
   })
     .sort({ warehouseId: 1, code: 1 })
     .lean();
-  const labels = [];
+  const labels: LocationLabel[] = [];
   // Bound QR encoding memory during larger print jobs.
   for (const location of locations) {
     labels.push({
