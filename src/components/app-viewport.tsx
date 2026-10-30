@@ -15,6 +15,7 @@ export function AppViewport() {
     const root = document.documentElement;
     const viewport = window.visualViewport;
     let frame = 0;
+    let settleTimer = 0;
     let touch: { x: number; y: number; target: Element } | null = null;
 
     function reset() {
@@ -51,7 +52,49 @@ export function AppViewport() {
     }
 
     function schedule() {
+      if (document.visibilityState === "hidden") {
+        reset();
+        return;
+      }
       if (!frame) frame = requestAnimationFrame(updateViewport);
+    }
+
+    function cancelPendingUpdate() {
+      cancelAnimationFrame(frame);
+      clearTimeout(settleTimer);
+      frame = 0;
+      settleTimer = 0;
+    }
+
+    function suspend() {
+      cancelPendingUpdate();
+      touch = null;
+      const active = document.activeElement;
+      // iOS can retain the focused field and stale visual viewport coordinates
+      // while a standalone PWA is in the background. Blurring keeps the layout
+      // and its touch targets in the same coordinate system when the app returns.
+      if (editing(active) && active instanceof HTMLElement) active.blur();
+      reset();
+    }
+
+    function resume() {
+      cancelPendingUpdate();
+      touch = null;
+      reset();
+      if (window.scrollX || window.scrollY) window.scrollTo(0, 0);
+
+      // WebKit may expose the previous visual viewport during the first frame
+      // after a PWA resumes. Re-read it after layout has settled and once more
+      // after the native app-switch animation has completed.
+      frame = requestAnimationFrame(() => {
+        frame = requestAnimationFrame(updateViewport);
+      });
+      settleTimer = window.setTimeout(schedule, 250);
+    }
+
+    function visibilityChanged() {
+      if (document.visibilityState === "hidden") suspend();
+      else resume();
     }
 
     function touchStart(event: TouchEvent) {
@@ -86,21 +129,23 @@ export function AppViewport() {
     viewport?.addEventListener("resize", schedule);
     viewport?.addEventListener("scroll", schedule);
     window.addEventListener("resize", schedule);
-    window.addEventListener("pageshow", schedule);
-    document.addEventListener("visibilitychange", schedule);
+    window.addEventListener("pageshow", resume);
+    window.addEventListener("focus", resume);
+    document.addEventListener("visibilitychange", visibilityChanged);
     document.addEventListener("focusin", schedule);
     document.addEventListener("focusout", schedule);
     document.addEventListener("touchstart", touchStart, { passive: true });
     document.addEventListener("touchmove", touchMove, { passive: false });
-    schedule();
+    resume();
     return () => {
-      cancelAnimationFrame(frame);
+      cancelPendingUpdate();
       reset();
       viewport?.removeEventListener("resize", schedule);
       viewport?.removeEventListener("scroll", schedule);
       window.removeEventListener("resize", schedule);
-      window.removeEventListener("pageshow", schedule);
-      document.removeEventListener("visibilitychange", schedule);
+      window.removeEventListener("pageshow", resume);
+      window.removeEventListener("focus", resume);
+      document.removeEventListener("visibilitychange", visibilityChanged);
       document.removeEventListener("focusin", schedule);
       document.removeEventListener("focusout", schedule);
       document.removeEventListener("touchstart", touchStart);

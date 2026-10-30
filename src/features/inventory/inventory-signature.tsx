@@ -10,7 +10,46 @@ type LockableOrientation = ScreenOrientation & {
   unlock?: () => void;
 };
 
+type StandaloneNavigator = Navigator & { standalone?: boolean };
+
 const subscribeToClient = () => () => undefined;
+
+function runsAsInstalledApp() {
+  return window.matchMedia("(display-mode: standalone)").matches ||
+    (navigator as StandaloneNavigator).standalone === true;
+}
+
+function resizeSignatureCanvas(instance: SignatureCanvas) {
+  const canvas = instance.getCanvas();
+  const bounds = canvas.getBoundingClientRect();
+  const width = Math.round(bounds.width);
+  const height = Math.round(bounds.height);
+  if (width < 1 || height < 1) return;
+
+  const ratio = Math.max(window.devicePixelRatio || 1, 1);
+  const previousRatio = Number(canvas.dataset.signatureRatio) || ratio;
+  const previousWidth = canvas.width / previousRatio;
+  const previousHeight = canvas.height / previousRatio;
+  const targetWidth = Math.round(width * ratio);
+  const targetHeight = Math.round(height * ratio);
+  canvas.dataset.signatureRatio = String(ratio);
+  if (canvas.width === targetWidth && canvas.height === targetHeight) return;
+
+  const data = instance.toData();
+  const scaleX = previousWidth > 0 ? width / previousWidth : 1;
+  const scaleY = previousHeight > 0 ? height / previousHeight : 1;
+  const scaled = data.map((stroke) => stroke.map((point) => ({
+    ...point,
+    x: point.x * scaleX,
+    y: point.y * scaleY,
+  }))) as ReturnType<SignatureCanvas["toData"]>;
+
+  canvas.width = targetWidth;
+  canvas.height = targetHeight;
+  canvas.getContext("2d")?.scale(ratio, ratio);
+  instance.clear();
+  if (scaled.length) instance.fromData(scaled);
+}
 
 function exportTrimmedSignature(source: HTMLCanvasElement) {
   if (source.width < 1 || source.height < 1) return null;
@@ -89,19 +128,42 @@ export function InventorySignature({
     document.body.style.overflow = "hidden";
     document.documentElement.style.overflow = "hidden";
     const frame = requestAnimationFrame(() => setCanvasReady(true));
-    const clearDraftAfterResize = () => {
-      setDraftHasSignature(false);
-      setCaptureError("");
-    };
-    window.addEventListener("resize", clearDraftAfterResize);
     return () => {
       cancelAnimationFrame(frame);
-      window.removeEventListener("resize", clearDraftAfterResize);
       if (element.open) element.close();
       document.body.style.overflow = previousBodyOverflow;
       document.documentElement.style.overflow = previousRootOverflow;
     };
   }, [signing]);
+
+  useEffect(() => {
+    if (!signing || !canvasReady) return;
+    if (!pad.current) return;
+    const instance = pad.current;
+    const canvas = instance.getCanvas();
+    const container = canvas.parentElement;
+    if (!container) return;
+
+    let frame = 0;
+    function scheduleResize() {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        resizeSignatureCanvas(instance);
+        setDraftHasSignature(!instance.isEmpty());
+      });
+    }
+    const observer = new ResizeObserver(scheduleResize);
+    observer.observe(container);
+    window.visualViewport?.addEventListener("resize", scheduleResize);
+    screen.orientation?.addEventListener("change", scheduleResize);
+    scheduleResize();
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+      window.visualViewport?.removeEventListener("resize", scheduleResize);
+      screen.orientation?.removeEventListener("change", scheduleResize);
+    };
+  }, [canvasReady, signing]);
 
   function openCapture() {
     if (disabled) return;
@@ -112,22 +174,29 @@ export function InventorySignature({
     setSigning(true);
 
     const orientation = screen.orientation as LockableOrientation | undefined;
-    const lockLandscape = () => orientation?.lock?.("landscape").catch(() => undefined);
-    if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
-      void document.documentElement
-        .requestFullscreen({ navigationUI: "hide" })
-        .then(() => {
-          if (!captureOpen.current) {
-            void document.exitFullscreen?.().catch(() => undefined);
-            return;
-          }
-          enteredFullscreen.current = true;
-          return lockLandscape();
-        })
-        .catch(() => undefined);
-    } else {
+    const lockLandscape = async () => {
+      try {
+        await orientation?.lock?.("landscape");
+      } catch {
+        // Portrait remains fully usable when the PWA or device rejects a lock.
+      }
+    };
+    if (runsAsInstalledApp() || document.fullscreenElement ||
+      !document.documentElement.requestFullscreen) {
       void lockLandscape();
+      return;
     }
+    void document.documentElement
+      .requestFullscreen({ navigationUI: "hide" })
+      .then(async () => {
+        if (!captureOpen.current) {
+          await document.exitFullscreen?.().catch(() => undefined);
+          return;
+        }
+        enteredFullscreen.current = true;
+        await lockLandscape();
+      })
+      .catch(lockLandscape);
   }
 
   function closeCapture() {
@@ -203,7 +272,7 @@ export function InventorySignature({
           ) : (
             <span>
               <strong>Öppna signeringsytan</strong>
-              <small>Använd hela skärmen och vrid gärna mobilen till liggande läge.</small>
+              <small>Signera i stående eller liggande läge med hela skärmen.</small>
             </span>
           )}
         </button>
@@ -234,7 +303,7 @@ export function InventorySignature({
           <header className="signature-capture-header">
             <div>
               <h2 id={headingId}>Skriv din signatur</h2>
-              <p>Vrid mobilen till liggande läge för en större signeringsyta.</p>
+              <p>Signera direkt eller vrid mobilen för en bredare signeringsyta.</p>
             </div>
             <button type="button" onClick={closeCapture} aria-label="Stäng signeringsytan">
               Stäng
@@ -249,7 +318,7 @@ export function InventorySignature({
                   minWidth={1.4}
                   maxWidth={3.2}
                   throttle={8}
-                  clearOnResize
+                  clearOnResize={false}
                   onBegin={() => {
                     setDraftHasSignature(true);
                     setCaptureError("");
@@ -262,7 +331,7 @@ export function InventorySignature({
               )}
               {!draftHasSignature && <span>Skriv här</span>}
             </div>
-            <p className="signature-capture-rotate">Vrid mobilen för att använda hela skärmbredden.</p>
+            <p className="signature-capture-rotate">Du kan signera här direkt eller vrida mobilen för en bredare yta.</p>
             {captureError && <p className="signature-capture-error" role="alert">{captureError}</p>}
           </main>
           <footer className="signature-capture-actions">

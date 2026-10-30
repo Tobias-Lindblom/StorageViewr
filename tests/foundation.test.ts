@@ -32,7 +32,9 @@ import {
   createOrganizationInvitation,
   getOrganizationInvitation,
   listOrganizationMembers,
+  removeOrganizationMember,
   revokeOrganizationInvitation,
+  updateOrganizationMember,
 } from "../src/features/organizations/members";
 import {
   objectIdSchema,
@@ -281,6 +283,67 @@ test("a valid invitation permits account creation while public registration is c
   const revokable = await createOrganizationInvitation(context, { email: "revoke@example.com", role: "warehouse" });
   await revokeOrganizationInvitation(context, revokable.id);
   assert.equal(await OrganizationInvitation.countDocuments({ _id: revokable.id }), 0);
+});
+
+test("administrators change member roles and remove members without changing their own membership", async () => {
+  const owner = await User.create({ email: "members-owner@example.com", name: "Owner", passwordHash: "test-only" });
+  const worker = await User.create({ email: "members-worker@example.com", name: "Worker", passwordHash: "test-only" });
+  const otherAdmin = await User.create({ email: "members-admin@example.com", name: "Admin", passwordHash: "test-only" });
+  const ownerSession = await resolveSession((await createSession(owner._id)).token);
+  const organization = await createOrganization(ownerSession, { name: "Members AB", slug: "members-ab" });
+  const workerMembership = await Membership.create({
+    organizationId: organization.id,
+    userId: worker._id,
+    role: "warehouse",
+  });
+  const adminMembership = await Membership.create({
+    organizationId: organization.id,
+    userId: otherAdmin._id,
+    role: "admin",
+  });
+  const ownerContext = await tenantForSession(await resolveSession(
+    (await createSession(owner._id, new Types.ObjectId(organization.id))).token,
+  ));
+  const workerToken = (await createSession(worker._id, new Types.ObjectId(organization.id))).token;
+  const workerSession = await resolveSession(workerToken);
+  const workerContext = await tenantForSession(workerSession);
+
+  await assert.rejects(
+    updateOrganizationMember(workerContext, workerMembership._id.toString(), { role: "admin" }),
+    hasStatus(403),
+  );
+  await assert.rejects(removeOrganizationMember(workerContext, adminMembership._id.toString()), hasStatus(403));
+
+  await updateOrganizationMember(ownerContext, workerMembership._id.toString(), { role: "admin" });
+  assert.equal((await tenantForSession(await resolveSession(workerToken))).role, "admin");
+  await updateOrganizationMember(ownerContext, workerMembership._id.toString(), { role: "warehouse" });
+  assert.equal((await Membership.findById(workerMembership._id))?.role, "warehouse");
+
+  const ownerMembership = await Membership.findOne({
+    organizationId: organization.id,
+    userId: owner._id,
+  });
+  assert.ok(ownerMembership);
+  await assert.rejects(
+    updateOrganizationMember(ownerContext, ownerMembership._id.toString(), { role: "warehouse" }),
+    hasStatus(409),
+  );
+  await assert.rejects(removeOrganizationMember(ownerContext, ownerMembership._id.toString()), hasStatus(409));
+
+  await updateOrganizationMember(ownerContext, adminMembership._id.toString(), { role: "warehouse" });
+  assert.equal((await Membership.findById(adminMembership._id))?.role, "warehouse");
+  await removeOrganizationMember(ownerContext, adminMembership._id.toString());
+  assert.equal(await Membership.exists({ _id: adminMembership._id }), null);
+
+  await removeOrganizationMember(ownerContext, workerMembership._id.toString());
+  assert.equal(await Membership.exists({ _id: workerMembership._id }), null);
+  assert.equal((await Session.findById(workerSession._id))?.organizationId, null);
+  await assert.rejects(tenantForSession(await resolveSession(workerToken)), hasStatus(409));
+
+  await assert.rejects(
+    updateOrganizationMember(ownerContext, new Types.ObjectId().toString(), { role: "warehouse" }),
+    hasStatus(404),
+  );
 });
 
 test("organization creation rolls back if its session is invalid and unique indexes reject duplicates", async () => {

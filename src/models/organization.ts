@@ -20,6 +20,7 @@ const schema = new Schema(
     contactEmail: { type: String, default: "", trim: true, lowercase: true, maxlength: 254 },
     phone: { type: String, default: "", trim: true, maxlength: 40 },
     website: { type: String, default: "", trim: true, maxlength: 200 },
+    membershipRevision: { type: Number, default: 0, required: true },
   },
   { timestamps: true, collection: "organizations" },
 );
@@ -28,7 +29,7 @@ type OrganizationRecord = InferSchemaType<typeof schema>;
 const cachedOrganization = models.Organization as Model<OrganizationRecord> | undefined;
 if (cachedOrganization && [
   "organizationNumber", "addressLine1", "addressLine2", "postalCode",
-  "city", "country", "contactEmail", "phone", "website",
+  "city", "country", "contactEmail", "phone", "website", "membershipRevision",
 ].some(path => !cachedOrganization.schema.path(path))) {
   deleteModel("Organization");
 }

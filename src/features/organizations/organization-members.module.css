@@ -36,8 +36,29 @@
 .personIdentity > span { margin-top: 4px; color: var(--text-secondary); font-size: 10px; }
 .roleBadge { flex-shrink: 0; padding: 5px 8px; border: 1px solid var(--border-subtle); border-radius: 999px; background: var(--surface-2); color: var(--text-secondary); font-size: 9px; white-space: nowrap; }
 .roleBadge.admin { border-color: var(--border-default); color: var(--text-primary); }
+.manageButton { display: inline-flex; min-height: 36px; flex-shrink: 0; align-items: center; gap: 6px; padding: 7px 9px; border: 1px solid var(--border-subtle); border-radius: 8px; background: var(--surface-2); color: var(--text-secondary); font-size: 10px; font-weight: 650; }
+.manageButton:hover { border-color: var(--border-active); background: var(--surface-3); color: var(--text-primary); }
 .invitationActions { display: flex; align-items: center; gap: 8px; }
 .invitationActions button { min-height: 34px; color: var(--color-destructive); font-size: 10px; }
+.memberSheet { display: grid; gap: 18px; }
+.memberSummary { display: flex; align-items: center; gap: 11px; padding: 12px; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); background: var(--surface-2); }
+.memberSheet > label { font-size: 12px; }
+.memberSheet > label select { min-height: 48px; margin-top: 7px; }
+.memberRoleHelp { padding: 12px; border-radius: var(--radius-sm); background: var(--surface-2); }
+.memberRoleHelp strong, .memberRoleHelp span { display: block; }
+.memberRoleHelp strong { font-size: 12px; }
+.memberRoleHelp span { margin-top: 4px; color: var(--text-secondary); font-size: 11px; line-height: 1.5; }
+.dangerZone { padding: 14px; border: 1px solid color-mix(in srgb, var(--color-destructive) 24%, var(--border-subtle)); border-radius: var(--radius-sm); background: color-mix(in srgb, var(--color-destructive) 4%, var(--surface-1)); }
+.dangerZone h3 { margin: 0; font-size: 13px; }
+.dangerZone > p { margin-top: 5px; color: var(--text-secondary); font-size: 11px; line-height: 1.5; }
+.dangerZone > button { min-height: 38px; margin-top: 12px; padding: 8px 11px; border: 1px solid color-mix(in srgb, var(--color-destructive) 35%, transparent); border-radius: 8px; color: var(--color-destructive); font-size: 11px; font-weight: 700; }
+.removeConfirmation { margin-top: 12px; padding: 11px; border-radius: 8px; background: var(--danger-soft); }
+.removeConfirmation > strong { display: block; font-size: 11px; }
+.removeConfirmation > div { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.removeConfirmation button { min-height: 38px; padding: 8px 11px; border: 1px solid var(--border-default); border-radius: 8px; background: var(--surface-2); color: var(--text-primary); font-size: 10px; font-weight: 700; }
+.removeConfirmation button:last-child { border-color: color-mix(in srgb, var(--color-destructive) 40%, transparent); background: var(--danger-soft); color: var(--color-destructive); }
+.sheetFooter { display: grid; grid-template-columns: minmax(0, .7fr) minmax(0, 1.3fr); gap: 9px; }
+.sheetFooter > button { width: 100%; }
 @media (max-width: 620px) {
   .form, .roleHelp { grid-template-columns: 1fr; }
   .emailField, .roleHelp, .form > button { grid-column: auto; }
@@ -45,4 +66,6 @@
   .peopleList > li { padding-inline: 14px; }
   .roleBadge { display: none; }
   .invitationActions .roleBadge { display: none; }
+  .manageButton span { display: none; }
+  .manageButton { width: 38px; padding-inline: 0; justify-content: center; }
 }

@@ -1,6 +1,6 @@
 import "server-only";
 import { createHash, randomBytes } from "node:crypto";
-import { Types } from "mongoose";
+import { Types, type ClientSession } from "mongoose";
 import { OrganizationInvitation } from "@/models/organization-invitation";
 import { Organization } from "@/models/organization";
 import { Membership } from "@/models/membership";
@@ -10,7 +10,13 @@ import { connectDb } from "@/lib/server/db";
 import { AppError } from "@/lib/server/errors";
 import { requireAdmin, type TenantContext } from "@/lib/server/tenant";
 import type { resolveSession } from "@/lib/server/session";
-import { createInvitationSchema, invitationIdSchema, invitationTokenSchema } from "@/validation/membership";
+import {
+  createInvitationSchema,
+  invitationIdSchema,
+  invitationTokenSchema,
+  membershipIdSchema,
+  updateMemberSchema,
+} from "@/validation/membership";
 
 const INVITATION_LIFETIME = 7 * 86400_000;
 const tokenHash = (token: string) => createHash("sha256").update(token).digest("hex");
@@ -81,6 +87,70 @@ export async function revokeOrganizationInvitation(context: TenantContext, id: u
   const result = await OrganizationInvitation.deleteOne({ _id: invitationId, organizationId: context.organizationId });
   if (!result.deletedCount) throw new AppError(404, "INVITATION_NOT_FOUND", "Inbjudan kunde inte hittas.");
   return { revoked: true };
+}
+
+async function lockMemberships(context: TenantContext, transaction: ClientSession) {
+  const organization = await Organization.findOneAndUpdate(
+    { _id: context.organizationId },
+    { $inc: { membershipRevision: 1 } },
+    { session: transaction, returnDocument: "after" },
+  );
+  if (!organization) throw new AppError(404, "ORGANIZATION_NOT_FOUND", "Företaget kunde inte hittas.");
+  const actor = await Membership.exists({
+    organizationId: context.organizationId,
+    userId: context.userId,
+    role: "admin",
+  }).session(transaction);
+  if (!actor) throw new AppError(403, "FORBIDDEN", "Åtgärden kräver administratör.");
+}
+
+export async function updateOrganizationMember(context: TenantContext, id: unknown, input: unknown) {
+  requireAdmin(context);
+  const membershipId = membershipIdSchema.parse(id);
+  const data = updateMemberSchema.parse(input);
+  const db = await connectDb();
+  return db.connection.transaction(async transaction => {
+    await lockMemberships(context, transaction);
+    const membership = await Membership.findOne({
+      _id: membershipId,
+      organizationId: context.organizationId,
+    }).session(transaction);
+    if (!membership) throw new AppError(404, "MEMBER_NOT_FOUND", "Medlemmen kunde inte hittas.");
+    if (membership.userId.equals(context.userId)) {
+      throw new AppError(409, "SELF_MEMBERSHIP_CHANGE", "Du kan inte ändra din egen behörighet.");
+    }
+    membership.role = data.role;
+    await membership.save({ session: transaction });
+    return { id: membership._id.toString(), role: membership.role };
+  });
+}
+
+export async function removeOrganizationMember(context: TenantContext, id: unknown) {
+  requireAdmin(context);
+  const membershipId = membershipIdSchema.parse(id);
+  const db = await connectDb();
+  return db.connection.transaction(async transaction => {
+    await lockMemberships(context, transaction);
+    const membership = await Membership.findOne({
+      _id: membershipId,
+      organizationId: context.organizationId,
+    }).session(transaction);
+    if (!membership) throw new AppError(404, "MEMBER_NOT_FOUND", "Medlemmen kunde inte hittas.");
+    if (membership.userId.equals(context.userId)) {
+      throw new AppError(409, "SELF_MEMBERSHIP_CHANGE", "Du kan inte ta bort ditt eget medlemskap.");
+    }
+    const removed = await Membership.deleteOne({
+      _id: membership._id,
+      organizationId: context.organizationId,
+    }, { session: transaction });
+    if (!removed.deletedCount) throw new AppError(409, "MEMBER_CHANGED", "Medlemskapet har redan ändrats.");
+    await Session.updateMany(
+      { userId: membership.userId, organizationId: context.organizationId },
+      { $unset: { organizationId: 1 } },
+      { session: transaction },
+    );
+    return { id: membership._id.toString(), removed: true };
+  });
 }
 
 async function invitationDocument(rawToken: unknown) {

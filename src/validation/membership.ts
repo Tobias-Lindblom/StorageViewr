@@ -8,3 +8,5 @@ export const createInvitationSchema = z.object({
   role: memberRoleSchema,
 }).strict();
 export const invitationIdSchema = objectIdSchema;
+export const membershipIdSchema = objectIdSchema;
+export const updateMemberSchema = z.object({ role: memberRoleSchema }).strict();

@@ -39,7 +39,7 @@ inte ett dolt Mongoose-plugin. Admin kontrolleras på servern före mutationer.
 
 | Collection                | Viktiga fält                                                                                                                                    | Index                                                                                                  |
 | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| organizations             | name, slug, timestamps                                                                                                                          | slug unikt                                                                                             |
+| organizations             | name, slug, medlemsrevision, timestamps                                                                                                         | slug unikt                                                                                             |
 | users                     | email, name, passwordHash, timestamps                                                                                                           | normaliserad email unikt                                                                               |
 | memberships               | organizationId, userId, role                                                                                                                    | (organizationId,userId) unikt; userId                                                                  |
 | sessions                  | tokenHash, userId, organizationId?, expiresAt                                                                                                   | tokenHash unikt; expiresAt TTL                                                                         |
@@ -104,8 +104,10 @@ men dess fysiska kontrollpunkt måste genomföras före publik lansering.
 ## Före publik lansering
 
 E-postverifiering och lösenordsåterställning behöver en vald e-postleverantör före publik
-lansering. Företagsinbjudningar med admin-/lagerroll är implementerade, men länken delas
-manuellt tills e-postleverans ansluts. IP-baserat skydd vid ingress bör komplettera databasens
+lansering. Företagsinbjudningar med admin-/lagerroll är implementerade, och administratörer
+kan ändra andra medlemmars roller eller ta bort deras åtkomst. Den egna administratörsrollen
+kan inte ändras eller tas bort från medlemsvyn. Inbjudningslänken delas manuellt tills
+e-postleverans ansluts. IP-baserat skydd vid ingress bör komplettera databasens
 konto/global-begränsningar; lita aldrig på godtyckliga forwarded headers.
 
 ## Visuell riktning
