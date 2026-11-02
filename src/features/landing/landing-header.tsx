@@ -13,7 +13,6 @@ const navigationItems = [
     id: "lagerplatser",
     label: "Lager & produkter",
   },
-  { href: "#lagerhandelser", id: "lagerhandelser", label: "Historik" },
   { href: "#inventering", id: "inventering", label: "Inventering" },
   { href: "#rapporter", id: "rapporter", label: "Rapporter" },
 ] as const;
@@ -122,7 +121,7 @@ export function LandingHeader() {
               className={`${styles.headerPrimary} button`}
               href="/pilot"
             >
-              <span className={styles.headerPrimaryFull}>Starta pilot</span>
+              <span className={styles.headerPrimaryFull}>Ansök om pilot</span>
               <span className={styles.headerPrimaryShort}>Pilot</span>
             </Link>
           </div>

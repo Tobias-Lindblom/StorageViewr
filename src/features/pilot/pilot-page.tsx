@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AppIcon } from "@/components/app-icon";
 import { BrandLogo } from "@/components/brand-logo";
+import { MaterialArrow } from "@/components/material-arrow";
 import { PilotForm } from "./pilot-form";
 import styles from "./pilot-page.module.css";
 
@@ -50,7 +51,7 @@ const processSteps = [
 const trustFeatures = [
   {
     title: "Mobil PWA",
-    description: "Använd direkt i webbläsaren, på alla enheter i lagret.",
+    description: "Arbeta direkt i mobilen eller lägg appen på hemskärmen.",
     icon: "dashboard",
   },
   {
@@ -60,7 +61,7 @@ const trustFeatures = [
   },
   {
     title: "Rollbaserad åtkomst",
-    description: "Ge rätt behörighet till rätt personer.",
+    description: "Bjud in medarbetare och ge dem rätt behörighet.",
     icon: "user",
   },
   {
@@ -70,12 +71,12 @@ const trustFeatures = [
   },
   {
     title: "Inventering och avvikelser",
-    description: "Få kontroll på lagersaldot och hantera avvikelser enkelt.",
+    description: "Räkna, signera och dokumentera avvikelser i samma flöde.",
     icon: "verified",
   },
   {
     title: "Rapporter och inventeringsunderlag",
-    description: "Exportera data och skapa underlag på några klick.",
+    description: "Skapa lagervärdes- och inventeringsrapporter som PDF.",
     icon: "download",
   },
 ] as const;
@@ -132,51 +133,67 @@ export default function PilotPage() {
         </div>
       </section>
 
-      <section className={styles.processSection} aria-labelledby="process-title">
-        <header className={styles.sectionHeader}>
-          <h2 id="process-title">Vad händer efteråt?</h2>
-          <p>Från förfrågan till pilot — en enkel och tydlig process.</p>
-        </header>
-        <ol className={styles.processGrid}>
-          {processSteps.map((step, index) => (
-            <li key={step.title}>
-              <span>{String(index + 1).padStart(2, "0")}</span>
-              <h3>{step.title}</h3>
-              <p>{step.description}</p>
-            </li>
-          ))}
-        </ol>
-      </section>
+      <div className={styles.closingFlow}>
+        <section className={styles.processSection} aria-labelledby="process-title">
+          <header className={styles.processHeader}>
+            <h2 id="process-title">Vad händer efteråt?</h2>
+            <p>
+              Från förfrågan till arbete i ert eget lager — en tydlig process
+              där ni vet vad nästa steg är.
+            </p>
+          </header>
+          <ol className={styles.processGrid}>
+            {processSteps.map((step, index) => (
+              <li key={step.title}>
+                <span aria-hidden="true">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <div>
+                  <h3>{step.title}</h3>
+                  <p>{step.description}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </section>
 
-      <section className={styles.trustSection} aria-labelledby="trust-title">
-        <header className={styles.sectionHeader}>
-          <h2 id="trust-title">Byggt för verkligt lagerarbete.</h2>
-          <p>
-            Samma funktioner som på riktigt gör skillnad — redan i piloten.
-          </p>
-        </header>
-        <ul className={styles.trustGrid}>
-          {trustFeatures.map((feature) => (
-            <li key={feature.title}>
-              <span className={styles.trustIcon} aria-hidden="true">
-                <AppIcon name={feature.icon} width={21} height={21} />
-              </span>
-              <div>
-                <h3>{feature.title}</h3>
-                <p>{feature.description}</p>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </section>
+        <section className={styles.trustSection} aria-labelledby="trust-title">
+          <header className={styles.sectionHeader}>
+            <h2 id="trust-title">Byggt för verkligt lagerarbete.</h2>
+            <p>
+              Piloten använder samma kärnfunktioner som ni arbetar vidare med
+              när lagret växer.
+            </p>
+          </header>
+          <ul className={styles.trustGrid}>
+            {trustFeatures.map((feature) => (
+              <li key={feature.title}>
+                <span className={styles.trustIcon} aria-hidden="true">
+                  <AppIcon name={feature.icon} width={21} height={21} />
+                </span>
+                <div>
+                  <h3>{feature.title}</h3>
+                  <p>{feature.description}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
 
-      <section className={styles.finalSection} aria-labelledby="final-title">
-        <h2 id="final-title">En pilot ska ge svar — inte skapa mer arbete.</h2>
-        <p>
-          StorageViewr ska göra det enklare att veta vad ni har, var det finns
-          och om lagersaldot faktiskt stämmer.
-        </p>
-      </section>
+        <section className={styles.finalSection} aria-labelledby="final-title">
+          <div className={styles.finalCopy}>
+            <h2 id="final-title">En pilot ska ge svar — inte skapa mer arbete.</h2>
+            <p>
+              Testa StorageViewr i ert lager och se om strukturen, saldona och
+              arbetsflödet håller ihop i vardagen.
+            </p>
+          </div>
+          <Link href="#pilot-form" className={`button ${styles.finalAction}`}>
+            Ansök om pilot
+            <MaterialArrow name="forward" />
+          </Link>
+        </section>
+      </div>
     </main>
   );
 }
