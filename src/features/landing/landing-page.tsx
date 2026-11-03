@@ -5,18 +5,19 @@ import { AppIcon } from "@/components/app-icon";
 import { BrandLogo } from "@/components/brand-logo";
 import { MaterialArrow } from "@/components/material-arrow";
 import { LandingHeader } from "./landing-header";
+import { ScrollReveal } from "./scroll-reveal";
 import { FloatingScrollToTop, FooterScrollToTop } from "./scroll-to-top";
 import styles from "./landing-page.module.css";
 
 export const landingMetadata: Metadata = {
   title: "StorageViewr – lagerkontroll och inventering med QR",
   description:
-    "Få kontroll över fysiska lagerplatser, verifierade saldon och lagervärde. Inventera med QR, hantera avvikelser och skapa signerade PDF-rapporter.",
+    "Koppla produkter till fysiska lagerplatser, inventera med QR, granska avvikelser och exportera lager- och inventeringsrapporter som PDF.",
 };
 
 const overviewFacts = [
   "Personlig pilotstart",
-  "Ingen installation",
+  "Fungerar i webbläsaren",
   "Mobil och dator",
 ];
 
@@ -30,7 +31,7 @@ const audienceTypes = [
 ];
 
 const audienceProofs = [
-  { label: "Verifierade saldon", icon: "verified" },
+  { label: "Fysiskt inventerade saldon", icon: "verified" },
   { label: "QR-baserade lagerplatser", icon: "qr" },
   { label: "Inventering med mobil", icon: "inventory" },
 ] as const;
@@ -59,9 +60,9 @@ const onboardingSteps = [
 ] as const;
 
 const healthSignals = [
-  { label: "Verifierade positioner", value: 37, icon: "verified" },
+  { label: "Tillförlitliga positioner", value: 37, icon: "verified" },
   { label: "Öppna avvikelser", value: 2, icon: "alert" },
-  { label: "Gammal kontroll", value: 1, icon: "history" },
+  { label: "Kontroll behöver förnyas", value: 1, icon: "history" },
 ] as const;
 
 const supportingFeatures = [
@@ -72,7 +73,7 @@ const supportingFeatures = [
   },
   {
     title: "Roller & behörigheter",
-    description: "Bjud in medarbetare och styr åtkomst med tydliga roller.",
+    description: "Bjud in administratörer eller lagerpersonal och ändra deras roll.",
     icon: "user",
   },
   {
@@ -82,7 +83,7 @@ const supportingFeatures = [
   },
   {
     title: "Flera lager",
-    description: "Håll lagerplatser, inventeringar och rapporter åtskilda per lager.",
+    description: "Skapa flera lager och koppla lagerplatser och inventeringar till rätt lager.",
     icon: "warehouse",
   },
 ] as const;
@@ -106,14 +107,14 @@ export default function LandingPage() {
           <div className={styles.heroCopy}>
             <h1 id="overview-title">Se direkt hur lagret faktiskt mår</h1>
             <p className={styles.lead}>
-              Få en samlad överblick över lagerhälsa, registrerade saldon,
-              avvikelser och lagervärde — utan att behöva leta i flera system
-              eller kalkylblad.
+              Koppla produkter och registrerade saldon till fysiska
+              lagerplatser. Inventera med mobilen och se vad som senast
+              verifierats, vilka avvikelser som är öppna och vad som behöver
+              kontrolleras.
             </p>
             <p className={styles.bodyCopy}>
-              Se vilka fysiska lagerpositioner som är verifierade, vad som
-              behöver uppmärksamhet och var nästa inventering gör störst
-              skillnad.
+              QR-koder öppnar rätt lagerplats för inventering, inleverans,
+              flytt och korrigering med spårbar tidpunkt och användare.
             </p>
 
             <div className={styles.actions}>
@@ -164,41 +165,46 @@ export default function LandingPage() {
         className={styles.healthSection}
       >
         <div className={styles.healthInner}>
-          <div className={styles.healthPanel}>
-            <div className={styles.healthCopy}>
+          <ScrollReveal className={styles.healthPanel} mode="group">
+            <div className={styles.healthCopy} data-reveal-item>
               <h2 id="health-title">
-                Se vilka lagerpositioner du faktiskt kan lita på.
+                Se vad som verifierats — och vad som behöver kontrolleras.
               </h2>
               <div
                 className={styles.healthScore}
-                aria-label="Exempel på lagerhälsa: 92 procent"
+                aria-label="Exempel på lagerhälsa: 93 procent"
               >
                 <strong>
-                  92<span>%</span>
+                  93<span>%</span>
                 </strong>
-                <span>Lagerhälsa</span>
+                <span>Exempel på lagerhälsa</span>
               </div>
               <p className={styles.healthVerified}>
-                37 av 40 lagerpositioner verifierade
+                37 av 40 positioner bedöms som tillförlitliga
               </p>
               <div
                 className={styles.healthProgress}
                 role="progressbar"
-                aria-label="Verifierad lagerhälsa"
-                aria-valuenow={92}
+                aria-label="Andel tillförlitliga positioner i exemplet"
+                aria-valuenow={93}
                 aria-valuemin={0}
                 aria-valuemax={100}
               >
                 <span aria-hidden="true" />
               </div>
             </div>
-            <div className={styles.healthSummary}>
+            <div
+              className={styles.healthSummary}
+              data-reveal-item
+              data-reveal-order="1"
+            >
               <header className={styles.healthSummaryHeader}>
                 <h3>Lagerhälsa</h3>
                 <p>
-                  StorageViewr använder fysisk inventering och lagerhistorik
-                  för att visa hur aktuell och tillförlitlig lagerinformationen
-                  är.
+                  StorageViewr utgår från den senaste slutförda fysiska
+                  inventeringen och kontrollerar att senare registrerade
+                  lagerhändelser bildar en sammanhängande kedja fram till det
+                  registrerade saldot.
                 </p>
               </header>
               <dl className={styles.healthRows}>
@@ -217,12 +223,12 @@ export default function LandingPage() {
               <div className={styles.healthAttention}>
                 <strong>3 positioner behöver uppmärksamhet</strong>
                 <p>
-                  När något gör saldot osäkert ser du direkt var du behöver
-                  kontrollera.
+                  Exemplet visar två öppna avvikelser och en kontroll som
+                  behöver förnyas.
                 </p>
               </div>
             </div>
-          </div>
+          </ScrollReveal>
         </div>
       </section>
 
@@ -231,27 +237,28 @@ export default function LandingPage() {
         aria-labelledby="scanner-title"
         className={styles.featureSection}
       >
-        <div className={styles.featureInner}>
-          <div className={styles.featureCopy}>
+        <ScrollReveal className={styles.featureInner} mode="group">
+          <div className={styles.featureCopy} data-reveal-item>
             <h2 id="scanner-title">
               Skanna lagerplatsen och fortsätt där arbetet sker
             </h2>
             <p>
-              Skapa utskrivbara QR-etiketter för aktiva lagerplatser. En
-              skanning öppnar rätt plats eller fortsätter en pågående
-              inventering direkt i mobilen.
-            </p>
-            <p>
-              På lagerplatsen ser du registrerade produkter och saldon och kan
-              inventera, registrera en inleverans, flytta material eller
-              korrigera ett saldo. Platskoden kan också anges manuellt.
+              Skapa QR-etiketter för aktiva lagerplatser. En skanning öppnar
+              rätt plats eller fortsätter en pågående inventering. Där ser du
+              placerade produkter och kan inventera, registrera inleverans,
+              flytta material eller korrigera saldo.
             </p>
             <p className={styles.featureStatement}>
               Samma skanner fungerar i webbläsaren och den installerade PWA:n.
             </p>
           </div>
 
-          <div className={`${styles.featureVisual} ${styles.scannerVisual}`}>
+          <div
+            className={`${styles.featureVisual} ${styles.scannerVisual}`}
+            data-reveal-item
+            data-reveal-order="1"
+            data-reveal-from="left"
+          >
             <div className={styles.imageGlow} aria-hidden="true" />
             <Image
               className={styles.scannerImage}
@@ -262,7 +269,7 @@ export default function LandingPage() {
               sizes="(max-width: 900px) 92vw, 46vw"
             />
           </div>
-        </div>
+        </ScrollReveal>
       </section>
 
       <section
@@ -270,29 +277,28 @@ export default function LandingPage() {
         aria-labelledby="storage-title"
         className={styles.featureSection}
       >
-        <div className={`${styles.featureInner} ${styles.storageFeature}`}>
-          <div className={styles.featureCopy}>
-            <h2 id="storage-title">Vet vad du har — och exakt var det finns</h2>
+        <ScrollReveal
+          className={`${styles.featureInner} ${styles.storageFeature}`}
+          mode="group"
+        >
+          <div className={styles.featureCopy} data-reveal-item>
+            <h2 id="storage-title">Se registrerat saldo och placering per produkt</h2>
             <p>
-              En produkt kan finnas på flera lagerplatser. StorageViewr visar
-              både det registrerade totalantalet och hur det är fördelat på
-              varje fysisk plats.
-            </p>
-            <p>
-              Öppna en lagerplats för att se vad som ska finnas där, eller öppna
-              en produkt för att se registrerat saldo, styckvärde, totalt värde
-              och fördelningen mellan placeringarna.
-            </p>
-            <p>
-              Inleveranser, flyttar, inventeringar och korrigeringar sparas i
-              historiken med tidpunkt och användare.
+              Se registrerat totalantal, styckvärde och lagervärde — och hur
+              varje produkt är fördelad mellan fysiska lagerplatser.
             </p>
             <p className={styles.featureStatement}>
-              Från enskild hylla till hela lagret — samma tydliga bild.
+              Inleveranser, flyttar, inventeringar och korrigeringar sparas med
+              tidpunkt och användare.
             </p>
           </div>
 
-          <div className={`${styles.featureVisual} ${styles.storageVisual}`}>
+          <div
+            className={`${styles.featureVisual} ${styles.storageVisual}`}
+            data-reveal-item
+            data-reveal-order="1"
+            data-reveal-from="right"
+          >
             <div className={styles.imageGlow} aria-hidden="true" />
             <Image
               className={styles.storageImage}
@@ -303,7 +309,7 @@ export default function LandingPage() {
               sizes="(max-width: 900px) 88vw, 44vw"
             />
           </div>
-        </div>
+        </ScrollReveal>
       </section>
 
       <section
@@ -311,33 +317,33 @@ export default function LandingPage() {
         aria-labelledby="inventory-title"
         className={styles.featureSection}
       >
-        <div className={styles.featureInner}>
-          <div className={styles.featureCopy}>
+        <ScrollReveal className={styles.featureInner} mode="group">
+          <div className={styles.featureCopy} data-reveal-item>
             <h2 id="inventory-title">
-              Fastställ verifierade startsaldon — och håll dem aktuella
+              Fastställ startsaldon och följ upp med nya inventeringar
             </h2>
             <p>
-              Den första inventeringen omfattar alla aktiva lagerplatser i ett
-              lager och fastställer verifierade startsaldon. Därefter kan du
-              skapa nya inventeringar för valda platser.
-            </p>
-            <p>
-              Skanna platsens QR-kod, räkna produkterna och bekräfta platsen
-              direkt i mobilen. StorageViewr håller koll på:
+              Den första inventeringen fastställer verifierade startsaldon för
+              lagrets aktiva platser. Därefter kan du inventera valda platser
+              vid behov.
             </p>
             <ul className={styles.inventoryList}>
-              <li>vilka platser som är räknade och vilka som återstår</li>
-              <li>förväntat och räknat antal</li>
-              <li>avvikelser som kan godkännas eller lämnas för utredning</li>
+              <li>räknade och återstående platser</li>
+              <li>förväntat och räknat antal samt avvikelser</li>
               <li>digital signatur och namnförtydligande</li>
             </ul>
             <p className={styles.featureStatement}>
-              Saldona uppdateras först när alla platser har räknats och en
-              administratör har granskat, signerat och slutfört inventeringen.
+              Saldona uppdateras när en administratör signerar och slutför
+              inventeringen.
             </p>
           </div>
 
-          <div className={`${styles.featureVisual} ${styles.inventoryVisual}`}>
+          <div
+            className={`${styles.featureVisual} ${styles.inventoryVisual}`}
+            data-reveal-item
+            data-reveal-order="1"
+            data-reveal-from="left"
+          >
             <div className={styles.imageGlow} aria-hidden="true" />
             <Image
               className={styles.inventoryImage}
@@ -348,7 +354,7 @@ export default function LandingPage() {
               sizes="(max-width: 900px) 88vw, 44vw"
             />
           </div>
-        </div>
+        </ScrollReveal>
       </section>
 
       <section
@@ -356,26 +362,31 @@ export default function LandingPage() {
         aria-labelledby="documents-title"
         className={`${styles.featureSection} ${styles.reportsSection}`}
       >
-        <div className={`${styles.featureInner} ${styles.documentsFeature}`}>
-          <div className={styles.featureCopy}>
+        <ScrollReveal
+          className={`${styles.featureInner} ${styles.documentsFeature}`}
+          mode="group"
+        >
+          <div className={styles.featureCopy} data-reveal-item>
             <h2 id="documents-title">Från lagersaldo till färdiga rapporter</h2>
             <p>
-              Hämta lagervärdes-, avvikelse- och lagerhälsorapporter som PDF.
-              Lagervärdesrapporten kan omfatta alla lager eller ett valt lager,
-              och företagets dokumentuppgifter följer med.
+              Hämta lagervärdesrapport för alla lager eller ett valt lager samt
+              företagsövergripande avvikelse- och lagerhälsorapporter som PDF.
             </p>
             <p>
-              Inventeringsrapporten visar lagerplats, produkt, förväntat och
-              räknat antal, styckvärde, totalvärde och värdedifferens. Inkommande
-              varuvärden, inventeringens tidpunkter och den digitala signaturen
-              följer med i samma underlag när de finns registrerade.
+              Inventeringsrapporten samlar räknade antal, värdedifferenser,
+              inkommande varuvärden, tidpunkter och digital signatur.
             </p>
             <p className={styles.featureStatement}>
-              Tydliga underlag — färdiga att spara, dela och följa upp.
+              Rapporterna innehåller företagets sparade dokumentuppgifter.
             </p>
           </div>
 
-          <div className={`${styles.featureVisual} ${styles.documentsVisual}`}>
+          <div
+            className={`${styles.featureVisual} ${styles.documentsVisual}`}
+            data-reveal-item
+            data-reveal-order="1"
+            data-reveal-from="right"
+          >
             <div className={styles.imageGlow} aria-hidden="true" />
             <Image
               className={styles.documentsImage}
@@ -386,7 +397,7 @@ export default function LandingPage() {
               sizes="(max-width: 900px) 88vw, 44vw"
             />
           </div>
-        </div>
+        </ScrollReveal>
       </section>
 
       <div className={styles.closingFlow}>
@@ -394,17 +405,21 @@ export default function LandingPage() {
           aria-labelledby="audience-title"
           className={styles.audienceSection}
         >
-          <div className={styles.audienceInner}>
-            <header className={styles.audienceHeader}>
+          <ScrollReveal className={styles.audienceInner} mode="group">
+            <header className={styles.audienceHeader} data-reveal-item>
               <h2 id="audience-title">
                 Byggt för verksamheter med ett fysiskt lager.
               </h2>
             </header>
-            <div className={styles.audienceDetails}>
+            <div
+              className={styles.audienceDetails}
+              data-reveal-item
+              data-reveal-order="1"
+            >
               <p className={styles.audienceLead}>
-                För mindre företag som behöver struktur på lagerplatser,
-                verifierade saldon och spårbara förändringar — utan att införa
-                ett tungt WMS.
+                För mindre företag som behöver registrera produkter på fysiska
+                lagerplatser, inventera med mobilen och följa saldoförändringar
+                med tidpunkt och användare.
               </p>
               <ul className={styles.audienceProofs} aria-label="Det viktigaste">
                 {audienceProofs.map((proof) => (
@@ -424,27 +439,32 @@ export default function LandingPage() {
                 ))}
               </ul>
             </div>
-          </div>
+          </ScrollReveal>
         </section>
 
         <section
           aria-labelledby="supporting-features-title"
           className={styles.supportingSection}
         >
-          <div className={styles.supportingInner}>
-            <header className={styles.supportingHeader}>
+          <ScrollReveal className={styles.supportingInner} mode="group">
+            <header className={styles.supportingHeader} data-reveal-item>
               <h2 id="supporting-features-title">
                 Verktygen för det dagliga lagerarbetet finns på plats.
               </h2>
               <p>
-                Mobil åtkomst, tydliga behörigheter, säker produktimport och
-                stöd för flera lager i samma företag.
+                Mobil PWA, två användarroller, CSV-import med förhandsgranskning
+                och flera lager i samma företag.
               </p>
             </header>
 
             <ul className={styles.capabilityGrid}>
-              {supportingFeatures.map((feature) => (
-                <li key={feature.title} className={styles.capabilityCard}>
+              {supportingFeatures.map((feature, index) => (
+                <li
+                  key={feature.title}
+                  className={styles.capabilityCard}
+                  data-reveal-item
+                  data-reveal-order={index + 1}
+                >
                   <span className={styles.capabilityIcon} aria-hidden="true">
                     <AppIcon name={feature.icon} width={23} height={23} />
                   </span>
@@ -453,7 +473,7 @@ export default function LandingPage() {
                 </li>
               ))}
             </ul>
-          </div>
+          </ScrollReveal>
         </section>
 
         <section
@@ -461,35 +481,39 @@ export default function LandingPage() {
           aria-labelledby="onboarding-title"
           className={styles.onboardingSection}
         >
-          <header className={styles.onboardingHeader}>
-            <h2 id="onboarding-title">
-              Kom igång utan ett implementationsprojekt.
-            </h2>
-            <p>
-              Skapa strukturen, placera produkterna och genomför den första
-              fysiska inventeringen för att etablera verifierade startsaldon.
-            </p>
-          </header>
-          <ol className={styles.onboardingSteps}>
-            {onboardingSteps.map((step, index) => (
-              <li key={step.title}>
-                <span aria-hidden="true">
-                  {String(index + 1).padStart(2, "0")}
-                </span>
-                <div>
-                  <strong>{step.title}</strong>
-                  <small>{step.description}</small>
-                </div>
-              </li>
-            ))}
-          </ol>
+          <ScrollReveal mode="group">
+            <header className={styles.onboardingHeader} data-reveal-item>
+              <h2 id="onboarding-title">Kom igång i fem konkreta steg.</h2>
+              <p>
+                Skapa lager och platser, lägg till produkter, placera dem och
+                genomför den första fysiska inventeringen.
+              </p>
+            </header>
+            <ol className={styles.onboardingSteps}>
+              {onboardingSteps.map((step, index) => (
+                <li
+                  key={step.title}
+                  data-reveal-item
+                  data-reveal-order={index + 1}
+                >
+                  <span aria-hidden="true">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                  <div>
+                    <strong>{step.title}</strong>
+                    <small>{step.description}</small>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </ScrollReveal>
         </section>
 
         <section aria-labelledby="cta-title" className={styles.ctaSection}>
-          <div className={styles.ctaPanel}>
+          <ScrollReveal className={styles.ctaPanel}>
             <div className={styles.ctaCopy}>
               <h2 id="cta-title">
-                Vet vad du har. Vet var det finns. Vet att saldot stämmer.
+                Se registrerat saldo, fysisk placering och senaste verifiering.
               </h2>
               <p>
                 Ansök om pilot så går vi igenom ert lager och sätter upp nästa
@@ -513,7 +537,7 @@ export default function LandingPage() {
                 sizes="(max-width: 900px) 100vw, 52vw"
               />
             </div>
-          </div>
+          </ScrollReveal>
         </section>
       </div>
 
@@ -525,8 +549,8 @@ export default function LandingPage() {
               <div className={styles.footerDescription}>
                 <p>Lagerkontroll för verksamheter med ett fysiskt lager.</p>
                 <p>
-                  Från fysiska lagerplatser och verifierade saldon till historik
-                  och signerade rapporter.
+                  Från lagerplatser och fysiska inventeringar till spårbar
+                  historik och signerade inventeringsrapporter.
                 </p>
               </div>
               <span className={styles.footerStatus}>

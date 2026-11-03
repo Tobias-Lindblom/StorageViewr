@@ -385,7 +385,7 @@
 }
 
 .healthInner {
-  padding-block: clamp(26px, 4vw, 52px) clamp(76px, 9vw, 118px);
+  padding-block: clamp(24px, 3vw, 42px) clamp(62px, 7vw, 88px);
 }
 
 .healthPanel {
@@ -461,7 +461,7 @@
 
 .healthProgress > span {
   display: block;
-  width: 92%;
+  width: 93%;
   height: 100%;
   border-radius: inherit;
   background: var(--brand-gradient);
@@ -590,7 +590,7 @@
   grid-template-columns: minmax(0, 1.04fr) minmax(360px, 0.96fr);
   align-items: center;
   gap: clamp(48px, 7vw, 100px);
-  padding-block: clamp(88px, 11vw, 148px);
+  padding-block: clamp(72px, 8.5vw, 112px);
 }
 
 .featureCopy {
@@ -659,7 +659,7 @@
 }
 
 .reportsSection .featureInner {
-  padding-bottom: clamp(64px, 7vw, 92px);
+  padding-bottom: clamp(48px, 5vw, 66px);
 }
 
 .storageFeature {
@@ -1005,13 +1005,13 @@
 
 .onboardingSection {
   scroll-margin-top: 92px;
-  padding-block: clamp(54px, 6vw, 66px) clamp(28px, 3vw, 38px);
+  padding-block: clamp(48px, 5vw, 58px) clamp(24px, 2.5vw, 32px);
 }
 
 .onboardingHeader {
   width: min(100%, 760px);
   max-width: 760px;
-  margin: 0 0 clamp(52px, 6vw, 70px);
+  margin: 0 0 clamp(40px, 4.5vw, 54px);
 }
 
 .onboardingHeader h2 {
@@ -1580,7 +1580,7 @@
 
   .heroInner {
     padding-top: 48px;
-    padding-bottom: 68px;
+    padding-bottom: 52px;
   }
 
   .heroCopy h1 {
@@ -1602,7 +1602,7 @@
   }
 
   .healthInner {
-    padding-block: 18px 72px;
+    padding-block: 18px 54px;
   }
 
   .healthPanel {
@@ -1611,12 +1611,12 @@
   }
 
   .featureInner {
-    gap: 40px;
-    padding-block: 78px;
+    gap: 32px;
+    padding-block: 58px;
   }
 
   .supportingInner {
-    padding-block: 44px 48px;
+    padding-block: 38px 40px;
   }
 
   .audienceHeader h2,
@@ -1633,16 +1633,16 @@
   }
 
   .onboardingSection {
-    padding-block: 58px 36px;
+    padding-block: 48px 28px;
   }
 
   .audienceInner {
-    padding-block: 64px 36px;
+    padding-block: 54px 28px;
   }
 
   .onboardingSteps {
     grid-template-columns: minmax(0, 1fr);
-    gap: 18px;
+    gap: 12px;
   }
 
   .onboardingSteps li {
@@ -1651,6 +1651,18 @@
     grid-template-columns: 44px minmax(0, 1fr);
     align-items: center;
     gap: 13px;
+    padding: 16px;
+  }
+
+  .onboardingHeader {
+    margin-bottom: 36px;
+  }
+
+  .scannerVisual,
+  .storageVisual,
+  .inventoryVisual,
+  .documentsVisual {
+    width: min(92%, 480px);
   }
 
   .onboardingSteps li:last-child {
