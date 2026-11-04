@@ -7,6 +7,7 @@ import { InventoryLevel } from "@/models/inventory-level";
 import { InventoryMovement } from "@/models/inventory-movement";
 import { Product } from "@/models/product";
 import { getWarehouseSetupState } from "@/features/dashboard/setup-state";
+import { measureServerOperation } from "@/lib/server/performance";
 
 export const VERIFIED_MAX_DAYS = 20;
 export const DUE_SOON_MAX_DAYS = 30;
@@ -221,7 +222,7 @@ export function summarizeInventoryHealthPositions(
   };
 }
 
-export async function getInventoryHealthSummary(
+async function loadInventoryHealthSummary(
   context: TenantContext,
   options: { now?: Date; baselineEstablished?: boolean } = {},
 ): Promise<InventoryHealthSummary> {
@@ -255,9 +256,15 @@ export async function getInventoryHealthSummary(
   }
 
   const positionKeys = new Set(positions.map(row => pairKey(row.productId, row.locationId)));
+  const productIds = [...new Map(positions.map(row => [String(row.productId), row.productId])).values()];
+  const locationIds = [...new Map(positions.map(row => [String(row.locationId), row.locationId])).values()];
   const [baselines, openDiscrepancies] = await Promise.all([
     InventoryCount.aggregate<BaselineRow>([
-    { $match: { organizationId } },
+    { $match: {
+      organizationId,
+      productId: { $in: productIds },
+      locationId: { $in: locationIds },
+    } },
     { $lookup: {
       from: "inventorySessions", let: { sessionId: "$inventorySessionId" },
       pipeline: [{ $match: { organizationId, status: "completed", $expr: { $eq: ["$_id", "$$sessionId"] } } }],
@@ -282,7 +289,13 @@ export async function getInventoryHealthSummary(
       inventorySessionId: "$row.inventorySessionId", completedAt: "$row.session.completedAt",
     } },
     ]),
-    InventoryDiscrepancy.find({ organizationId, status: "OPEN" })
+    InventoryDiscrepancy.find({
+      organizationId,
+      status: "OPEN",
+      productId: { $in: productIds },
+      locationId: { $in: locationIds },
+    })
+      .select("inventorySessionId productId locationId expectedQuantity countedQuantity difference createdAt")
       .sort({ createdAt: -1, _id: -1 }).lean(),
   ]);
   const relevantBaselines = baselines.filter(row => positionKeys.has(pairKey(row.productId, row.locationId)));
@@ -296,9 +309,13 @@ export async function getInventoryHealthSummary(
     !date || row.completedAt < date ? row.completedAt : date, null);
   const movementRows = earliest ? await InventoryMovement.find({
     organizationId,
+    productId: { $in: productIds },
+    locationId: { $in: locationIds },
     createdAt: { $gt: earliest },
     type: { $in: ["RECEIPT", "TRANSFER", "CORRECTION", "INVENTORY"] },
-  }).sort({ createdAt: 1, _id: 1 }).lean() : [];
+  })
+    .select("type productId locationId previousQuantity newQuantity difference createdAt")
+    .sort({ createdAt: 1, _id: 1 }).lean() : [];
   const movementsByPair = new Map<string, HealthMovement[]>();
   for (const movement of movementRows) {
     const key = pairKey(movement.productId, movement.locationId);
@@ -349,4 +366,14 @@ export async function getInventoryHealthSummary(
   const baselineEstablished =
     options.baselineEstablished ?? setup?.baselineEstablished ?? false;
   return baselineEstablished ? summary : { ...summary, score: null };
+}
+
+export async function getInventoryHealthSummary(
+  context: TenantContext,
+  options: { now?: Date; baselineEstablished?: boolean } = {},
+): Promise<InventoryHealthSummary> {
+  return measureServerOperation(
+    "inventory.health",
+    () => loadInventoryHealthSummary(context, options),
+  );
 }

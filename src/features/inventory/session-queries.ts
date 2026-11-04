@@ -12,6 +12,7 @@ import { Product } from "@/models/product";
 import { Warehouse } from "@/models/warehouse";
 import { objectIdSchema } from "@/validation/organization";
 import { sekToUnits } from "@/lib/money";
+import { measureServerOperation } from "@/lib/server/performance";
 
 export async function listInventories(
   context: TenantContext,
@@ -24,18 +25,25 @@ export async function listInventories(
     organizationId: context.organizationId,
     ...(status ? { status } : {}),
   };
-  const total = await InventorySession.countDocuments(filter);
-  const pages = Math.max(1, Math.ceil(total / 20)),
-    page = Math.min(requested, pages);
-  const records = await InventorySession.find(filter)
+  const pageRecords = (page: number) => InventorySession.find(filter)
+    .select("name warehouseName status startedAt completedAt")
     .sort(status === "completed" ? { completedAt: -1, _id: -1 } : { startedAt: -1, _id: -1 })
     .skip((page - 1) * 20)
     .limit(20)
     .lean();
+  const [total, requestedRecords] = await Promise.all([
+    InventorySession.countDocuments(filter),
+    pageRecords(requested),
+  ]);
+  const pages = Math.max(1, Math.ceil(total / 20)),
+    page = Math.min(requested, pages);
+  const records = page === requested
+    ? requestedRecords
+    : await pageRecords(page);
   const scopes = await InventorySessionLocation.find({
     organizationId: context.organizationId,
     inventorySessionId: { $in: records.map((row) => row._id) },
-  }).lean();
+  }).select("inventorySessionId status").lean();
   return {
     page,
     pages,
@@ -57,7 +65,7 @@ export async function listInventories(
   };
 }
 
-export async function getInventory(context: TenantContext, id: string) {
+async function loadInventory(context: TenantContext, id: string) {
   objectIdSchema.parse(id);
   const db = await connectDb();
   // A consistent snapshot keeps the displayed review revision tied to its counts.
@@ -254,6 +262,12 @@ export async function getInventory(context: TenantContext, id: string) {
       ),
     };
   });
+}
+export async function getInventory(context: TenantContext, id: string) {
+  return measureServerOperation(
+    "inventory.detail",
+    () => loadInventory(context, id),
+  );
 }
 export type InventoryDetail = Awaited<ReturnType<typeof getInventory>>;
 export type InventoryPlace = InventoryDetail["places"][number];

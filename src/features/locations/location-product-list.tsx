@@ -7,7 +7,7 @@ export function LocationProductList({ items }: { items: StockData["items"] }) {
   return <ul className="location-product-list">
     {items.map(row => <li key={row.id}>
       <Link href={"/products/" + row.productId} className="location-product-row">
-        {row.photoUrl ? <ProductPhoto src={row.photoUrl} alt="" className="location-product-photo" /> :
+        {row.photoUrl ? <ProductPhoto src={row.photoUrl} alt="" className="location-product-photo" size="thumbnail" /> :
           <span className="location-product-photo product-photo-placeholder"><AppIcon name="product" width={23} height={23} /></span>}
         <span className="location-product-identity">
           <span>{row.productName}</span><span>SKU {row.sku}{!row.active && " · Inaktiv"}</span>

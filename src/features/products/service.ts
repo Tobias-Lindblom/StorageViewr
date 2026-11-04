@@ -22,6 +22,12 @@ function withUnitValue<T extends { unitValue?: string | null; unitValueOre?: num
     ? { unitValue: legacyOreToSek(unitValueOre) } : {}) };
 }
 
+function productPhotoUrl(record: { _id: Types.ObjectId; hasPhoto: boolean; updatedAt: Date }) {
+  return record.hasPhoto
+    ? "/api/products/" + record._id + "/photo?v=" + record.updatedAt.getTime()
+    : "";
+}
+
 function serialize(record: ProductRecord & { _id: Types.ObjectId }) {
   return {
     id: record._id.toString(),
@@ -31,7 +37,7 @@ function serialize(record: ProductRecord & { _id: Types.ObjectId }) {
     description: record.description,
     unitValue: record.unitValue !== undefined ? record.unitValue : legacyOreToSek(record.unitValueOre ?? null),
     imageUrl: record.imageUrl,
-    photoUrl: record.hasPhoto ? "/api/products/" + record._id + "/photo?v=" + record.updatedAt.getTime() : "",
+    photoUrl: productPhotoUrl(record),
     active: record.active,
   };
 }
@@ -52,23 +58,49 @@ export async function listProducts(context: TenantContext, input: unknown = {}) 
   const query = productQuerySchema.parse(input);
   const filter = productFilter(context, query);
   const pageSize = 24;
-  type Row = ProductRecord & { _id: Types.ObjectId; totalQuantity: string; locationCount: number };
+  type Row = {
+    _id: Types.ObjectId;
+    sku: string;
+    name: string;
+    barcode: string;
+    description: string;
+    unitValue?: string | null;
+    unitValueOre?: number | null;
+    imageUrl: string;
+    hasPhoto: boolean;
+    active: boolean;
+    updatedAt: Date;
+    totalQuantity: string;
+    locationCount: number;
+  };
   const project: PipelineStage[] = [
-    { $set: { totalQuantity: { $toString: "$stockTotal" } } },
-    { $unset: ["stockSummary", "stockTotal"] },
+    { $project: {
+      sku: 1, name: 1, barcode: 1, description: 1, unitValue: 1, unitValueOre: 1,
+      imageUrl: 1, hasPhoto: 1, active: 1, updatedAt: 1,
+      totalQuantity: { $toString: "$stockTotal" }, locationCount: 1,
+    } },
   ];
   let total: number;
   let page: number;
   let records: Row[];
   if (query.stock === "all") {
-    total = await Product.countDocuments(filter);
-    page = Math.min(query.page, Math.max(1, Math.ceil(total / pageSize)));
-    // For the normal list, only sum the products on the current page.
-    records = await Product.aggregate<Row>([
+    const requestedRecords = Product.aggregate<Row>([
       { $match: filter }, { $sort: { name: 1, _id: 1 } },
-      { $skip: (page - 1) * pageSize }, { $limit: pageSize },
+      { $skip: (query.page - 1) * pageSize }, { $limit: pageSize },
       ...productStockStages(context), ...project,
     ]);
+    [total, records] = await Promise.all([
+      Product.countDocuments(filter),
+      requestedRecords,
+    ]);
+    page = Math.min(query.page, Math.max(1, Math.ceil(total / pageSize)));
+    if (page !== query.page) {
+      records = await Product.aggregate<Row>([
+        { $match: filter }, { $sort: { name: 1, _id: 1 } },
+        { $skip: (page - 1) * pageSize }, { $limit: pageSize },
+        ...productStockStages(context), ...project,
+      ]);
+    }
   } else {
     const stockFilter = query.stock === "in-stock" ? { stockTotal: { $gt: 0 } } :
       query.stock === "empty" ? { stockTotal: 0 } : { locationCount: 0 };
@@ -89,7 +121,11 @@ export async function listProducts(context: TenantContext, input: unknown = {}) 
     records = page === query.page ? result.items : await Product.aggregate<Row>([...pipeline, ...window(page)]);
   }
   return { items: records.map(row => ({
-    ...serialize(row), totalQuantity: row.totalQuantity, locationCount: row.locationCount,
+    id: row._id.toString(), sku: row.sku, name: row.name,
+    barcode: row.barcode, description: row.description,
+    unitValue: row.unitValue !== undefined ? row.unitValue : legacyOreToSek(row.unitValueOre ?? null),
+    imageUrl: row.imageUrl, photoUrl: productPhotoUrl(row), active: row.active,
+    totalQuantity: row.totalQuantity, locationCount: row.locationCount,
   })), total, page, pages: Math.max(1, Math.ceil(total / pageSize)) };
 }
 export async function getProductStockCounts(context: TenantContext, input: unknown = {}) {

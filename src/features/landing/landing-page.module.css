@@ -261,11 +261,20 @@
 .heroCopy h1 {
   max-width: 680px;
   margin: 0 0 28px;
+  animation: heroCopyEntrance 560ms cubic-bezier(0.22, 1, 0.36, 1) both;
   overflow-wrap: normal;
   font-size: clamp(3.15rem, 6.2vw, 5.5rem);
   line-height: 0.99;
   letter-spacing: -0.058em;
   text-wrap: balance;
+}
+
+.heroDescription {
+  animation: heroCopyEntrance 560ms cubic-bezier(0.22, 1, 0.36, 1) 80ms both;
+}
+
+.heroActionsGroup {
+  animation: heroCopyEntrance 560ms cubic-bezier(0.22, 1, 0.36, 1) 180ms both;
 }
 
 .lead {
@@ -357,6 +366,7 @@
   display: grid;
   min-width: 0;
   place-items: center;
+  animation: heroVisualEntrance 640ms cubic-bezier(0.22, 1, 0.36, 1) 280ms both;
 }
 
 .visualHalo,
@@ -376,7 +386,43 @@
 .heroImage {
   width: min(100%, 570px);
   height: auto;
+  animation: heroImageFloat 7.5s ease-in-out 1s infinite alternate;
   filter: drop-shadow(0 42px 48px rgb(0 0 0 / 0.55));
+  will-change: transform;
+}
+
+@keyframes heroCopyEntrance {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 16px, 0);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes heroVisualEntrance {
+  from {
+    opacity: 0;
+    transform: translate3d(26px, 0, 0);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes heroImageFloat {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+
+  to {
+    transform: translate3d(0, -4px, 0);
+  }
 }
 
 .healthSection {
@@ -422,6 +468,8 @@
 }
 
 .healthScore strong {
+  display: inline-flex;
+  align-items: baseline;
   color: var(--text-primary);
   font-size: clamp(2.5rem, 4vw, 3.35rem);
   line-height: 0.92;
@@ -429,7 +477,13 @@
   font-variant-numeric: tabular-nums;
 }
 
-.healthScore strong span {
+.healthScoreNumber {
+  display: inline-block;
+  min-width: 2ch;
+  text-align: right;
+}
+
+.healthScoreUnit {
   margin-left: 2px;
   color: #c597ff;
   font-size: 0.58em;
@@ -461,11 +515,14 @@
 
 .healthProgress > span {
   display: block;
-  width: 93%;
+  width: 100%;
   height: 100%;
   border-radius: inherit;
   background: var(--brand-gradient);
   box-shadow: 0 0 14px color-mix(in srgb, var(--brand) 28%, transparent);
+  transform: scaleX(0);
+  transform-origin: left center;
+  will-change: transform;
 }
 
 .healthSummary {
@@ -814,6 +871,11 @@
   line-height: 1.68;
 }
 
+.audienceLead strong {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
 .audienceProofs {
   display: grid;
   gap: 12px;
@@ -1054,6 +1116,14 @@
     rgb(181 137 255 / 0.14)
   );
   content: "";
+  transform: scaleX(0);
+  transform-origin: left center;
+  will-change: transform;
+}
+
+[data-reveal-state="visible"] .onboardingSteps::before {
+  transform: scaleX(1);
+  transition: transform 820ms cubic-bezier(0.22, 1, 0.36, 1) 60ms;
 }
 
 .onboardingSteps li {
@@ -1138,9 +1208,9 @@
   max-width: 650px;
 }
 
-.ctaCopy > p:last-child {
+.ctaCopy > p {
   max-width: 620px;
-  margin: 20px 0 0;
+  margin: 22px 0 0;
   color: var(--text-secondary);
   font-size: 16px;
   line-height: 1.65;
@@ -1748,6 +1818,35 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .heroCopy h1,
+  .heroDescription,
+  .heroActionsGroup,
+  .heroVisual,
+  .heroImage {
+    opacity: 1;
+    animation: none;
+    transform: none;
+  }
+
+  .healthScoreNumber {
+    display: none;
+  }
+
+  .healthScore strong::before {
+    content: "93";
+  }
+
+  .healthProgress > span {
+    transform: scaleX(0.93) !important;
+    will-change: auto;
+  }
+
+  .onboardingSteps::before {
+    transform: scaleX(1);
+    transition: none;
+    will-change: auto;
+  }
+
   .header,
   .navigationLinks a::after,
   .menuButton > span,

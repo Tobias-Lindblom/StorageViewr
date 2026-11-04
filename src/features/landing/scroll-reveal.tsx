@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import styles from "./scroll-reveal.module.css";
 
 type ScrollRevealProps = {
@@ -9,12 +16,19 @@ type ScrollRevealProps = {
   mode?: "single" | "group";
 };
 
+const ScrollRevealVisibleContext = createContext(false);
+
+export function useScrollRevealVisible() {
+  return useContext(ScrollRevealVisibleContext);
+}
+
 export function ScrollReveal({
   children,
   className = "",
   mode = "single",
 }: ScrollRevealProps) {
   const elementRef = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
     const element = elementRef.current;
@@ -24,15 +38,16 @@ export function ScrollReveal({
       "(prefers-reduced-motion: reduce)",
     ).matches;
     if (reducedMotion || !("IntersectionObserver" in window)) {
-      element.dataset.revealState = "visible";
-      return;
+      const animationFrame = window.requestAnimationFrame(() => {
+        setIsVisible(true);
+      });
+      return () => window.cancelAnimationFrame(animationFrame);
     }
 
-    element.dataset.revealState = "hidden";
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (!entry?.isIntersecting) return;
-        element.dataset.revealState = "visible";
+        setIsVisible(true);
         observer.disconnect();
       },
       {
@@ -46,12 +61,15 @@ export function ScrollReveal({
   }, []);
 
   return (
-    <div
-      ref={elementRef}
-      className={`${styles.root} ${className}`.trim()}
-      data-reveal-mode={mode}
-    >
-      {children}
-    </div>
+    <ScrollRevealVisibleContext.Provider value={isVisible}>
+      <div
+        ref={elementRef}
+        className={`${styles.root} ${className}`.trim()}
+        data-reveal-mode={mode}
+        data-reveal-state={isVisible ? "visible" : "hidden"}
+      >
+        {children}
+      </div>
+    </ScrollRevealVisibleContext.Provider>
   );
 }

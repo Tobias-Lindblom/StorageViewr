@@ -30,6 +30,7 @@ const schema = new Schema(
 );
 schema.index({ organizationId: 1, code: 1 }, { unique: true });
 schema.index({ organizationId: 1, active: 1 });
+schema.index({ organizationId: 1, active: -1, name: 1, _id: 1 });
 export type WarehouseRecord = InferSchemaType<typeof schema>;
 export const Warehouse: Model<WarehouseRecord> =
   (models.Warehouse as Model<WarehouseRecord> | undefined) ??

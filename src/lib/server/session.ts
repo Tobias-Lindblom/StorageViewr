@@ -2,6 +2,7 @@ import "server-only";
 import { createHash, randomBytes } from "node:crypto";
 import { cookies } from "next/headers";
 import { Types } from "mongoose";
+import { cache } from "react";
 import { connectDb } from "./db";
 import { AppError } from "./errors";
 import { Session } from "@/models/session";
@@ -20,7 +21,7 @@ export async function createSession(userId: Types.ObjectId, organizationId?: Typ
   await Session.create({ tokenHash: hashToken(token), userId, organizationId, expiresAt });
   return { token, expiresAt };
 }
-export async function resolveSession(token?: string) {
+export const resolveSession = cache(async (token?: string) => {
   if (!token || !/^[a-f0-9]{64}$/.test(token))
     throw new AppError(401, "UNAUTHENTICATED", "Logga in för att fortsätta.");
   await connectDb();
@@ -36,10 +37,10 @@ export async function resolveSession(token?: string) {
     );
   }
   return session;
-}
-export async function requireSession() {
+});
+export const requireSession = cache(async () => {
   return resolveSession((await cookies()).get(sessionCookie)?.value);
-}
+});
 export async function optionalSession() {
   try {
     return await requireSession();

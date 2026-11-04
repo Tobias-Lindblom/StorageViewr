@@ -13,14 +13,14 @@ export async function tenantForSession(
       "ORGANIZATION_REQUIRED",
       "Välj eller skapa ett företag.",
     );
-  const membership = await Membership.findOne({
-    organizationId: session.organizationId,
-    userId: session.userId,
-  }).lean();
-  if (
-    !membership ||
-    !(await Organization.exists({ _id: session.organizationId }))
-  ) {
+  const [membership, organization] = await Promise.all([
+    Membership.findOne({
+      organizationId: session.organizationId,
+      userId: session.userId,
+    }).lean(),
+    Organization.exists({ _id: session.organizationId }),
+  ]);
+  if (!membership || !organization) {
     throw new AppError(403, "FORBIDDEN", "Du saknar åtkomst till företaget.");
   }
   return {

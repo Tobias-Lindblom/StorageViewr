@@ -12,6 +12,7 @@ const schema = new Schema({
 }, { collection: "inventorySessionLocations" });
 schema.index({ organizationId: 1, inventorySessionId: 1, locationId: 1 }, { unique: true });
 schema.index({ organizationId: 1, locationId: 1 });
+schema.index({ organizationId: 1, status: 1, completedAt: -1, _id: -1 });
 type InventorySessionLocationRecord = InferSchemaType<typeof schema>;
 export const InventorySessionLocation: Model<InventorySessionLocationRecord> =
   (models.InventorySessionLocation as Model<InventorySessionLocationRecord> | undefined) ?? model<InventorySessionLocationRecord>("InventorySessionLocation", schema);

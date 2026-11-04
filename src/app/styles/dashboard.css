@@ -35,6 +35,16 @@
 .dashboard-welcome h1 { margin: 0 0 3px; font-size: 24px; line-height: 1.18; font-weight: 700; letter-spacing: -0.45px; }
 .dashboard-welcome p { color: var(--color-muted); font-size: 13px; line-height: 1.4; }
 .dashboard-layout { display: grid; gap: 11px; }
+.dashboard-skeleton-line, .dashboard-skeleton-card { display: block; overflow: hidden; background: linear-gradient(100deg, color-mix(in srgb, var(--color-surface-raised) 68%, var(--color-canvas)) 30%, color-mix(in srgb, var(--color-accent) 10%, var(--color-surface-raised)) 50%, color-mix(in srgb, var(--color-surface-raised) 68%, var(--color-canvas)) 70%); background-size: 220% 100%; animation: dashboard-skeleton-shimmer 1.35s ease-in-out infinite; }
+.dashboard-skeleton-line { border-radius: 999px; }
+.dashboard-skeleton-line.is-title { width: min(48%, 260px); height: 28px; margin-bottom: 8px; }
+.dashboard-skeleton-line.is-copy { width: min(66%, 360px); height: 14px; }
+.dashboard-skeleton-card { min-height: 116px; border: 1px solid color-mix(in srgb, var(--color-line) 72%, transparent); border-radius: 12px; }
+.dashboard-skeleton-card.is-health { min-height: 170px; }
+.dashboard-skeleton-card.is-actions { min-height: 82px; }
+.dashboard-skeleton-card.is-activity { min-height: 180px; }
+@keyframes dashboard-skeleton-shimmer { to { background-position-x: -220%; } }
+@media (prefers-reduced-motion: reduce) { .dashboard-skeleton-line, .dashboard-skeleton-card { animation: none; } }
 .dashboard-card { min-width: 0; border: 1px solid color-mix(in srgb, var(--color-accent) 24%, var(--color-line)); border-radius: 12px; background: radial-gradient(circle at 84% 0%, #6335a51f, transparent 48%), linear-gradient(135deg, color-mix(in srgb, var(--color-surface-raised) 74%, var(--color-canvas)), color-mix(in srgb, var(--color-surface) 58%, var(--color-canvas))); box-shadow: inset 0 1px 0 #ffffff08; }
 .dashboard-card-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .dashboard-card-heading h2, .dashboard-section-heading h2 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 15px; line-height: 1.35; font-weight: 700; }
@@ -145,6 +155,11 @@
   .warehouse-dashboard { max-width: 960px; padding-top: 0; }
   .dashboard-welcome h1 { font-size: 28px; }
   .dashboard-layout { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+  .dashboard-skeleton-card.is-health { grid-column: 1; grid-row: 1; }
+  .dashboard-skeleton-card.is-focus { grid-column: 1; grid-row: 2; }
+  .dashboard-skeleton-card.is-actions { grid-column: 1; grid-row: 3; }
+  .dashboard-skeleton-card.is-overview { grid-column: 2; grid-row: 1; }
+  .dashboard-skeleton-card.is-activity { grid-column: 2; grid-row: 2 / span 2; }
   .dashboard-health { grid-column: 1; grid-row: 1; }
   .dashboard-focus { grid-column: 1; grid-row: 2; }
   .dashboard-actions-section { grid-column: 1; grid-row: 3; }

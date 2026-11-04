@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { Organization } from "@/models/organization";
 import { Membership } from "@/models/membership";
 import { Session } from "@/models/session";
@@ -82,10 +83,15 @@ export async function selectOrganization(session: AuthSession, input: unknown) {
     throw new AppError(401, "UNAUTHENTICATED", "Logga in igen.");
   return { id: membership.organizationId.toString() };
 }
-export async function getOrganization(context: TenantContext) {
+const getOrganizationById = cache(async (
+  organizationId: string,
+  role: TenantContext["role"],
+) => {
   const organization = await Organization.findOne({
-    _id: context.organizationId,
-  }).lean();
+    _id: organizationId,
+  })
+    .select("name slug organizationNumber addressLine1 addressLine2 postalCode city country contactEmail phone website")
+    .lean();
   if (!organization)
     throw new AppError(
       404,
@@ -97,8 +103,12 @@ export async function getOrganization(context: TenantContext) {
     name: organization.name,
     slug: organization.slug,
     ...organizationDocumentDetails(organization),
-    role: context.role,
+    role,
   };
+});
+
+export async function getOrganization(context: TenantContext) {
+  return getOrganizationById(String(context.organizationId), context.role);
 }
 export async function updateOrganization(
   context: TenantContext,

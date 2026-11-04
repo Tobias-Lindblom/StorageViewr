@@ -686,14 +686,21 @@ export async function listMovements(context: TenantContext, input: unknown) {
   const filter = { organizationId: context.organizationId, ...scope,
     type: { $in: historyMovementTypes[kind] },
     ...(q ? { $or: historySearch(q) } : {}) };
-  const total = await InventoryMovement.countDocuments(filter);
-  const pages = Math.max(1, Math.ceil(total / 20)),
-    page = Math.min(requestedPage, pages);
-  const records = await InventoryMovement.find(filter)
+  const pageRecords = (page: number) => InventoryMovement.find(filter)
+    .select("type inventorySessionId transferId transferDirection counterpartLocationId counterpartLocationCode counterpartWarehouseName previousQuantity newQuantity difference reason productName sku locationCode warehouseName performedByName createdAt")
     .sort({ createdAt: -1, _id: -1 })
     .skip((page - 1) * 20)
     .limit(20)
     .lean();
+  const [total, requestedRecords] = await Promise.all([
+    InventoryMovement.countDocuments(filter),
+    pageRecords(requestedPage),
+  ]);
+  const pages = Math.max(1, Math.ceil(total / 20)),
+    page = Math.min(requestedPage, pages);
+  const records = page === requestedPage
+    ? requestedRecords
+    : await pageRecords(page);
   return {
     page,
     pages,

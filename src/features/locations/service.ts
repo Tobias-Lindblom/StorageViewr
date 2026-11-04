@@ -19,6 +19,7 @@ import {
   locationCode,
   qrTokenSchema,
 } from "@/validation/location";
+import { measureServerOperation } from "@/lib/server/performance";
 
 function serialize(record: LocationRecord & { _id: Types.ObjectId }) {
   return {
@@ -32,7 +33,7 @@ function serialize(record: LocationRecord & { _id: Types.ObjectId }) {
     qrToken: record.qrToken,
   };
 }
-export async function listLocations(
+async function loadLocations(
   context: TenantContext,
   warehouseId?: string,
 ) {
@@ -49,7 +50,7 @@ export async function listLocations(
       organizationId: context.organizationId,
       _id: { $in: records.map((record) => record.warehouseId) },
       ...(context.role !== "admin" ? { active: true } : {}),
-    }).lean(),
+    }).select("name").lean(),
     records.length
       ? InventoryLevel.find({
           organizationId: context.organizationId,
@@ -88,6 +89,16 @@ export async function listLocations(
         totalQuantity: (summary?.totalQuantity ?? BigInt(0)).toString(),
       };
     });
+}
+export async function listLocations(
+  context: TenantContext,
+  warehouseId?: string,
+) {
+  return measureServerOperation(
+    "locations.list",
+    () => loadLocations(context, warehouseId),
+    { warehouseScoped: Boolean(warehouseId) },
+  );
 }
 export async function getLocation(context: TenantContext, id: string) {
   const record = await Location.findOne({

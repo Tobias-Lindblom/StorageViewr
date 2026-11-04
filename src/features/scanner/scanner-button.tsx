@@ -2,7 +2,12 @@
 
 import { useRef, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
-import { ScannerSheet } from "./scanner-sheet";
+import dynamic from "next/dynamic";
+
+const ScannerSheet = dynamic(
+  () => import("./scanner-sheet").then(module => module.ScannerSheet),
+  { loading: () => <p className="p-4 text-sm text-muted" role="status">Startar skannern…</p> },
+);
 
 export function ScannerButton({ children, className, label = "Skanna lagerplats" }: {
   children: ReactNode; className?: string; label?: string;

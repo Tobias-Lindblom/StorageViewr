@@ -14,6 +14,7 @@ const schema = new Schema({
 schema.index({ organizationId: 1, warehouseId: 1, code: 1 }, { unique: true });
 schema.index({ qrToken: 1 }, { unique: true });
 schema.index({ organizationId: 1, active: 1 });
+schema.index({ organizationId: 1, active: -1, code: 1, _id: 1 });
 export type LocationRecord = InferSchemaType<typeof schema>;
 export const Location: Model<LocationRecord> =
   (models.Location as Model<LocationRecord> | undefined) ?? model<LocationRecord>("Location", schema);

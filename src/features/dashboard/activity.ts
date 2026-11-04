@@ -2,8 +2,9 @@ import "server-only";
 import { Types } from "mongoose";
 import type { TenantContext } from "@/lib/server/tenant";
 import { InventorySessionLocation } from "@/models/inventory-session-location";
+import { InventoryMovement } from "@/models/inventory-movement";
 import { completedSession } from "@/features/inventory/verification";
-import { listMovements, type MovementData } from "@/features/inventory/service";
+import { checkScope, type MovementData } from "@/features/inventory/service";
 import { objectIdSchema } from "@/validation/organization";
 
 export type DashboardActivity = {
@@ -13,8 +14,33 @@ export type DashboardActivity = {
 
 export async function getDashboardActivity(context: TenantContext, options: { locationId?: string; movements?: MovementData["items"] } = {}): Promise<DashboardActivity[]> {
   const locationId = options.locationId ? objectIdSchema.parse(options.locationId) : undefined;
+  if (context.role === "admin" && locationId && !options.movements)
+    await checkScope(context, { locationId });
   const [movements, counts] = await Promise.all([
-    context.role === "admin" ? options.movements ? Promise.resolve({ items: options.movements }) : listMovements(context, locationId ? { locationId } : {}) : Promise.resolve({ items: [] }),
+    context.role === "admin"
+      ? options.movements
+        ? Promise.resolve({ items: options.movements })
+        : InventoryMovement.find({
+            organizationId: context.organizationId,
+            ...(locationId ? { locationId } : {}),
+            type: { $in: ["RECEIPT", "TRANSFER", "CORRECTION", "INVENTORY"] },
+          })
+            .select("type inventorySessionId transferDirection counterpartLocationCode difference productName locationCode createdAt")
+            .sort({ createdAt: -1, _id: -1 })
+            .limit(20)
+            .lean()
+            .then(rows => ({ items: rows.map(row => ({
+              id: String(row._id),
+              type: row.type,
+              inventorySessionId: row.inventorySessionId ? String(row.inventorySessionId) : null,
+              transferDirection: row.transferDirection ?? null,
+              counterpartLocationCode: row.counterpartLocationCode ?? null,
+              difference: row.difference,
+              productName: row.productName,
+              locationCode: row.locationCode,
+              createdAt: row.createdAt.toISOString(),
+            })) }))
+      : Promise.resolve({ items: [] }),
     InventorySessionLocation.aggregate<{
       _id: Types.ObjectId; inventorySessionId: Types.ObjectId; locationId: Types.ObjectId;
       locationCode: string; completedAt: Date;

@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/empty-state";
 import { pageTenant } from "@/lib/server/page-auth";
 import { getProductStockCounts, listProducts } from "@/features/products/service";
 import { productQuerySchema } from "@/validation/product";
+import { measureServerOperation } from "@/lib/server/performance";
 
 export default async function ProductsPage({
   searchParams,
@@ -21,9 +22,13 @@ export default async function ProductsPage({
   const query = parsed.success ? parsed.data : productQuerySchema.parse({});
   const admin = context.role === "admin";
   if (!admin) query.status = "active";
-  const [result, counts] = await Promise.all([
-    listProducts(context, query), getProductStockCounts(context, query),
-  ]);
+  const [result, counts] = await measureServerOperation(
+    "products.list",
+    () => Promise.all([
+      listProducts(context, query), getProductStockCounts(context, query),
+    ]),
+    { page: query.page, stock: query.stock },
+  );
   const pageLink = (page: number) => "/products?" + new URLSearchParams({
     q: query.q, status: query.status, stock: query.stock, page: String(page),
   });
@@ -69,7 +74,7 @@ export default async function ProductsPage({
             {result.items.map(product => (
               <Link key={product.id} href={"/products/" + product.id} className="product-list-row">
                 {product.photoUrl || product.imageUrl ? (
-                  <ProductPhoto src={product.photoUrl || product.imageUrl} alt="" className="product-list-photo" />
+                  <ProductPhoto src={product.photoUrl || product.imageUrl} alt="" className="product-list-photo" size="thumbnail" />
                 ) : (
                   <span className="product-list-photo product-photo-placeholder"><AppIcon name="product" width={28} height={28} /></span>
                 )}

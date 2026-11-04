@@ -8,21 +8,20 @@ import type { TenantContext } from "@/lib/server/tenant";
 import { productStockStages } from "@/features/products/product-stock";
 import { legacyOreToSek, sekToUnits } from "@/lib/money";
 import { getWarehouseSetupState } from "./setup-state";
+import { measureServerOperation } from "@/lib/server/performance";
 
 export async function getDashboard(context: TenantContext) {
-  const setup = await getWarehouseSetupState(context);
+  return measureServerOperation("dashboard.load", async () => {
   const filter = { organizationId: context.organizationId, active: true };
   const inventoryFilter = {
     organizationId: context.organizationId,
     status: "active" as const,
   };
-  const [
-    productStock,
-    inventoryRecords,
-    insights,
-    activity,
-  ] = await Promise.all([
-    Product.aggregate<{
+  const setupPromise = measureServerOperation(
+    "dashboard.setup",
+    () => getWarehouseSetupState(context),
+  );
+  const productStockPromise = measureServerOperation("dashboard.product-stock", () => Product.aggregate<{
       unitValue?: string | null;
       unitValueOre?: number | null;
       totalQuantity: string;
@@ -34,20 +33,33 @@ export async function getDashboard(context: TenantContext) {
         unitValueOre: 1,
         totalQuantity: { $toString: "$stockTotal" },
       } },
-    ]),
-    InventorySession.find(inventoryFilter)
+    ]));
+  const inventoriesPromise = InventorySession.find(inventoryFilter)
+      .select("name warehouseName startedAt")
       .sort({ startedAt: -1, _id: -1 })
       .limit(3)
-      .lean(),
-    getDashboardInsights(context, setup.baselineEstablished),
-    getDashboardActivity(context),
-  ]);
-  const scopes = inventoryRecords.length
-    ? await InventorySessionLocation.find({
+      .lean()
+      .then(async (inventoryRecords) => ({
+        inventoryRecords,
+        scopes: inventoryRecords.length
+          ? await InventorySessionLocation.find({
         organizationId: context.organizationId,
         inventorySessionId: { $in: inventoryRecords.map((row) => row._id) },
-      }).lean()
-    : [];
+      }).select("inventorySessionId status").lean()
+          : [],
+      }));
+  const activityPromise = measureServerOperation(
+    "dashboard.activity",
+    () => getDashboardActivity(context),
+  );
+  const setup = await setupPromise;
+  const [productStock, inventoryData, insights, activity] = await Promise.all([
+    productStockPromise,
+    inventoriesPromise,
+    getDashboardInsights(context, setup.baselineEstablished),
+    activityPromise,
+  ]);
+  const { inventoryRecords, scopes } = inventoryData;
   const stockUnitCount = productStock.reduce(
     (sum, row) => sum + BigInt(row.totalQuantity),
     BigInt(0),
@@ -86,4 +98,5 @@ export async function getDashboard(context: TenantContext) {
       };
     }),
   };
+  });
 }

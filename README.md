@@ -23,6 +23,7 @@ Implementerat:
 Mobilvyerna har saldosammanfattning, inventeringsstatus, direkta lageråtgärder,
 skanning i en bottomsheet och uppföljning på dashboarden. Se [audit och implementation](docs/mobile-workspace.md).
 Full modell och ordning: [Arkitektur](docs/architecture.md).
+Prestandafynd, mätning och kvarvarande skalningsarbete: [Prestandaaudit](docs/performance-audit.md).
 Ursprungliga krav: [Kravspecifikation](docs/requirements.md).
 
 ## Kör lokalt

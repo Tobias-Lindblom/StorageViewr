@@ -325,13 +325,17 @@ test("JSON size limits stay small by default and are explicitly expanded for bou
 });
 
 test("photos are re-encoded, oriented and stripped of metadata before storage", async () => {
-  const source = await sharp({ create: { width: 12, height: 8, channels: 3, background: "#8b5cf6" } })
+  const source = await sharp({ create: { width: 1200, height: 800, channels: 3, background: "#8b5cf6" } })
     .jpeg().withMetadata({ orientation: 6 }).toBuffer();
   const prepared = await prepareProductPhoto("data:image/jpeg;base64," + source.toString("base64"));
   assert.ok(prepared);
-  const metadata = await sharp(prepared).metadata();
+  const metadata = await sharp(prepared.detail).metadata();
+  const thumbnail = await sharp(prepared.thumbnail).metadata();
   assert.equal(metadata.format, "webp");
-  assert.equal(metadata.width, 8); assert.equal(metadata.height, 12);
+  assert.equal(metadata.width, 800); assert.equal(metadata.height, 1200);
+  assert.equal(thumbnail.format, "webp");
+  assert.equal(thumbnail.width, 213); assert.equal(thumbnail.height, 320);
+  assert.ok(prepared.thumbnail.length < prepared.detail.length);
   assert.equal(metadata.exif, undefined);
   assert.equal(metadata.icc, undefined);
   assert.equal(await prepareProductPhoto(undefined), undefined);

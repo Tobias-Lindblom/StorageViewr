@@ -1,14 +1,23 @@
 ﻿"use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { ScannerButton } from "@/features/scanner/scanner-button";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { AppIcon } from "@/components/app-icon";
 import { BottomSheet } from "@/components/bottom-sheet";
-import { StockEditor } from "@/features/inventory/stock-editor";
 import type { Choice, EditorActionState } from "@/features/inventory/stock-types";
-import { ProductPicker, type PickedProduct } from "./product-picker";
+import type { PickedProduct } from "./product-picker";
+
+const ProductPicker = dynamic(
+  () => import("./product-picker").then(module => module.ProductPicker),
+  { loading: () => <p className="text-sm text-muted" role="status">Läser produkter…</p> },
+);
+const StockEditor = dynamic(
+  () => import("@/features/inventory/stock-editor").then(module => module.StockEditor),
+  { loading: () => <p className="text-sm text-muted" role="status">Öppnar inleverans…</p> },
+);
 
 export function DashboardActions({ locations }: { locations: Choice[]; admin: boolean }) {
   const [open, setOpen] = useState(false);

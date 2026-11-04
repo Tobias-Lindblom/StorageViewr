@@ -78,6 +78,8 @@ const schema = new Schema(
   { collection: "inventorySessions", timestamps: true },
 );
 schema.index({ organizationId: 1, warehouseId: 1, status: 1 });
+schema.index({ organizationId: 1, status: 1, startedAt: -1, _id: -1 });
+schema.index({ organizationId: 1, status: 1, completedAt: -1, _id: -1 });
 type InventorySessionRecord = InferSchemaType<typeof schema>;
 const cachedInventorySession = models.InventorySession as Model<InventorySessionRecord> | undefined;
 if (

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { AppIcon } from "@/components/app-icon";
 import { BrandLogo } from "@/components/brand-logo";
 import { MaterialArrow } from "@/components/material-arrow";
+import { AnimatedHealthMetric } from "./animated-health-metric";
 import { LandingHeader } from "./landing-header";
 import { ScrollReveal } from "./scroll-reveal";
 import { FloatingScrollToTop, FooterScrollToTop } from "./scroll-to-top";
@@ -106,42 +107,44 @@ export default function LandingPage() {
         <div className={styles.heroInner}>
           <div className={styles.heroCopy}>
             <h1 id="overview-title">Se direkt hur lagret faktiskt mår</h1>
-            <p className={styles.lead}>
-              Koppla produkter och registrerade saldon till fysiska
-              lagerplatser. Inventera med mobilen och se vad som senast
-              verifierats, vilka avvikelser som är öppna och vad som behöver
-              kontrolleras.
-            </p>
-            <p className={styles.bodyCopy}>
-              QR-koder öppnar rätt lagerplats för inventering, inleverans,
-              flytt och korrigering med spårbar tidpunkt och användare.
-            </p>
-
-            <div className={styles.actions}>
-              <Link
-                href={primaryHref}
-                className={`${styles.primaryAction} button`}
-              >
-                {primaryLabel}
-                <MaterialArrow name="forward" />
-              </Link>
-              <a
-                href="#kom-igang"
-                className={`${styles.secondaryAction} button-secondary`}
-              >
-                Se hur det fungerar
-                <MaterialArrow name="down" />
-              </a>
+            <div className={styles.heroDescription}>
+              <p className={styles.lead}>
+                Koppla produkter till fysiska lagerplatser, inventera med
+                mobilen och se vilka saldon du faktiskt kan lita på.
+              </p>
+              <p className={styles.bodyCopy}>
+                Avvikelser och saldoförändringar blir spårbara med lagerplats,
+                tidpunkt och användare.
+              </p>
             </div>
 
-            <ul className={styles.facts} aria-label="Viktiga funktioner">
-              {overviewFacts.map((fact) => (
-                <li key={fact}>
-                  <span aria-hidden="true" />
-                  {fact}
-                </li>
-              ))}
-            </ul>
+            <div className={styles.heroActionsGroup}>
+              <div className={styles.actions}>
+                <Link
+                  href={primaryHref}
+                  className={`${styles.primaryAction} button`}
+                >
+                  {primaryLabel}
+                  <MaterialArrow name="forward" />
+                </Link>
+                <a
+                  href="#kom-igang"
+                  className={`${styles.secondaryAction} button-secondary`}
+                >
+                  Se hur det fungerar
+                  <MaterialArrow name="down" />
+                </a>
+              </div>
+
+              <ul className={styles.facts} aria-label="Viktiga funktioner">
+                {overviewFacts.map((fact) => (
+                  <li key={fact}>
+                    <span aria-hidden="true" />
+                    {fact}
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
 
           <div className={styles.heroVisual}>
@@ -170,28 +173,7 @@ export default function LandingPage() {
               <h2 id="health-title">
                 Se vad som verifierats — och vad som behöver kontrolleras.
               </h2>
-              <div
-                className={styles.healthScore}
-                aria-label="Exempel på lagerhälsa: 93 procent"
-              >
-                <strong>
-                  93<span>%</span>
-                </strong>
-                <span>Exempel på lagerhälsa</span>
-              </div>
-              <p className={styles.healthVerified}>
-                37 av 40 positioner bedöms som tillförlitliga
-              </p>
-              <div
-                className={styles.healthProgress}
-                role="progressbar"
-                aria-label="Andel tillförlitliga positioner i exemplet"
-                aria-valuenow={93}
-                aria-valuemin={0}
-                aria-valuemax={100}
-              >
-                <span aria-hidden="true" />
-              </div>
+              <AnimatedHealthMetric />
             </div>
             <div
               className={styles.healthSummary}
@@ -201,10 +183,9 @@ export default function LandingPage() {
               <header className={styles.healthSummaryHeader}>
                 <h3>Lagerhälsa</h3>
                 <p>
-                  StorageViewr utgår från den senaste slutförda fysiska
-                  inventeringen och kontrollerar att senare registrerade
-                  lagerhändelser bildar en sammanhängande kedja fram till det
-                  registrerade saldot.
+                  StorageViewr utgår från den senaste fysiska inventeringen och
+                  följer registrerade lagerhändelser därefter. Om kedjan bryts
+                  markeras positionen för kontroll.
                 </p>
               </header>
               <dl className={styles.healthRows}>
@@ -282,7 +263,9 @@ export default function LandingPage() {
           mode="group"
         >
           <div className={styles.featureCopy} data-reveal-item>
-            <h2 id="storage-title">Se registrerat saldo och placering per produkt</h2>
+            <h2 id="storage-title">
+              Se saldot — och exakt var produkterna finns
+            </h2>
             <p>
               Se registrerat totalantal, styckvärde och lagervärde — och hur
               varje produkt är fördelad mellan fysiska lagerplatser.
@@ -417,9 +400,8 @@ export default function LandingPage() {
               data-reveal-order="1"
             >
               <p className={styles.audienceLead}>
-                För mindre företag som behöver registrera produkter på fysiska
-                lagerplatser, inventera med mobilen och följa saldoförändringar
-                med tidpunkt och användare.
+                För mindre företag som behöver bättre fysisk lagerkontroll{` `}
+                <strong>utan att införa ett tungt WMS.</strong>
               </p>
               <ul className={styles.audienceProofs} aria-label="Det viktigaste">
                 {audienceProofs.map((proof) => (
@@ -513,7 +495,7 @@ export default function LandingPage() {
           <ScrollReveal className={styles.ctaPanel}>
             <div className={styles.ctaCopy}>
               <h2 id="cta-title">
-                Se registrerat saldo, fysisk placering och senaste verifiering.
+                Vet vad du har. Vet var det finns. Se när det senast verifierades.
               </h2>
               <p>
                 Ansök om pilot så går vi igenom ert lager och sätter upp nästa
