@@ -3,7 +3,7 @@ import { requireSession } from "@/lib/server/session";
 import { acceptOrganizationInvitation } from "@/features/organizations/members";
 
 export async function POST(request: Request, { params }: { params: Promise<{ token: string }> }) {
-  return api(async () => {
+  return api(request, async () => {
     assertOrigin(request);
     return acceptOrganizationInvitation(await requireSession(), (await params).token);
   });

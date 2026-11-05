@@ -5,10 +5,10 @@ import { listLocations, createLocation } from "@/features/locations/service";
 import { locationSchema } from "@/validation/location";
 
 export async function GET(request: Request) {
-  return api(async () => listLocations(await requireTenant(), new URL(request.url).searchParams.get("warehouseId") ?? undefined));
+  return api(request, async () => listLocations(await requireTenant(), new URL(request.url).searchParams.get("warehouseId") ?? undefined));
 }
 export async function POST(request: Request) {
-  return api(async () => {
+  return api(request, async () => {
     assertOrigin(request);
     const context = await requireTenant();
     await rateLimit("locations:create:" + context.userId, 60);

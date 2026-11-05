@@ -7,7 +7,7 @@ export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string; locationId: string }> },
 ) {
-  return api(async () => {
+  return api(request, async () => {
     assertOrigin(request);
     const context = await requireTenant();
     await rateLimit("inventory:count:" + context.userId, 120);

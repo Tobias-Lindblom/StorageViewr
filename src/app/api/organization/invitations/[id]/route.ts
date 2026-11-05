@@ -3,7 +3,7 @@ import { requireTenant } from "@/lib/server/tenant";
 import { revokeOrganizationInvitation } from "@/features/organizations/members";
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  return api(async () => {
+  return api(request, async () => {
     assertOrigin(request);
     return revokeOrganizationInvitation(await requireTenant(), (await params).id);
   });

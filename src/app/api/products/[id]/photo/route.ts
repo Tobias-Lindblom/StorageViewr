@@ -1,10 +1,10 @@
-import { api } from "@/lib/server/api";
+import { apiResponse } from "@/lib/server/api";
 import { requireTenant } from "@/lib/server/tenant";
 import { getProductPhotoAccess, readProductPhotoData } from "@/features/products/photos";
 
 export const runtime = "nodejs";
 export async function GET(request: Request, route: { params: Promise<{ id: string }> }) {
-  try {
+  return apiResponse(request, async () => {
     const context = await requireTenant();
     const { id } = await route.params;
     const size = new URL(request.url).searchParams.get("size") === "thumbnail"
@@ -26,5 +26,5 @@ export async function GET(request: Request, route: { params: Promise<{ id: strin
       ...headers,
       "Content-Type": "image/webp", "Content-Length": String(data.length),
     } });
-  } catch (error) { return api(async () => { throw error; }); }
+  });
 }

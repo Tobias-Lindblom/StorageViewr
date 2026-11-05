@@ -5,11 +5,11 @@ import { getProduct, updateProduct } from "@/features/products/service";
 import { productUpdateRequestSchema } from "@/validation/product";
 import { PHOTO_REQUEST_BYTES } from "@/validation/product-photo";
 type RouteContext = { params: Promise<{ id: string }> };
-export async function GET(_request: Request, route: RouteContext) {
-  return api(async () => getProduct(await requireTenant(), (await route.params).id));
+export async function GET(request: Request, route: RouteContext) {
+  return api(request, async () => getProduct(await requireTenant(), (await route.params).id));
 }
 export async function PATCH(request: Request, route: RouteContext) {
-  return api(async () => {
+  return api(request, async () => {
     assertOrigin(request);
     const context = await requireTenant();
     requireAdmin(context);

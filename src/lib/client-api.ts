@@ -11,6 +11,7 @@ type ApiEnvelope<T> =
         code?: string;
         message?: string;
         details?: ApiErrorDetail[];
+        requestId?: string;
       };
     };
 
@@ -75,7 +76,7 @@ export async function clientApi<T>(
       response.status,
       apiError?.code ?? `HTTP_${response.status}`,
       details,
-      response.headers.get("x-request-id") ?? undefined,
+      response.headers.get("x-request-id") ?? apiError?.requestId,
     );
   }
   if (!result || !("data" in result)) {

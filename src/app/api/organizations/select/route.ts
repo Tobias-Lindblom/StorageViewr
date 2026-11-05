@@ -3,7 +3,7 @@ import { requireSession } from "@/lib/server/session";
 import { selectOrganization } from "@/features/organizations/service";
 import { selectOrganizationSchema } from "@/validation/organization";
 export async function POST(request: Request) {
-  return api(async () => {
+  return api(request, async () => {
     assertOrigin(request);
     return selectOrganization(await requireSession(), await readJson(request, selectOrganizationSchema));
   });

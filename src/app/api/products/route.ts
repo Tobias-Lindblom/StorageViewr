@@ -5,10 +5,10 @@ import { listProducts, createProduct } from "@/features/products/service";
 import { productCreateRequestSchema } from "@/validation/product";
 import { PHOTO_REQUEST_BYTES } from "@/validation/product-photo";
 export async function GET(request: Request) {
-  return api(async () => listProducts(await requireTenant(), Object.fromEntries(new URL(request.url).searchParams)));
+  return api(request, async () => listProducts(await requireTenant(), Object.fromEntries(new URL(request.url).searchParams)));
 }
 export async function POST(request: Request) {
-  return api(async () => {
+  return api(request, async () => {
     assertOrigin(request);
     const context = await requireTenant();
     requireAdmin(context);

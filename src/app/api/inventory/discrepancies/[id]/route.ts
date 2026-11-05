@@ -5,7 +5,7 @@ import { discrepancyActionSchema } from "@/validation/discrepancy";
 import { updateDiscrepancy } from "@/features/inventory/discrepancies";
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  return api(async () => {
+  return api(request, async () => {
     assertOrigin(request);
     const context = await requireTenant();
     await rateLimit("inventory:discrepancy:" + context.userId, 40);

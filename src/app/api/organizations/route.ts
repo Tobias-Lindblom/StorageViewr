@@ -3,11 +3,11 @@ import { requireSession } from "@/lib/server/session";
 import { rateLimit } from "@/lib/server/rate-limit";
 import { listOrganizations, createOrganization } from "@/features/organizations/service";
 import { organizationSchema } from "@/validation/organization";
-export async function GET() {
-  return api(async () => listOrganizations(await requireSession()));
+export async function GET(request: Request) {
+  return api(request, async () => listOrganizations(await requireSession()));
 }
 export async function POST(request: Request) {
-  return api(async () => {
+  return api(request, async () => {
     assertOrigin(request);
     const session = await requireSession();
     await rateLimit("organization:create:" + session.userId, 10);

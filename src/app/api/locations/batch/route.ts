@@ -5,7 +5,7 @@ import { createLocationBatch } from "@/features/locations/service";
 import { locationBatchSchema } from "@/validation/location";
 
 export async function POST(request: Request) {
-  return api(async () => {
+  return api(request, async () => {
     assertOrigin(request);
     const context = await requireTenant();
     await rateLimit("locations:batch:" + context.userId, 20);

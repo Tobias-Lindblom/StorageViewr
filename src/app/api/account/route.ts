@@ -4,7 +4,7 @@ import { updateAccount } from "@/features/account/service";
 import { updateAccountSchema } from "@/validation/account";
 
 export async function PATCH(request: Request) {
-  return api(async () => {
+  return api(request, async () => {
     assertOrigin(request);
     return updateAccount(await requireSession(), await readJson(request, updateAccountSchema));
   });

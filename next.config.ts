@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs/config";
 
 const isProduction = process.env.NODE_ENV === "production";
 
@@ -55,4 +56,25 @@ const config: NextConfig = {
     ];
   },
 };
-export default config;
+const sentryConfigured = Boolean(
+  process.env.SENTRY_DSN ?? process.env.NEXT_PUBLIC_SENTRY_DSN,
+);
+
+export default sentryConfigured
+  ? withSentryConfig(config, {
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
+      authToken: process.env.SENTRY_AUTH_TOKEN,
+      telemetry: false,
+      silent: !process.env.SENTRY_AUTH_TOKEN,
+      tunnelRoute: "/monitoring",
+      sourcemaps: {
+        disable: !process.env.SENTRY_AUTH_TOKEN,
+        deleteSourcemapsAfterUpload: true,
+      },
+      release: {
+        name:
+          process.env.SENTRY_RELEASE ?? process.env.VERCEL_GIT_COMMIT_SHA,
+      },
+    })
+  : config;

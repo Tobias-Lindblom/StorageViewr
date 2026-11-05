@@ -5,7 +5,7 @@ import { placeProduct } from "@/features/inventory/service";
 import { stockPairSchema } from "@/validation/inventory";
 
 export async function POST(request: Request) {
-  return api(async () => {
+  return api(request, async () => {
     assertOrigin(request);
     const context = await requireTenant();
     await rateLimit("inventory:placement:" + context.userId, 60);

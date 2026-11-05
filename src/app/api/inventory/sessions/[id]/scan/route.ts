@@ -4,7 +4,7 @@ import { rateLimit } from "@/lib/server/rate-limit";
 import { resolveInventoryLocation } from "@/features/scanner/service";
 import { scanLocationSchema } from "@/validation/scan";
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  return api(async () => {
+  return api(request, async () => {
     assertOrigin(request);
     const context = await requireTenant();
     await rateLimit("inventory:scan:" + context.userId, 120);

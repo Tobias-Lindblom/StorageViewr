@@ -15,6 +15,7 @@
     "db:indexes": "node --conditions=react-server --import tsx --env-file=.env.local scripts/create-indexes.ts"
   },
   "dependencies": {
+    "@sentry/nextjs": "^10.78.0",
     "csv-parse": "7.0.3",
     "jsqr": "1.4.0",
     "mongoose": "9.11.4",
@@ -45,6 +46,12 @@
     "typescript": "5.9.3"
   },
   "overrides": {
+    "@sentry/bundler-plugins": {
+      "glob": "14.0.2"
+    },
+    "@typescript-eslint/typescript-estree": {
+      "minimatch": "11.0.1"
+    },
     "follow-redirects": "1.16.2",
     "source-map-js": "1.2.2"
   },

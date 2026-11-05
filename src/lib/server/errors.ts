@@ -5,6 +5,7 @@ export class AppError extends Error {
     message: string,
   ) {
     super(message);
+    this.name = "AppError";
   }
 }
 export function isDuplicateKey(error: unknown): boolean {

@@ -1,4 +1,4 @@
-import { api } from "@/lib/server/api";
+import { apiResponse } from "@/lib/server/api";
 import { requireTenant } from "@/lib/server/tenant";
 import { rateLimit } from "@/lib/server/rate-limit";
 import { getLocationStockReport } from "@/features/locations/report-data";
@@ -10,7 +10,7 @@ import {
 export const runtime = "nodejs";
 
 export async function GET(request: Request) {
-  try {
+  return apiResponse(request, async () => {
     const context = await requireTenant();
     await rateLimit("locations:pdf:" + context.userId, 10, 60_000);
     const warehouseId =
@@ -28,9 +28,5 @@ export async function GET(request: Request) {
         "Cross-Origin-Resource-Policy": "same-origin",
       },
     });
-  } catch (error) {
-    return api(async () => {
-      throw error;
-    });
-  }
+  });
 }

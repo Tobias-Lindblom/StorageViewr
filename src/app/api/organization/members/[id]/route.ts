@@ -7,7 +7,7 @@ import {
 import { updateMemberSchema } from "@/validation/membership";
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  return api(async () => {
+  return api(request, async () => {
     assertOrigin(request);
     return updateOrganizationMember(
       await requireTenant(),
@@ -18,7 +18,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 }
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  return api(async () => {
+  return api(request, async () => {
     assertOrigin(request);
     return removeOrganizationMember(await requireTenant(), (await params).id);
   });

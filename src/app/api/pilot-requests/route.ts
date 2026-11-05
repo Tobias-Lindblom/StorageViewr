@@ -12,7 +12,7 @@ function requestIdentity(request: Request) {
 }
 
 export async function POST(request: Request) {
-  return api(async () => {
+  return api(request, async () => {
     assertOrigin(request);
     const data = await readJson(request, pilotRequestSchema, 20_000);
     const identity = requestIdentity(request);

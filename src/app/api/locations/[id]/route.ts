@@ -8,17 +8,17 @@ import {
 import { locationUpdateSchema } from "@/validation/location";
 
 type RouteContext = { params: Promise<{ id: string }> };
-export async function GET(_request: Request, route: RouteContext) {
-  return api(async () => getLocation(await requireTenant(), (await route.params).id));
+export async function GET(request: Request, route: RouteContext) {
+  return api(request, async () => getLocation(await requireTenant(), (await route.params).id));
 }
 export async function PATCH(request: Request, route: RouteContext) {
-  return api(async () => {
+  return api(request, async () => {
     assertOrigin(request);
     return updateLocation(await requireTenant(), (await route.params).id, await readJson(request, locationUpdateSchema));
   });
 }
 export async function DELETE(request: Request, route: RouteContext) {
-  return api(async () => {
+  return api(request, async () => {
     assertOrigin(request);
     return deleteLocation(
       await requireTenant(),

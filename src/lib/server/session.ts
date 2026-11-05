@@ -5,6 +5,7 @@ import { Types } from "mongoose";
 import { cache } from "react";
 import { connectDb } from "./db";
 import { AppError } from "./errors";
+import { setRequestLogActor } from "./logger";
 import { Session } from "@/models/session";
 import { User } from "@/models/user";
 
@@ -39,7 +40,14 @@ export const resolveSession = cache(async (token?: string) => {
   return session;
 });
 export const requireSession = cache(async () => {
-  return resolveSession((await cookies()).get(sessionCookie)?.value);
+  const session = await resolveSession((await cookies()).get(sessionCookie)?.value);
+  setRequestLogActor({
+    userId: String(session.userId),
+    ...(session.organizationId
+      ? { organizationId: String(session.organizationId) }
+      : {}),
+  });
+  return session;
 });
 export async function optionalSession() {
   try {

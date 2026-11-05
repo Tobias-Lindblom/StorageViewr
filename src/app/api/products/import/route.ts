@@ -4,7 +4,7 @@ import { rateLimit } from "@/lib/server/rate-limit";
 import { importProducts } from "@/features/products/import";
 import { productImportSchema } from "@/validation/product";
 export async function POST(request: Request) {
-  return api(async () => {
+  return api(request, async () => {
     assertOrigin(request);
     const context = await requireTenant();
     requireAdmin(context);

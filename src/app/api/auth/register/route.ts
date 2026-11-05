@@ -4,7 +4,7 @@ import { registerSchema } from "@/validation/auth";
 import { setSessionCookie } from "@/lib/server/session";
 
 export async function POST(request: Request) {
-  return api(async () => {
+  return api(request, async () => {
     assertOrigin(request);
     const session = await register(await readJson(request, registerSchema));
     await setSessionCookie(session.token, session.expiresAt);

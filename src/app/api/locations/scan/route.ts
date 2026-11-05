@@ -5,7 +5,7 @@ import { locationScanSchema } from "@/validation/scan";
 import { resolveLocation } from "@/features/scanner/service";
 
 export async function POST(request: Request) {
-  return api(async () => {
+  return api(request, async () => {
     assertOrigin(request);
     const context = await requireTenant();
     await rateLimit("locations:scan:" + context.userId, 120);

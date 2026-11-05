@@ -26,6 +26,8 @@ import { tenantForSession } from "../src/lib/server/tenant";
 import { AppError } from "../src/lib/server/errors";
 import { rateLimit } from "../src/lib/server/rate-limit";
 import { api, assertOrigin, readJson } from "../src/lib/server/api";
+import { redactApiRoute } from "../src/lib/server/logger";
+import { scrubSentryEvent } from "../src/lib/monitoring/privacy";
 import { registerSchema } from "../src/validation/auth";
 import {
   acceptOrganizationInvitation,
@@ -461,14 +463,117 @@ test("mutation origin checks and bounded JSON parsing reject invalid requests co
     readJson(request("x".repeat(17000)), updateOrganizationSchema),
     hasStatus(413),
   );
-  const result = await api(async () => {
-    throw new AppError(403, "FORBIDDEN", "Nekad");
-  });
+  const apiRequest = new Request(
+    "http://localhost:3000/api/invitations/secret-token-value/accept?email=private@example.com",
+    {
+      method: "POST",
+      headers: { "x-request-id": "untrusted-client-value" },
+    },
+  );
+  let logLine = "";
+  const originalWarn = console.warn;
+  const result = await (async () => {
+    console.warn = (line) => {
+      logLine = String(line);
+    };
+    try {
+      return await api(apiRequest, async () => {
+        throw new AppError(403, "FORBIDDEN", "Nekad");
+      });
+    } finally {
+      console.warn = originalWarn;
+    }
+  })();
   assert.equal(result.status, 403);
+  const requestId = result.headers.get("x-request-id");
+  assert.match(requestId ?? "", /^[0-9a-f-]{36}$/);
+  assert.notEqual(requestId, "untrusted-client-value");
   assert.deepEqual(await result.json(), {
-    error: { code: "FORBIDDEN", message: "Nekad" },
+    error: { code: "FORBIDDEN", message: "Nekad", requestId },
   });
   assert.equal(result.headers.get("cache-control"), "no-store");
+  assert.equal(
+    redactApiRoute(apiRequest.url),
+    "/api/invitations/:token/accept",
+  );
+  assert.equal(
+    redactApiRoute("http://localhost:3000/api/locations/report?warehouseId=secret"),
+    "/api/locations/report",
+  );
+  const logged = JSON.parse(logLine) as Record<string, unknown>;
+  assert.equal(logged.event, "api.request.completed");
+  assert.equal(logged.requestId, requestId);
+  assert.equal(logged.route, "/api/invitations/:token/accept");
+  assert.equal(logged.errorName, "AppError");
+  assert.equal(logLine.includes("secret-token-value"), false);
+  assert.equal(logLine.includes("private@example.com"), false);
+});
+
+test("central error reporting removes request data, credentials and dynamic route values", () => {
+  const event = scrubSentryEvent({
+    type: undefined,
+    message:
+      "Failed for private@example.com with token aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    transaction: "POST /api/invitations/secret-invitation/accept",
+    user: { id: "user-id", email: "private@example.com" },
+    extra: { body: { password: "secret" } },
+    request: {
+      method: "POST",
+      url: "https://storageviewr.example/api/invitations/secret-invitation/accept?email=private@example.com",
+      headers: { cookie: "storageviewr=secret", authorization: "Bearer secret" },
+      cookies: { storageviewr: "secret" },
+      query_string: "email=private@example.com",
+      data: { password: "secret" },
+    },
+    breadcrumbs: [
+      {
+        category: "fetch",
+        message: "private@example.com",
+        data: {
+          url: "https://storageviewr.example/api/products/507f1f77bcf86cd799439011?search=secret",
+          method: "GET",
+          body: "secret",
+        },
+      },
+    ],
+    exception: {
+      values: [
+        {
+          type: "Error",
+          value:
+            "mongodb://user:password@example/database private@example.com",
+        },
+      ],
+    },
+    contexts: {
+      nextjs: {
+        request_path:
+          "/api/invitations/secret-invitation/accept?email=private@example.com",
+      },
+    },
+  });
+
+  assert.equal(event.user, undefined);
+  assert.equal(event.extra, undefined);
+  assert.equal(event.transaction, "POST /api/invitations/:token/accept");
+  assert.equal(event.request?.url, "/api/invitations/:token/accept");
+  assert.equal(event.request?.headers, undefined);
+  assert.equal(event.request?.cookies, undefined);
+  assert.equal(event.request?.query_string, undefined);
+  assert.equal(event.request?.data, undefined);
+  assert.equal(event.message?.includes("private@example.com"), false);
+  assert.equal(
+    event.exception?.values?.[0]?.value,
+    "[redacted-database-uri] [redacted-email]",
+  );
+  assert.deepEqual(event.breadcrumbs?.[0]?.data, {
+    url: "/api/products/:id",
+    method: "GET",
+  });
+  assert.equal(
+    event.contexts?.nextjs?.request_path,
+    "/api/invitations/:token/accept",
+  );
 });
 
 test("database rate limiting stays atomic under concurrent requests", async () => {
