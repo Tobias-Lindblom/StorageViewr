@@ -12,7 +12,8 @@
     "test:e2e": "playwright test",
     "e2e:app": "node --import tsx scripts/e2e-app.ts",
     "icons:generate": "node scripts/generate-brand-icons.mjs",
-    "db:indexes": "node --conditions=react-server --import tsx --env-file=.env.local scripts/create-indexes.ts"
+    "db:indexes": "node --conditions=react-server --import tsx --env-file=.env.local scripts/create-indexes.ts",
+    "pilot:requests": "node --conditions=react-server --import tsx --env-file=.env.local scripts/pilot-requests.ts"
   },
   "dependencies": {
     "@sentry/nextjs": "^10.78.0",

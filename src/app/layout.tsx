@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { publicOrigin } from "@/lib/public-metadata";
 import { AppViewport } from "@/components/app-viewport";
 import { ScrollbarActivity } from "@/components/scrollbar-activity";
 import { PwaRegistration } from "@/components/pwa-registration";
@@ -6,6 +7,8 @@ import { workspaceFont } from "./fonts";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(publicOrigin()),
+  robots: { index: false, follow: false },
   title: "StorageViewr – ditt lager under kontroll",
   applicationName: "StorageViewr",
   description:

@@ -28,7 +28,7 @@ export function FloatingScrollToTop() {
     updateVisibility();
     scrollRoot.addEventListener("scroll", updateVisibility, { passive: true });
 
-    const observer = footer
+    const observer = footer && "IntersectionObserver" in window
       ? new IntersectionObserver(
           ([entry]) => setFooterVisible(entry.isIntersecting),
           { root: scrollRoot, threshold: 0.05 },

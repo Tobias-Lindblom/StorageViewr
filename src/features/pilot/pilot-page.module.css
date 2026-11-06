@@ -281,7 +281,7 @@
 
 .optional {
   color: var(--text-muted);
-  font-size: 11px;
+  font-size: 0.875rem;
   font-weight: 500;
 }
 
@@ -313,7 +313,7 @@
   display: block;
   margin-top: 6px;
   color: #ff99a5;
-  font-size: 12px;
+  font-size: 0.875rem;
   font-weight: 500;
   line-height: 1.4;
 }
@@ -352,7 +352,7 @@
   border-radius: 9px;
   background: rgb(14 12 21 / 0.7);
   color: var(--text-secondary);
-  font-size: 11px;
+  font-size: 0.875rem;
   line-height: 1.25;
   text-align: left;
   overflow-wrap: anywhere;
@@ -420,7 +420,7 @@
 .submitNote {
   margin: -12px 0 0;
   color: var(--text-muted);
-  font-size: 11px;
+  font-size: 0.875rem;
   line-height: 1.5;
   text-align: center;
 }
@@ -568,7 +568,7 @@
   border-radius: 12px;
   background: rgb(24 18 37 / 0.98);
   color: #c596ff;
-  font-size: 12px;
+  font-size: 0.875rem;
   font-weight: 750;
   font-variant-numeric: tabular-nums;
   box-shadow: inset 0 1px rgb(255 255 255 / 0.055), 0 8px 22px rgb(0 0 0 / 0.2);
@@ -822,7 +822,7 @@
   }
 
   .backLink {
-    font-size: 12px;
+    font-size: 0.875rem;
   }
 
   .loginLink {
@@ -870,7 +870,7 @@
 
   .needChoice {
     min-height: 48px;
-    font-size: 12px;
+    font-size: 0.875rem;
   }
 
   .processSection {
@@ -965,3 +965,50 @@
   }
 }
 
+
+
+.formShortcut {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-top: 18px;
+  color: var(--text-primary);
+  text-decoration: underline;
+  text-underline-offset: 5px;
+}
+
+.form:focus { outline: none; }
+.form a, .successState a:not(.successAction) { color: #d1afff; text-decoration: underline; }
+.form a, .successState a { overflow-wrap: anywhere; }
+.form a:focus-visible, .formShortcut:focus-visible {
+  outline: 2px solid #c795ff;
+  outline-offset: 4px;
+}
+.needChoice:focus-visible { outline: 2px solid #c795ff; outline-offset: 3px; }
+
+.pilotTerms {
+  padding-block: 16px;
+  border-block: 1px solid var(--border-default);
+  color: var(--text-secondary);
+  font-size: .9375rem;
+  line-height: 1.65;
+  scroll-margin-top: 24px;
+}
+.pilotTerms summary { cursor: pointer; color: var(--text-primary); padding-block: 8px; font-weight: 700; }
+.pilotTerms dl { margin: 12px 0 0; }
+.pilotTerms dl > div + div { margin-top: 16px; }
+.pilotTerms dt { font-weight: 700; color: var(--text-primary); }
+.pilotTerms dd { margin: 4px 0 0; }
+.privacyNote { font-size: .875rem; line-height: 1.65; color: var(--text-secondary); margin: 0; }
+.contactFooter {
+  display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center;
+  width: min(100%, var(--pilot-width)); margin: 0 auto;
+  padding: 28px var(--pilot-gutter) 40px;
+  color: var(--text-secondary); font-size: .875rem; line-height: 1.7;
+}
+.contactFooter a { text-decoration: underline; text-underline-offset: 4px; overflow-wrap: anywhere; }
+.contactFooter a:focus-visible, .pilotTerms summary:focus-visible {
+  outline: 2px solid var(--color-accent); outline-offset: 4px;
+}
+
+.page :is(h1, h2, h3, p, a, button, summary, dd) { overflow-wrap: anywhere; }

@@ -106,3 +106,49 @@ Rekommenderade första larm i Sentry:
 - fler än tio unika berörda användare för samma fel under en timme
 
 Larmen skapas i Sentry efter att projekt, DSN och mottagare har konfigurerats.
+
+## Pilotförfrågningar utan e-postavisering
+
+Pilotförfrågningar sparas i `pilotRequests`. Tobias Lindblom ansvarar för att
+kontrollera kön minst en gång per arbetsdag tills en separat aviseringstjänst
+har beslutats. Listkommandot visar inga kontaktuppgifter, men markerar nya
+förfrågningar som har väntat längre än 24 timmar:
+
+```powershell
+npm run pilot:requests -- list
+```
+
+Visa kontaktuppgifterna först när en enskild förfrågan ska hanteras:
+
+```powershell
+npm run pilot:requests -- show <id>
+```
+
+Efter faktisk kontakt förlängs lagringstiden till 90 dagar från den angivna
+kontakttiden. Kommandot är en förhandsvisning tills `--apply` läggs till:
+
+```powershell
+npm run pilot:requests -- contacted <id> 2026-11-06T09:00:00Z
+npm run pilot:requests -- contacted <id> 2026-11-06T09:00:00Z --apply
+```
+
+En begäran om omedelbar radering hanteras på samma sätt:
+
+```powershell
+npm run pilot:requests -- delete <id>
+npm run pilot:requests -- delete <id> --apply
+```
+
+Nya poster får `lastContactAt` och `expiresAt` vid inskick. MongoDB:s TTL-index
+raderar posten efter `expiresAt`; kör `npm run db:indexes` vid driftsättning av
+modellen. Äldre poster saknar dessa fält och raderas inte automatiskt. Granska
+först eventuell extern korrespondens och kör därefter:
+
+```powershell
+npm run pilot:requests -- backfill
+npm run pilot:requests -- backfill --apply
+```
+
+Förhandsvisningen visar särskilt vilka äldre poster som redan passerat sin
+beräknade lagringstid. Statusändringar i databasen räknas inte som kontakt och
+förlänger därför inte lagringstiden.

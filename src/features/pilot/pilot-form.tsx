@@ -18,6 +18,8 @@ import {
   pilotProductRanges,
   pilotRequestSchema,
 } from "@/validation/pilot-request";
+import { pilotContact } from "@/lib/pilot-contact";
+import { PilotTerms } from "./pilot-terms";
 import styles from "./pilot-page.module.css";
 
 type PilotNeed = (typeof pilotNeeds)[number];
@@ -125,7 +127,7 @@ export function PilotForm() {
 
   if (success) {
     return (
-      <div className={styles.successState} role="status">
+      <div id="pilot-form" className={styles.successState} role="status">
         <span className={styles.successIcon} aria-hidden="true">
           <AppIcon name="verified" width={32} height={32} />
         </span>
@@ -133,9 +135,16 @@ export function PilotForm() {
           Tack — vi har fått er pilotförfrågan.
         </h2>
         <p>
-          Vi går igenom informationen och återkommer med nästa steg.
+          Tobias Lindblom går igenom informationen och återkommer
+          till den e-postadress ni angav inom 24 timmar.
         </p>
-        <p>Under tiden behöver ni inte skapa något konto.</p>
+        <p>
+          Detta är er mottagningsbekräftelse; inget automatiskt bekräftelsemejl skickas.
+          Under tiden behöver ni inte skapa något konto.
+        </p>
+        <p>
+          Frågor? <a href={"mailto:" + pilotContact.email}>Kontakta Tobias Lindblom</a>.
+        </p>
         <Link href="/" className={`button ${styles.successAction}`}>
           Tillbaka till StorageViewr
           <MaterialArrow name="forward" />
@@ -152,10 +161,17 @@ export function PilotForm() {
   });
 
   return (
-    <form id="pilot-form" className={styles.form} onSubmit={submit} noValidate>
+    <form id="pilot-form" className={styles.form} action="/api/pilot-requests"
+      method="post" onSubmit={submit} noValidate tabIndex={-1}>
+      <noscript>
+        <p data-noscript-message className={styles.submitError}>
+          Aktivera JavaScript för att skicka formuläret, eller kontakta oss på{" "}
+          <a href={"mailto:" + pilotContact.email}>tobiasmagnuslindblom@gmail.com</a>.
+        </p>
+      </noscript>
       <header className={styles.formHeader}>
         <h2>Ansök om pilot</h2>
-        <p>Det tar ungefär en minut.</p>
+        <p>Sex obligatoriska uppgifter. Övriga fält är valfria.</p>
       </header>
 
       <div className={styles.fieldGrid}>
@@ -379,6 +395,12 @@ export function PilotForm() {
         />
       </label>
 
+      <PilotTerms />
+      <p className={styles.privacyNote}>
+        {pilotContact.name} använder uppgifterna för att besvara och följa upp
+        din förfrågan. Den raderas 90 dagar efter senaste kontakt.{" "}
+        <Link href="/integritet">Så behandlas dina personuppgifter</Link>.
+      </p>
       {submitError && (
         <p className={styles.submitError} role="alert">
           {submitError}
@@ -390,7 +412,7 @@ export function PilotForm() {
         {!pending && <MaterialArrow name="forward" />}
       </button>
       <p className={styles.submitNote}>
-        Ingen bindning. Vi går igenom er förfrågan innan någon miljö skapas.
+        Obindande förfrågan. Svar inom 24 timmar. Pris och testperiod bestäms före start.
       </p>
     </form>
   );

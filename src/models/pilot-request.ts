@@ -13,6 +13,8 @@ import {
   pilotProductRanges,
 } from "@/validation/pilot-request";
 
+import { pilotRequestExpiry } from "@/features/pilot/retention";
+
 const schema = new Schema(
   {
     name: { type: String, required: true, trim: true, maxlength: 100 },
@@ -47,6 +49,12 @@ const schema = new Schema(
     },
     needs: [{ type: String, enum: pilotNeeds }],
     description: { type: String, default: "", trim: true, maxlength: 1_200 },
+    lastContactAt: { type: Date, required: true, default: Date.now },
+    expiresAt: {
+      type: Date,
+      required: true,
+      default: () => pilotRequestExpiry(new Date()),
+    },
     status: {
       type: String,
       required: true,
@@ -57,6 +65,8 @@ const schema = new Schema(
   { timestamps: true, collection: "pilotRequests" },
 );
 
+// TTL is installed by db:indexes, never by application startup.
+schema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 schema.index({ createdAt: -1 });
 schema.index({ email: 1, createdAt: -1 });
 schema.index({ status: 1, createdAt: -1 });

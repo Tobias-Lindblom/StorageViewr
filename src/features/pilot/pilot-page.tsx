@@ -65,8 +65,8 @@ const trustFeatures = [
     icon: "user",
   },
   {
-    title: "Full lagerhistorik",
-    description: "Se alla händelser och förändringar i lagret.",
+    title: "Spårbar lagerhistorik",
+    description: "Följ registrerade lagerhändelser med tidpunkt och användare.",
     icon: "history",
   },
   {
@@ -113,6 +113,7 @@ export default function PilotPage() {
             </p>
           </div>
 
+          <a href="#pilot-form" className={styles.formShortcut}>Gå till formuläret ↓</a>
           <ul className={styles.benefitList}>
             {pilotBenefits.map((benefit) => (
               <li key={benefit.title}>
@@ -194,6 +195,11 @@ export default function PilotPage() {
           </Link>
         </section>
       </div>
+      <footer className={styles.contactFooter}>
+        <Link href="/om-oss">Om oss</Link>
+        <Link href="/kontakt">Kontakta oss</Link>
+        <Link href="/integritet">Personuppgifter</Link>
+      </footer>
     </main>
   );
 }

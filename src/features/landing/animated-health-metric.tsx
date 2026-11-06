@@ -67,7 +67,7 @@ export function AnimatedHealthMetric() {
       >
         <strong aria-hidden="true">
           <span ref={numberRef} className={styles.healthScoreNumber}>
-            0
+            {HEALTH_PERCENT}
           </span>
           <span className={styles.healthScoreUnit}>%</span>
         </strong>

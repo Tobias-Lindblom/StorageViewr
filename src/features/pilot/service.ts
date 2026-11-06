@@ -1,6 +1,7 @@
 import "server-only";
 import { connectDb } from "@/lib/server/db";
 import { PilotRequest } from "@/models/pilot-request";
+import { pilotRequestExpiry } from "./retention";
 import { pilotRequestSchema } from "@/validation/pilot-request";
 
 export async function createPilotRequest(input: unknown) {
@@ -10,7 +11,10 @@ export async function createPilotRequest(input: unknown) {
   if (data.website) return { received: true } as const;
 
   await connectDb();
+  const submittedAt = new Date();
   await PilotRequest.create({
+    lastContactAt: submittedAt,
+    expiresAt: pilotRequestExpiry(submittedAt),
     name: data.name,
     companyName: data.companyName,
     email: data.email,

@@ -3,6 +3,8 @@ import { after, before, test } from "node:test";
 import { MongoMemoryReplSet } from "mongodb-memory-server";
 import { POST } from "../src/app/api/pilot-requests/route";
 import { connectDb } from "../src/lib/server/db";
+import { recordPilotContact } from "../src/features/pilot/request-maintenance";
+import { pilotRequestExpiry } from "../src/features/pilot/retention";
 import { createPilotRequest } from "../src/features/pilot/service";
 import { Organization } from "../src/models/organization";
 import { PilotRequest } from "../src/models/pilot-request";
@@ -128,4 +130,35 @@ test("pilot endpoint enforces origin, validation and request limits", async () =
     ).status,
     429,
   );
+});
+
+test("pilot retention is 90 days from real contact, not incidental edits", async () => {
+  const submittedAt = new Date("2026-01-01T12:00:00Z");
+  const contactedAt = new Date("2026-02-01T12:00:00Z");
+  const now = new Date("2026-02-02T12:00:00Z");
+  const row = await PilotRequest.create({
+    ...pilotRequestSchema.parse(validRequest),
+    email: "retention@example.com", createdAt: submittedAt,
+    lastContactAt: submittedAt, expiresAt: pilotRequestExpiry(submittedAt),
+  });
+  assert.equal(row.expiresAt.getTime() - row.lastContactAt.getTime(), 90 * 86_400_000);
+  const updated = await recordPilotContact(String(row._id), contactedAt, now);
+  assert.ok(updated);
+  assert.equal(updated.expiresAt.toISOString(), "2026-05-02T12:00:00.000Z");
+  await PilotRequest.updateOne({ _id: row._id }, { $set: { status: "DECLINED" } });
+  assert.equal((await PilotRequest.findById(row._id))!.expiresAt.getTime(), updated.expiresAt.getTime());
+  assert.equal(await recordPilotContact(String(row._id), submittedAt, now), null);
+  assert.equal(await recordPilotContact(String(row._id), new Date("2026-05-03T12:00:00Z"), new Date("2026-05-04T12:00:00Z")), null);
+  await assert.rejects(() => recordPilotContact(String(row._id), new Date("2027-01-01"), now));
+  const indexes = await PilotRequest.collection.indexes();
+  assert.ok(indexes.some((index) => index.key.expiresAt === 1 && index.expireAfterSeconds === 0));
+});
+
+test("new inquiry gets a submission-based expiry and rejects client-supplied retention", async () => {
+  await createPilotRequest({ ...validRequest, email: "expiry@example.com" });
+  const row = await PilotRequest.findOne({ email: "expiry@example.com" });
+  assert.ok(row);
+  assert.equal(row.expiresAt.getTime(), pilotRequestExpiry(row.lastContactAt).getTime());
+  assert.ok(Math.abs(row.lastContactAt.getTime() - Date.now()) < 10_000);
+  assert.equal(pilotRequestSchema.safeParse({ ...validRequest, expiresAt: "2099-01-01" }).success, false);
 });

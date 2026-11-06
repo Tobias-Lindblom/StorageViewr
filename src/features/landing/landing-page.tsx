@@ -1,20 +1,19 @@
-import type { Metadata } from "next";
+import { publicMetadata } from "@/lib/public-metadata";
 import Image from "next/image";
 import Link from "next/link";
 import { AppIcon } from "@/components/app-icon";
-import { BrandLogo } from "@/components/brand-logo";
 import { MaterialArrow } from "@/components/material-arrow";
 import { AnimatedHealthMetric } from "./animated-health-metric";
 import { LandingHeader } from "./landing-header";
 import { ScrollReveal } from "./scroll-reveal";
-import { FloatingScrollToTop, FooterScrollToTop } from "./scroll-to-top";
+import { FloatingScrollToTop } from "./scroll-to-top";
+import { PublicFooter } from "./public-footer";
 import styles from "./landing-page.module.css";
 
-export const landingMetadata: Metadata = {
-  title: "StorageViewr – lagerkontroll och inventering med QR",
-  description:
-    "Koppla produkter till fysiska lagerplatser, inventera med QR, granska avvikelser och exportera lager- och inventeringsrapporter som PDF.",
-};
+export const landingMetadata = publicMetadata(
+  "/", "StorageViewr – lagerkontroll och inventering med QR",
+  "Koppla produkter till fysiska lagerplatser, inventera med QR, granska avvikelser och exportera lager- och inventeringsrapporter som PDF.",
+);
 
 const overviewFacts = [
   "Personlig pilotstart",
@@ -186,6 +185,10 @@ export default function LandingPage() {
                   StorageViewr utgår från den senaste fysiska inventeringen och
                   följer registrerade lagerhändelser därefter. Om kedjan bryts
                   markeras positionen för kontroll.
+                </p>
+                <p>
+                  Förändringar som inte registreras i StorageViewr upptäcks
+                  först vid en ny fysisk kontroll.
                 </p>
               </header>
               <dl className={styles.healthRows}>
@@ -411,6 +414,12 @@ export default function LandingPage() {
                   </li>
                 ))}
               </ul>
+              <p className={styles.audienceBoundary}>
+                StorageViewr kompletterar ert affärssystem med fysisk lagerkontroll.
+                Piloten har ingen automatisk synkronisering med Shopify, orderflöden
+                eller andra affärssystem. När en kundorder skickas ändras därför
+                inte saldot automatiskt i StorageViewr.
+              </p>
               <p className={styles.audiencePrompt}>Passar särskilt bra för:</p>
               <ul
                 className={styles.audienceTypes}
@@ -471,6 +480,16 @@ export default function LandingPage() {
                 genomför den första fysiska inventeringen.
               </p>
             </header>
+            <details className={styles.fieldTest}>
+              <summary>Testat med iPhone i ett internt inventeringsflöde</summary>
+              <p>
+                En första baseline-inventering har slutförts på iPhone i ett
+                internt test. Signeringen gjordes i mobilens webbläsare efter
+                problem med rotation i PWA:n. Korrigeringarna för rotation och
+                appbyte behöver fortfarande ett nytt fysiskt test.
+                Detta är ett internt test, inte en kundreferens.
+              </p>
+            </details>
             <ol className={styles.onboardingSteps}>
               {onboardingSteps.map((step, index) => (
                 <li
@@ -523,57 +542,7 @@ export default function LandingPage() {
         </section>
       </div>
 
-      <footer className={styles.footer}>
-        <div className={styles.footerInner}>
-          <div className={styles.footerTop}>
-            <div className={styles.footerBrand}>
-              <BrandLogo href="#toppen" />
-              <div className={styles.footerDescription}>
-                <p>Lagerkontroll för verksamheter med ett fysiskt lager.</p>
-                <p>
-                  Från lagerplatser och fysiska inventeringar till spårbar
-                  historik och signerade inventeringsrapporter.
-                </p>
-              </div>
-              <span className={styles.footerStatus}>
-                <span aria-hidden="true" />
-                Begränsad pilot pågår
-              </span>
-            </div>
-
-            <nav
-              aria-label="Länkar i sidfoten"
-              className={styles.footerNavigation}
-            >
-              <div className={styles.footerLinkGroup}>
-                <h2>Produkt</h2>
-                <a href="#oversikt">Lageröversikt</a>
-                <a href="#qr-skanner">QR-skanner</a>
-                <a href="#lagerplatser">Lagerplatser &amp; produkter</a>
-              </div>
-              <div className={styles.footerLinkGroup}>
-                <h2>Arbetsflöde</h2>
-                <a href="#inventering">Inventering</a>
-                <a href="#rapporter">Rapporter &amp; dokument</a>
-              </div>
-              <div className={styles.footerLinkGroup}>
-                <h2>Kom igång</h2>
-                <a href="#kom-igang">Så fungerar det</a>
-                <Link className={styles.footerAccentLink} href={primaryHref}>
-                  {primaryLabel}
-                  <MaterialArrow name="forward" size={16} />
-                </Link>
-                <Link href="/login">Logga in</Link>
-              </div>
-            </nav>
-          </div>
-
-          <div className={styles.footerBottom}>
-            <span>© {new Date().getFullYear()} StorageViewr</span>
-            <FooterScrollToTop />
-          </div>
-        </div>
-      </footer>
+      <PublicFooter />
     </main>
   );
 }
